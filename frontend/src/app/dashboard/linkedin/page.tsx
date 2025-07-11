@@ -6,7 +6,7 @@ import { LinkedInProfileViewer } from '@/components/linkedin/profile-viewer';
 import { LinkedInMessaging } from '@/components/linkedin/messaging';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LinkedIn, Users, MessageSquare, Share2, TrendingUp, UserPlus } from 'lucide-react';
+import { Linkedin, Users, MessageSquare, Share2, TrendingUp, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { authHelpers } from '@/lib/supabase/auth';
 import { toast } from 'sonner';
@@ -35,7 +35,7 @@ export default function LinkedInIntegrationPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <LinkedIn className="w-8 h-8 text-blue-500" />
+              <Linkedin className="w-8 h-8 text-blue-500" />
               LinkedIn Integration
             </h1>
             <p className="text-zinc-400 mt-2">
@@ -49,7 +49,7 @@ export default function LinkedInIntegrationPage() {
               disabled={isConnecting}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              <LinkedIn className="w-4 h-4 mr-2" />
+              <Linkedin className="w-4 h-4 mr-2" />
               {isConnecting ? 'Connecting...' : 'Connect LinkedIn'}
             </Button>
           )}
