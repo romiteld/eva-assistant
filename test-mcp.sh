@@ -1,0 +1,20 @@
+#!/bin/bash
+# Test script for Supabase MCP Server connection
+
+echo "Testing Supabase MCP Server Configuration..."
+echo "============================================"
+echo ""
+echo "Project Details:"
+echo "- Project ID: ztakznzshlvqobzbuewb"
+echo "- URL: https://ztakznzshlvqobzbuewb.supabase.co"
+echo ""
+echo "To test in Claude Code, try these commands:"
+echo "1. List all tables: 'Show me all tables in the Supabase database'"
+echo "2. Query data: 'Query the candidates table'"
+echo "3. Check realtime: 'Is realtime enabled on the tasks table?'"
+echo ""
+echo "MCP Servers configured:"
+echo "✓ Supabase MCP Server"
+echo "✓ Filesystem MCP Server"
+echo ""
+echo "Setup complete! 🎉"

@@ -1,0 +1,159 @@
+Expanded AI Project Scoping Document for The Well Recruiting Solutions
+In-Process (Priority 1)
+10. Steve AI Agents
+1.1 Email Drafting Agent ✓
+
+Already scoped
+
+1.2 Marketing Content Development ✓
+
+Already scoped
+
+1.3 Sales Call Analysis ✓
+
+Already scoped
+
+1.4 EA/Weekly Review Agent ✓
+
+Already scoped
+
+Immediate Additions Needed for EVA Core Functionality
+11. Deal Source Attribution & Enrichment Agent
+
+Auto-detect introduction patterns (email referrals, LinkedIn, events)
+Company research automation (pull from LinkedIn, web, financial databases)
+Contact enrichment with relationship mapping
+Create Zoho records with full context
+What's Needed: Zoho API credentials, enrichment data sources API keys
+
+12. Mobile Communication Classifier
+
+Parse Steve's business texts and emails
+AI classification of business vs personal
+Permission-based push to Zoho
+What's Needed: Mobile device integration plan, classification training data
+
+13. Calendar & Meeting Orchestration Agent
+
+Interview scheduling automation
+Zoom meeting creation with context
+Follow-up reminders based on conversation content
+What's Needed: Zoom API integration, calendar sync permissions
+
+On Deck (Priority 2)
+20. New Client Pre-Sales Research Agent ✓
+What's Needed to Implement:
+
+Access to data sources:
+
+LinkedIn Sales Navigator API or scraping permissions
+Company databases (Crunchbase, ZoomInfo, or similar)
+News aggregation APIs
+Social media monitoring tools
+
+
+Zoho CRM webhook to trigger on new Deal creation
+Storage for research summaries (SharePoint or Zoho custom module)
+Template for executive summary format
+
+30. New Hire Training Series ✓
+What's Needed to Implement:
+
+Access to recorded sales calls and interviews
+Transcription service (Azure Speech or similar)
+Video editing/creation tools
+Learning Management System or SharePoint site for hosting
+Subject matter expert review process
+
+Additional Recommended Agents
+40. Candidate Pipeline Automation
+
+Resume parsing and skill extraction
+Automatic candidate scoring
+Job matching algorithm
+Status update automation
+What's Needed: Resume parsing API, skill taxonomy database
+
+50. Client Engagement Tracker
+
+Monitor client satisfaction signals
+Predict renewal likelihood
+Suggest proactive touchpoints
+Track placement success metrics
+What's Needed: Email sentiment analysis, engagement tracking
+
+60. Compliance & Documentation Agent
+
+Ensure EEOC compliance in job postings
+Track required documentation
+Monitor data retention policies
+Generate audit reports
+What's Needed: Compliance rule engine, document templates
+
+70. Performance Analytics Dashboard
+
+Real-time KPI tracking
+Predictive revenue forecasting
+Recruiter productivity metrics
+Pipeline health monitoring
+What's Needed: PowerBI integration, data warehouse setup
+
+Technical Requirements Summary
+For EVA Core Implementation:
+
+Authentication Setup
+
+Configure Azure AD app registration for EVA
+Set up service principals for each integration
+Certificate-based authentication for security
+
+
+Data Infrastructure
+
+PostgreSQL for operational data
+Vector database for embeddings (Pinecone/Weaviate)
+Azure Blob Storage for documents
+
+
+Integration APIs Needed
+
+Zoho CRM (already have admin access)
+Microsoft Graph (for SharePoint, Outlook, Teams)
+LinkedIn API or approved scraping solution
+Zoom API
+Enrichment services (Clearbit, ZoomInfo, or similar)
+
+
+From Your Microsoft 365 Environment:
+
+Leverage existing SharePoint sites for document management
+Use emailthewell.com as primary domain
+Clean up unused app registrations (I see 35 apps - many might be legacy)
+Fix the "Incomplete setup" status on getthewellsolutions.com domain
+
+
+
+Next Steps for Items 20 & 30
+For Item 20 (Pre-Sales Research):
+
+Define specific data sources you have access to
+Create Zoho webhook for new Deal trigger
+Design research template with Steve's input
+Set up storage location for summaries
+Test with recent deals as examples
+
+For Item 30 (Training Series):
+
+Inventory existing recorded calls
+Get consent for using calls in training
+Define the 6-10 video topics based on common questions
+Create video production timeline
+Choose hosting platform (SharePoint vs dedicated LMS)
+
+Missing Infrastructure Elements:
+
+Webhook configuration in Zoho
+API rate limiting strategy
+Error handling and monitoring
+Backup and disaster recovery plan
+Security audit of all integrations
