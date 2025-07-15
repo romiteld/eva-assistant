@@ -294,6 +294,9 @@ export class AudioProcessor {
    * Play audio from Int16Array
    */
   async playAudio(audioData: Int16Array): Promise<void> {
+    // Ensure audio context is initialized
+    await this.ensureAudioContext();
+    
     // Convert Int16Array to Float32Array for Web Audio API
     const float32Data = new Float32Array(audioData.length);
     for (let i = 0; i < audioData.length; i++) {
@@ -343,7 +346,7 @@ export class AudioProcessor {
       this.stream = null;
     }
     
-    if (this.audioContext.state !== 'closed') {
+    if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close();
     }
   }
@@ -360,7 +363,7 @@ export class AudioProcessor {
    * Resume audio context
    */
   async resume(): Promise<void> {
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
   }
