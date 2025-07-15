@@ -137,16 +137,30 @@ export class ZoomOAuthService {
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000)
 
+    // First, try to get user info if we have a valid token
+    let userInfo: ZoomUserInfo | null = null
+    try {
+      userInfo = await this.getUserInfo(tokens.access_token)
+    } catch (error) {
+      console.warn('Failed to get user info during token storage:', error)
+    }
+
     const { error } = await this.supabase
-      .from('oauth_tokens')
+      .from('oauth_credentials')
       .upsert({
         user_id: user.id,
         provider: 'zoom',
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at: expiresAt.toISOString(),
-        token_type: tokens.token_type,
-        scope: tokens.scope,
+        scopes: tokens.scope ? tokens.scope.split(' ') : [],
+        metadata: {
+          token_type: tokens.token_type,
+          user_info: userInfo || {},
+          provider_user_id: userInfo?.id,
+          provider_email: userInfo?.email,
+        },
+        last_refreshed: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,provider'
@@ -165,7 +179,7 @@ export class ZoomOAuthService {
     if (!user) return null
 
     const { data, error } = await this.supabase
-      .from('oauth_tokens')
+      .from('oauth_credentials')
       .select('*')
       .eq('user_id', user.id)
       .eq('provider', 'zoom')
@@ -191,8 +205,8 @@ export class ZoomOAuthService {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
       expires_in: Math.floor((expiresAt.getTime() - now.getTime()) / 1000),
-      token_type: data.token_type,
-      scope: data.scope,
+      token_type: data.metadata?.token_type || 'Bearer',
+      scope: data.scopes ? data.scopes.join(' ') : '',
     }
   }
 
@@ -231,7 +245,7 @@ export class ZoomOAuthService {
 
     // Remove from database
     const { error } = await this.supabase
-      .from('oauth_tokens')
+      .from('oauth_credentials')
       .delete()
       .eq('user_id', user.id)
       .eq('provider', 'zoom')

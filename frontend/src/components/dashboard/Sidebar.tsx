@@ -32,7 +32,8 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
-  Database
+  Database,
+  Video
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -79,6 +80,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
   const sidebarItems = [
     { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
     { icon: Mic, label: "Voice Agent", href: "/dashboard/voice" },
+    { icon: Zap, label: "Deal Automation", href: "/dashboard/deals" },
     { icon: Megaphone, label: "Lead Generation", href: "/dashboard/lead-generation" },
     { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
     { icon: TrendingUpIcon, label: "Post Predictor", href: "/dashboard/post-predictor" },
@@ -94,6 +96,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" },
     { icon: Database, label: "Zoho CRM", href: "/dashboard/zoho" },
     { icon: Phone, label: "Twilio", href: "/dashboard/twilio" },
+    { icon: Video, label: "Zoom", href: "/dashboard/zoom" },
     { icon: Linkedin, label: "LinkedIn", href: "/dashboard/linkedin" },
     { icon: Brain, label: "Intelligence Hub", href: "/dashboard/firecrawl" },
     { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" },

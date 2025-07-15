@@ -91,7 +91,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Upsert Zoom credentials
+    // Store credentials in both tables for compatibility
+    // First in oauth_credentials (general OAuth storage)
+    const { error: oauthError } = await supabase
+      .from('oauth_credentials')
+      .upsert({
+        user_id: user.id,
+        provider: 'zoom',
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_at: new Date(Date.now() + (tokens.expires_in * 1000)).toISOString(),
+        scopes: tokens.scope ? tokens.scope.split(' ') : [],
+        metadata: {
+          token_type: tokens.token_type || 'Bearer',
+          zoom_user_id: zoomUser.id,
+          zoom_email: zoomUser.email,
+          zoom_account_id: zoomUser.account_id,
+        },
+        last_refreshed: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,provider'
+      })
+
+    if (oauthError) {
+      console.error('Failed to store OAuth credentials:', oauthError)
+    }
+
+    // Then in zoom_credentials (Zoom-specific storage)
     const { error: dbError } = await supabase
       .from('zoom_credentials')
       .upsert({

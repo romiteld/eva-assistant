@@ -14,6 +14,7 @@ EVA (Executive Virtual Assistant) is a comprehensive recruitment automation plat
 - **Content Studio** - Automated content creation with predictive analytics
 - **Resume Parser** - Intelligent resume analysis and candidate matching
 - **Interview Scheduler** - AI-driven scheduling with calendar integration
+- **Research Intelligence Hub** - Recruiter-friendly research interface with guided wizards (formerly Firecrawl)
 
 ### 🔗 Integrations
 - **Microsoft 365** - Full integration (Outlook, Teams, SharePoint, OneDrive)

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { validateZoomApiKey } from '@/lib/middleware/zoom-auth';
+import { NextRequest, NextResponse } from 'next/server'
+
+const ZOOM_API_BASE = 'https://api.zoom.us/v2'
 
 // GET /api/zoom/meetings/[meetingId] - Get meeting details
 export async function GET(
@@ -8,132 +8,130 @@ export async function GET(
   { params }: { params: { meetingId: string } }
 ) {
   try {
-    if (!validateZoomApiKey(request)) {
+    const authHeader = request.headers.get('authorization')
+    
+    if (!authHeader) {
       return NextResponse.json(
-        { error: 'Unauthorized - Invalid API Key' },
+        { error: 'Authorization header required' },
         { status: 401 }
-      );
+      )
     }
 
-    const supabase = createClient();
-    const { data: interview, error } = await supabase
-      .from('interviews')
-      .select('*')
-      .eq('meeting_id', params.meetingId)
-      .single();
+    const accessToken = authHeader.replace('Bearer ', '')
 
-    if (error || !interview) {
+    // Get meeting details from Zoom
+    const response = await fetch(`${ZOOM_API_BASE}/meetings/${params.meetingId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
       return NextResponse.json(
-        { error: 'Meeting not found' },
-        { status: 404 }
-      );
+        { error: error.message || 'Failed to get meeting' },
+        { status: response.status }
+      )
     }
 
-    return NextResponse.json({
-      success: true,
-      meeting: interview,
-    });
+    const meeting = await response.json()
+    return NextResponse.json(meeting)
   } catch (error) {
-    console.error('Get meeting error:', error);
+    console.error('Get meeting error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
 
-// PUT /api/zoom/meetings/[meetingId] - Update meeting
-export async function PUT(
+// PATCH /api/zoom/meetings/[meetingId] - Update meeting
+export async function PATCH(
   request: NextRequest,
   { params }: { params: { meetingId: string } }
 ) {
   try {
-    if (!validateZoomApiKey(request)) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid API Key' },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-    const supabase = createClient();
+    const authHeader = request.headers.get('authorization')
     
-    // Update in database
-    const { data: interview, error } = await supabase
-      .from('interviews')
-      .update({
-        start_time: body.start_time,
-        duration: body.duration,
-        topic: body.topic,
-        status: body.status,
-        notes: body.notes,
-      })
-      .eq('meeting_id', params.meetingId)
-      .select()
-      .single();
-
-    if (error) {
+    if (!authHeader) {
       return NextResponse.json(
-        { error: 'Failed to update meeting' },
-        { status: 400 }
-      );
+        { error: 'Authorization header required' },
+        { status: 401 }
+      )
     }
 
-    // TODO: Also update in Zoom API if needed
+    const accessToken = authHeader.replace('Bearer ', '')
+    const updates = await request.json()
 
-    return NextResponse.json({
-      success: true,
-      meeting: interview,
-      message: 'Meeting updated successfully',
-    });
+    // Update meeting in Zoom
+    const response = await fetch(`${ZOOM_API_BASE}/meetings/${params.meetingId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      return NextResponse.json(
+        { error: error.message || 'Failed to update meeting' },
+        { status: response.status }
+      )
+    }
+
+    // Zoom API returns 204 No Content on successful update
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Update meeting error:', error);
+    console.error('Update meeting error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
 
-// DELETE /api/zoom/meetings/[meetingId] - Cancel meeting
+// DELETE /api/zoom/meetings/[meetingId] - Delete meeting
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { meetingId: string } }
 ) {
   try {
-    if (!validateZoomApiKey(request)) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid API Key' },
-        { status: 401 }
-      );
-    }
-
-    const supabase = createClient();
+    const authHeader = request.headers.get('authorization')
     
-    // Update status to cancelled
-    const { error } = await supabase
-      .from('interviews')
-      .update({ status: 'cancelled' })
-      .eq('meeting_id', params.meetingId);
-
-    if (error) {
+    if (!authHeader) {
       return NextResponse.json(
-        { error: 'Failed to cancel meeting' },
-        { status: 400 }
-      );
+        { error: 'Authorization header required' },
+        { status: 401 }
+      )
     }
 
-    // TODO: Also cancel in Zoom API
+    const accessToken = authHeader.replace('Bearer ', '')
 
-    return NextResponse.json({
-      success: true,
-      message: 'Meeting cancelled successfully',
-    });
+    // Delete meeting in Zoom
+    const response = await fetch(`${ZOOM_API_BASE}/meetings/${params.meetingId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      return NextResponse.json(
+        { error: error.message || 'Failed to delete meeting' },
+        { status: response.status }
+      )
+    }
+
+    // Zoom API returns 204 No Content on successful delete
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Cancel meeting error:', error);
+    console.error('Delete meeting error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
