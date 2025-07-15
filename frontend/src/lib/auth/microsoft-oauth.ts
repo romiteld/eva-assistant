@@ -35,6 +35,7 @@ export async function signInWithMicrosoftPKCE() {
   const tenantId = '29ee1479-b5f7-48c5-b665-7de9a8a9033e';
   const redirectUri = `${window.location.origin}/auth/microsoft/callback`;
   const scope = 'openid email profile offline_access';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   
   // Create state parameter that includes the code verifier
   const state = {

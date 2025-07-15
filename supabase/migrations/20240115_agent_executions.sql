@@ -55,4 +55,4 @@ CREATE TRIGGER update_agent_executions_updated_at
 
 -- Grant permissions
 GRANT ALL ON public.agent_executions TO authenticated;
-GRANT USAGE ON SEQUENCE public.agent_executions_id_seq TO authenticated;
+-- No sequence to grant permissions on since we're using UUID with gen_random_uuid()

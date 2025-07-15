@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { getTokenManager } from '@/lib/auth/token-manager';
 import { handleLinkedInCallback, getLinkedInProfile } from '@/lib/auth/linkedin-oauth';
 
+// Force dynamic rendering since this route uses searchParams
+export const dynamic = 'force-dynamic';
+
 // Initialize Supabase Admin Client
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
