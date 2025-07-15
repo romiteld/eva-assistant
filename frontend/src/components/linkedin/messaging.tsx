@@ -34,7 +34,6 @@ export function LinkedInMessaging() {
       const response = await fetch('/api/linkedin/profile', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${await user?.getIdToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -69,7 +68,6 @@ export function LinkedInMessaging() {
       const response = await fetch('/api/linkedin/profile', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${await user?.getIdToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

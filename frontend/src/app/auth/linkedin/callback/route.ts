@@ -75,10 +75,11 @@ export async function GET(request: NextRequest) {
     let userId: string;
     
     // First, try to get the user by email
-    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(profile.email);
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email === profile.email);
     
-    if (existingUser?.user) {
-      userId = existingUser.user.id;
+    if (existingUser) {
+      userId = existingUser.id;
     } else {
       // Create a new user if doesn't exist
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({

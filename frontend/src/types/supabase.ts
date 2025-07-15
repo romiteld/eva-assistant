@@ -41,13 +41,14 @@ export type OAuthToken = Tables['oauth_tokens']['Row']
 export type OAuthTokenInsert = Tables['oauth_tokens']['Insert']
 export type OAuthTokenUpdate = Tables['oauth_tokens']['Update']
 
-export type EmailTemplate = Tables['email_templates']['Row']
-export type EmailTemplateInsert = Tables['email_templates']['Insert']
-export type EmailTemplateUpdate = Tables['email_templates']['Update']
+// Email templates are views, not tables
+export type EmailTemplate = Database['public']['Views']['email_templates']['Row']
+export type EmailTemplateInsert = Database['public']['Views']['email_templates']['Insert']
+export type EmailTemplateUpdate = Database['public']['Views']['email_templates']['Update']
 
-export type EmailTemplateUsage = Tables['email_template_usage']['Row']
-export type EmailTemplateUsageInsert = Tables['email_template_usage']['Insert']
-export type EmailTemplateUsageUpdate = Tables['email_template_usage']['Update']
+export type EmailTemplateUsage = Database['public']['Views']['email_template_usage']['Row']
+export type EmailTemplateUsageInsert = Database['public']['Views']['email_template_usage']['Insert']
+export type EmailTemplateUsageUpdate = Database['public']['Views']['email_template_usage']['Update']
 
 // Enum types
 export type TaskStatus = Enums['task_status']

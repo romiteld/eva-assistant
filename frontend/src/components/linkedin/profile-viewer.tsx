@@ -43,11 +43,7 @@ export function LinkedInProfileViewer() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/linkedin/profile', {
-        headers: {
-          'Authorization': `Bearer ${await user?.getIdToken()}`
-        }
-      });
+      const response = await fetch('/api/linkedin/profile');
 
       if (!response.ok) {
         throw new Error('Failed to fetch LinkedIn profile');
