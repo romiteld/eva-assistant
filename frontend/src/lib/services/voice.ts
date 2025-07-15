@@ -97,12 +97,22 @@ export class VoiceService extends EventEmitter {
       
       const { websocket } = await authResponse.json();
       
-      // Use proxy WebSocket endpoint with auth token
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/gemini/ws?model=${encodeURIComponent(modelName)}&token=${encodeURIComponent(websocket.token)}`;
-      console.log('Connecting to WebSocket proxy:', wsUrl);
+      // Use Supabase Edge Function for WebSocket proxy
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const wsUrl = `${supabaseUrl}/functions/v1/gemini-websocket?model=${encodeURIComponent(modelName)}`;
+      console.log('Connecting to Supabase WebSocket proxy:', wsUrl);
       
-      this.ws = new WebSocket(wsUrl);
+      // Add authorization header for Supabase Edge Function
+      const { data: { session } } = await createClient().auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No authentication session found');
+      }
+      
+      this.ws = new WebSocket(wsUrl, [], {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
       this.setupWebSocketHandlers();
 
       // Create new session

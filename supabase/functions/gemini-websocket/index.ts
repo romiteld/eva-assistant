@@ -1,0 +1,113 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+serve(async (req: Request) => {
+  try {
+    // Verify authentication
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return new Response('Missing authorization header', { status: 401 })
+    }
+
+    // Create Supabase client to verify JWT
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const token = authHeader.replace('Bearer ', '')
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    if (error || !user) {
+      return new Response('Invalid authentication token', { status: 401 })
+    }
+
+    // Extract model from query params
+    const url = new URL(req.url)
+    const model = url.searchParams.get('model') || 'gemini-2.0-flash-exp'
+
+    // Check if this is a WebSocket upgrade request
+    if (req.headers.get('upgrade') !== 'websocket') {
+      return new Response('Expected websocket', { status: 400 })
+    }
+
+    // Create WebSocket upgrade
+    const { socket: clientSocket, response } = Deno.upgradeWebSocket(req)
+    
+    // Connect to Gemini WebSocket
+    const geminiUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`
+    const geminiSocket = new WebSocket(geminiUrl)
+    
+    let geminiConnected = false
+
+    // Handle Gemini connection
+    geminiSocket.onopen = () => {
+      console.log('Connected to Gemini WebSocket')
+      geminiConnected = true
+      
+      // Send initial setup message
+      const setupMessage = {
+        setup: {
+          model: `models/${model}`,
+          generation_config: {
+            temperature: 0.7,
+            top_p: 0.95,
+            max_output_tokens: 4096,
+            response_modalities: ['TEXT', 'AUDIO']
+          },
+          tools: []
+        }
+      }
+      
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        geminiSocket.send(JSON.stringify(setupMessage))
+      }
+    }
+
+    // Relay messages from client to Gemini
+    clientSocket.onmessage = (event) => {
+      if (geminiConnected && geminiSocket.readyState === WebSocket.OPEN) {
+        geminiSocket.send(event.data)
+      }
+    }
+
+    // Relay messages from Gemini to client
+    geminiSocket.onmessage = (event) => {
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(event.data)
+      }
+    }
+
+    // Handle client disconnect
+    clientSocket.onclose = () => {
+      console.log('Client disconnected')
+      if (geminiSocket.readyState === WebSocket.OPEN) {
+        geminiSocket.close()
+      }
+    }
+
+    // Handle Gemini disconnect
+    geminiSocket.onclose = () => {
+      console.log('Gemini disconnected')
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.close()
+      }
+    }
+
+    // Handle errors
+    clientSocket.onerror = (error) => {
+      console.error('Client WebSocket error:', error)
+      geminiSocket.close()
+    }
+
+    geminiSocket.onerror = (error) => {
+      console.error('Gemini WebSocket error:', error)
+      clientSocket.close()
+    }
+
+    return response
+  } catch (error) {
+    console.error('WebSocket proxy error:', error)
+    return new Response('Internal server error', { status: 500 })
+  }
+})

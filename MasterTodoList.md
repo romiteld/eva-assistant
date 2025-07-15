@@ -409,6 +409,10 @@ graph TD
 3. Hardcoded configuration values
 4. Missing error boundaries
 5. Exposed OpenAI API key in .env.example (fixed)
+6. **Dynamic Server Usage Errors** - Routes using cookies/searchParams need proper configuration
+   - `/api/verify-session` - uses `cookies`
+   - `/auth/linkedin/callback` - uses `nextUrl.searchParams`
+   - Fix: Add `export const dynamic = 'force-dynamic'` to these routes
 
 ### Future Refactoring
 1. Extract common UI patterns

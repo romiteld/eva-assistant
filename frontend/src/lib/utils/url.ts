@@ -63,11 +63,11 @@ export function getWebSocketURL(): string {
  * Get HTTP WebSocket URL (for Socket.IO)
  */
 export function getHttpWebSocketURL(): string {
-  if (typeof window !== 'undefined') {
-    // Client-side: use current origin
-    return window.location.origin
+  // Use separate WebSocket server URL in production
+  if (process.env.NODE_ENV === 'production' || (typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
+    return process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'https://your-websocket-server.railway.app'
   }
   
-  // Server-side: use configured URLs
-  return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  // Local development: use localhost:8080
+  return 'http://localhost:8080'
 }

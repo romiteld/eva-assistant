@@ -34,7 +34,7 @@ const nextConfig = {
     // Common CSP rules
     const cspRules = {
       'default-src': ["'self'"],
-      'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://challenges.cloudflare.com'],
+      'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://challenges.cloudflare.com', 'blob:'],
       'style-src': ["'self'", "'unsafe-inline'"],
       'img-src': ["'self'", 'data:', 'https:', 'blob:'],
       'font-src': ["'self'", 'data:'],
