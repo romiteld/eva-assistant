@@ -1,6 +1,11 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { corsHeaders } from '../_shared/cors.ts'
+import { 
+  createAgentExecutor, 
+  broadcastAgentUpdate, 
+  type AgentExecutionContext 
+} from '../_shared/agent-executor.ts'
 
 // Agent status types
 type AgentStatus = 'idle' | 'active' | 'completed' | 'error' | 'paused'
@@ -94,42 +99,30 @@ async function executeAgent(agentId: string, payload: any, userId: string): Prom
 
     if (execError) throw execError
 
-    // Execute based on agent type
-    let result: any
-    switch (agentConfig.handler) {
-      case 'enhanced-lead-generation':
-        result = await executeLeadGeneration(payload, userId, (progress, status) => {
-          updateAgentStatus(agentId, 'active', progress, status)
+    // Create agent executor
+    const executor = createAgentExecutor(agentId)
+    
+    // Execute agent with real-time progress updates
+    const result = await executor.execute({
+      userId,
+      payload,
+      onProgress: async (progress: number, status: string) => {
+        updateAgentStatus(agentId, 'active', progress, status)
+        
+        // Broadcast real-time updates
+        await broadcastAgentUpdate(userId, agentId, {
+          progress,
+          status,
+          currentTask: status
         })
-        break
-      
-      case 'ai-content-studio':
-        result = await executeContentStudio(payload, userId, (progress, status) => {
-          updateAgentStatus(agentId, 'active', progress, status)
-        })
-        break
-      
-      case 'resume-parser-pipeline':
-        result = await executeResumeParser(payload, userId, (progress, status) => {
-          updateAgentStatus(agentId, 'active', progress, status)
-        })
-        break
-      
-      case 'ai-interview-center':
-        result = await executeInterviewCenter(payload, userId, (progress, status) => {
-          updateAgentStatus(agentId, 'active', progress, status)
-        })
-        break
-      
-      case 'deep-thinking-orchestrator':
-        result = await executeDeepThinking(payload, userId, (progress, status) => {
-          updateAgentStatus(agentId, 'active', progress, status)
-        })
-        break
-      
-      default:
-        throw new Error(`Handler not implemented: ${agentConfig.handler}`)
-    }
+      },
+      onError: (error: Error) => {
+        updateAgentStatus(agentId, 'error', 0, error.message)
+      },
+      onComplete: (result: any) => {
+        updateAgentStatus(agentId, 'completed', 100, 'Task completed successfully')
+      }
+    })
 
     // Update execution record
     await supabase
@@ -142,10 +135,26 @@ async function executeAgent(agentId: string, payload: any, userId: string): Prom
       .eq('id', execution.id)
 
     updateAgentStatus(agentId, 'completed', 100, 'Task completed successfully')
+    
+    // Broadcast completion
+    await broadcastAgentUpdate(userId, agentId, {
+      progress: 100,
+      status: 'completed',
+      result
+    })
+
     return result
 
   } catch (error) {
     updateAgentStatus(agentId, 'error', 0, error.message)
+    
+    // Broadcast error
+    await broadcastAgentUpdate(userId, agentId, {
+      progress: 0,
+      status: 'error',
+      error: error.message
+    })
+    
     throw error
   }
 }
@@ -172,129 +181,8 @@ function updateAgentStatus(
   agentStates.set(agentId, agent)
 }
 
-// Agent execution handlers
-async function executeLeadGeneration(payload: any, userId: string, onProgress: (progress: number, status: string) => void) {
-  onProgress(10, 'Searching for leads...')
-  
-  // Simulate multi-stage lead generation
-  const stages = [
-    { progress: 20, status: 'Web scraping financial advisors...', duration: 2000 },
-    { progress: 40, status: 'Qualifying leads based on criteria...', duration: 1500 },
-    { progress: 60, status: 'Scoring and ranking leads...', duration: 1000 },
-    { progress: 80, status: 'Enriching lead data...', duration: 1500 },
-    { progress: 90, status: 'Syncing to Zoho CRM...', duration: 1000 }
-  ]
-
-  for (const stage of stages) {
-    await new Promise(resolve => setTimeout(resolve, stage.duration))
-    onProgress(stage.progress, stage.status)
-  }
-
-  // Return mock results (in production, call actual agent logic)
-  return {
-    leadsFound: 15,
-    qualified: 8,
-    syncedToCRM: 8,
-    topLeads: [
-      { name: 'John Smith', score: 95, location: 'New York', aum: '$50M' },
-      { name: 'Sarah Johnson', score: 92, location: 'Los Angeles', aum: '$45M' }
-    ]
-  }
-}
-
-async function executeContentStudio(payload: any, userId: string, onProgress: (progress: number, status: string) => void) {
-  onProgress(10, 'Analyzing market trends...')
-  
-  const stages = [
-    { progress: 25, status: 'Generating content variations...', duration: 2000 },
-    { progress: 50, status: 'Optimizing for engagement...', duration: 1500 },
-    { progress: 75, status: 'Creating multimedia assets...', duration: 2000 },
-    { progress: 90, status: 'Preparing distribution plan...', duration: 1000 }
-  ]
-
-  for (const stage of stages) {
-    await new Promise(resolve => setTimeout(resolve, stage.duration))
-    onProgress(stage.progress, stage.status)
-  }
-
-  return {
-    contentGenerated: 5,
-    formats: ['LinkedIn Post', 'Blog Article', 'Email Template'],
-    engagementScore: 87,
-    distributionChannels: ['LinkedIn', 'Email', 'Website']
-  }
-}
-
-async function executeResumeParser(payload: any, userId: string, onProgress: (progress: number, status: string) => void) {
-  onProgress(10, 'Extracting resume data...')
-  
-  const stages = [
-    { progress: 30, status: 'Analyzing skills and experience...', duration: 1500 },
-    { progress: 50, status: 'Matching against job requirements...', duration: 2000 },
-    { progress: 70, status: 'Verifying credentials...', duration: 1500 },
-    { progress: 90, status: 'Generating recommendations...', duration: 1000 }
-  ]
-
-  for (const stage of stages) {
-    await new Promise(resolve => setTimeout(resolve, stage.duration))
-    onProgress(stage.progress, stage.status)
-  }
-
-  return {
-    candidatesProcessed: 12,
-    topMatches: 5,
-    averageScore: 78,
-    recommendations: ['Schedule interviews with top 3 candidates']
-  }
-}
-
-async function executeInterviewCenter(payload: any, userId: string, onProgress: (progress: number, status: string) => void) {
-  onProgress(10, 'Checking calendar availability...')
-  
-  const stages = [
-    { progress: 25, status: 'Generating interview questions...', duration: 1500 },
-    { progress: 50, status: 'Creating interview guides...', duration: 2000 },
-    { progress: 75, status: 'Scheduling meetings...', duration: 1500 },
-    { progress: 90, status: 'Sending notifications...', duration: 1000 }
-  ]
-
-  for (const stage of stages) {
-    await new Promise(resolve => setTimeout(resolve, stage.duration))
-    onProgress(stage.progress, stage.status)
-  }
-
-  return {
-    interviewsScheduled: 3,
-    questionsGenerated: 15,
-    calendarIntegration: 'Microsoft Outlook',
-    nextInterview: '2024-01-15 10:00 AM'
-  }
-}
-
-async function executeDeepThinking(payload: any, userId: string, onProgress: (progress: number, status: string) => void) {
-  onProgress(10, 'Initializing sub-agents...')
-  
-  const stages = [
-    { progress: 20, status: 'Analysis agent processing...', duration: 2000 },
-    { progress: 40, status: 'Planning agent strategizing...', duration: 2000 },
-    { progress: 60, status: 'Execution agent implementing...', duration: 2000 },
-    { progress: 80, status: 'Validation agent verifying...', duration: 1500 },
-    { progress: 95, status: 'Learning agent updating models...', duration: 1000 }
-  ]
-
-  for (const stage of stages) {
-    await new Promise(resolve => setTimeout(resolve, stage.duration))
-    onProgress(stage.progress, stage.status)
-  }
-
-  return {
-    problemSolved: true,
-    confidence: 0.92,
-    subAgentsUsed: 5,
-    reasoningSteps: 12,
-    recommendation: 'Proceed with recommended approach'
-  }
-}
+// Agent execution handlers have been moved to _shared/agent-executor.ts
+// This provides better separation of concerns and easier testing
 
 serve(async (req) => {
   // Handle CORS

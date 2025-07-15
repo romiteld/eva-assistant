@@ -535,4 +535,40 @@ export class FileUploadService {
     }
     return 'other';
   }
+
+  /**
+   * Validate file for specific bucket
+   */
+  validateFileForBucket(file: File, bucket: string): { valid: boolean; error?: string } {
+    const bucketConfigs = {
+      documents: { maxSize: 25 * 1024 * 1024, allowedTypes: FILE_TYPE_CONFIGS.documents.types },
+      resumes: { maxSize: 10 * 1024 * 1024, allowedTypes: FILE_TYPE_CONFIGS.documents.types },
+      avatars: { maxSize: 5 * 1024 * 1024, allowedTypes: FILE_TYPE_CONFIGS.images.types },
+      'temp-uploads': { maxSize: 50 * 1024 * 1024, allowedTypes: ['*'] },
+      'ai-generated': { maxSize: 10 * 1024 * 1024, allowedTypes: [...FILE_TYPE_CONFIGS.images.types, ...FILE_TYPE_CONFIGS.documents.types] }
+    }
+
+    const config = bucketConfigs[bucket]
+    if (!config) {
+      return { valid: false, error: `Unknown bucket: ${bucket}` }
+    }
+
+    // Check file size
+    if (file.size > config.maxSize) {
+      return { 
+        valid: false, 
+        error: `File size (${this.formatFileSize(file.size)}) exceeds limit (${this.formatFileSize(config.maxSize)})`
+      }
+    }
+
+    // Check file type
+    if (!config.allowedTypes.includes('*') && !config.allowedTypes.includes(file.type)) {
+      return { 
+        valid: false, 
+        error: `File type "${file.type}" is not allowed for bucket "${bucket}"`
+      }
+    }
+
+    return { valid: true }
+  }
 }
