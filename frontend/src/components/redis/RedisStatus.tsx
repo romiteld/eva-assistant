@@ -123,12 +123,12 @@ export function RedisStatus() {
                 {status.connected ? (
                   <>
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <Badge variant="success">Connected</Badge>
+                    <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">Connected</Badge>
                   </>
                 ) : status.fallbackMode ? (
                   <>
                     <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    <Badge variant="warning">Fallback Mode</Badge>
+                    <Badge variant="default" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Fallback Mode</Badge>
                   </>
                 ) : (
                   <>
@@ -144,7 +144,7 @@ export function RedisStatus() {
               <>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Queue Size</span>
-                  <Badge variant={status.queueStatus.queueSize > 50 ? 'warning' : 'secondary'}>
+                  <Badge variant="secondary" className={status.queueStatus.queueSize > 50 ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : ''}>
                     {status.queueStatus.queueSize} requests
                   </Badge>
                 </div>

@@ -14,6 +14,7 @@ import {
   Line,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -203,7 +204,7 @@ export function OptimalTimingChart({ prediction }: OptimalTimingChartProps) {
                 radius={[8, 8, 0, 0]}
               >
                 {weeklyData.map((entry, index) => (
-                  <Bar
+                  <Cell
                     key={`cell-${index}`}
                     fill={entry.day === optimal_timing.best_day.slice(0, 3) ? '#8B5CF6' : '#3B82F6'}
                   />

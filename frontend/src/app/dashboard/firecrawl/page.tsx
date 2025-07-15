@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { 
@@ -100,6 +100,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useToast } from '@/hooks/use-toast'
 
 interface ResearchTemplate {
@@ -163,6 +165,9 @@ interface SavedSearch {
   lastRun?: Date
   nextRun?: Date
   notificationEnabled?: boolean
+  automated?: boolean
+  query?: string
+  resultsCount?: number
 }
 
 interface ResearchFolder {
@@ -172,6 +177,7 @@ interface ResearchFolder {
   color?: string
   icon?: string
   researchCount: number
+  itemCount: number
   sharedWith?: string[]
   createdAt: Date
   updatedAt: Date
@@ -591,6 +597,7 @@ const mockFolders: ResearchFolder[] = [
     color: 'blue',
     icon: 'folder',
     researchCount: 24,
+    itemCount: 24,
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
   },
@@ -601,6 +608,7 @@ const mockFolders: ResearchFolder[] = [
     color: 'green',
     icon: 'target',
     researchCount: 12,
+    itemCount: 12,
     sharedWith: ['team-strategy'],
     createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
@@ -1741,7 +1749,7 @@ export default function RecruiterIntelligenceHub() {
                 <Badge variant="secondary">{savedSearches.length + folders.length} items</Badge>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCreateFolderOpen(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowCreateFolderDialog(true)}>
                   <FolderPlus className="h-4 w-4 mr-2" />
                   New Folder
                 </Button>
@@ -1856,7 +1864,7 @@ export default function RecruiterIntelligenceHub() {
                         </div>
                         <p className="text-sm text-gray-400">{search.query}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Last run: {formatTimeAgo(search.lastRun)}</span>
+                          <span>Last run: {search.lastRun ? formatTimeAgo(search.lastRun) : 'Never'}</span>
                           <span>{search.resultsCount} results</span>
                           {search.frequency && <span>Runs {search.frequency}</span>}
                         </div>
@@ -1898,7 +1906,7 @@ export default function RecruiterIntelligenceHub() {
         </Tabs>
 
         {/* Dialogs */}
-        <Dialog open={batchResearchOpen} onOpenChange={setBatchResearchOpen}>
+        <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
           <DialogContent className="bg-gray-900 border-gray-800 max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-gray-100">Batch Research Operation</DialogTitle>
@@ -1947,7 +1955,7 @@ Jane Doe, Morgan Stanley
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBatchResearchOpen(false)}>
+              <Button variant="outline" onClick={() => setShowBatchDialog(false)}>
                 Cancel
               </Button>
               <Button className="bg-purple-500 hover:bg-purple-600">
@@ -1957,7 +1965,7 @@ Jane Doe, Morgan Stanley
           </DialogContent>
         </Dialog>
 
-        <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
           <DialogContent className="bg-gray-900 border-gray-800">
             <DialogHeader>
               <DialogTitle className="text-gray-100">Export Research</DialogTitle>
@@ -2003,7 +2011,7 @@ Jane Doe, Morgan Stanley
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setExportOpen(false)}>
+              <Button variant="outline" onClick={() => setShowExportDialog(false)}>
                 Cancel
               </Button>
               <Button className="bg-purple-500 hover:bg-purple-600">
@@ -2014,7 +2022,7 @@ Jane Doe, Morgan Stanley
           </DialogContent>
         </Dialog>
 
-        <Dialog open={createFolderOpen} onOpenChange={setCreateFolderOpen}>
+        <Dialog open={showCreateFolderDialog} onOpenChange={setShowCreateFolderDialog}>
           <DialogContent className="bg-gray-900 border-gray-800">
             <DialogHeader>
               <DialogTitle className="text-gray-100">Create New Folder</DialogTitle>
@@ -2052,7 +2060,7 @@ Jane Doe, Morgan Stanley
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateFolderOpen(false)}>
+              <Button variant="outline" onClick={() => setShowCreateFolderDialog(false)}>
                 Cancel
               </Button>
               <Button className="bg-purple-500 hover:bg-purple-600">
@@ -2068,7 +2076,7 @@ Jane Doe, Morgan Stanley
 }
 
 // Utility function
-function formatTimeAgo(date: string): string {
+function formatTimeAgo(date: string | Date): string {
   const now = new Date()
   const past = new Date(date)
   const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000)

@@ -253,7 +253,7 @@ export function EmailTemplatePreview({ template, onClose }: EmailTemplatePreview
                         {Object.entries(stats.mostUsedVariables).map(([variable, count]) => (
                           <div key={variable} className="flex justify-between items-center">
                             <span className="text-sm text-gray-400">{variable}</span>
-                            <span className="text-sm text-white">{count} times</span>
+                            <span className="text-sm text-white">{count as React.ReactNode} times</span>
                           </div>
                         ))}
                       </div>

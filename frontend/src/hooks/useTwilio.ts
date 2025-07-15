@@ -51,6 +51,7 @@ export interface IVRStep {
     finishOnKey?: string
     action?: string
     transferNumber?: string
+    maxLength?: number
   }
   nextSteps?: { [key: string]: string }
 }

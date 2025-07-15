@@ -193,9 +193,6 @@ export function IVRDesigner({
     if (step.options?.finishOnKey) {
       options.push(`End on ${step.options.finishOnKey}`)
     }
-    if (step.options?.maxLength) {
-      options.push(`Max ${step.options.maxLength}s`)
-    }
     if (step.options?.transferNumber) {
       options.push(`Transfer to ${step.options.transferNumber}`)
     }

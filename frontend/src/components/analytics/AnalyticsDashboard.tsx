@@ -22,7 +22,7 @@ import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { AnalyticsService } from '@/lib/services/analytics';
 
 export default function AnalyticsDashboard() {
-  const { supabase } = useSupabase();
+  const supabase = useSupabase();
   const analyticsService = new AnalyticsService(supabase);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({

@@ -240,11 +240,12 @@ async function processEmailInline(emailData: any) {
   const userId = userData.id;
   
   // Initialize services
-  const zoho = new ZohoClient(
-    process.env.ZOHO_CLIENT_ID!,
-    process.env.ZOHO_CLIENT_SECRET!,
-    process.env.ZOHO_REFRESH_TOKEN!
-  );
+  const zoho = new ZohoCRMClient({
+    clientId: process.env.ZOHO_CLIENT_ID!,
+    clientSecret: process.env.ZOHO_CLIENT_SECRET!,
+    refreshToken: process.env.ZOHO_REFRESH_TOKEN!,
+    accessToken: process.env.ZOHO_ACCESS_TOKEN || ''
+  });
   
   const automationRules = new EmailAutomationRules(zoho, userId);
   

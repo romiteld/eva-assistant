@@ -19,12 +19,12 @@ export default function AuthErrorRecovery({
   const [isRecovering, setIsRecovering] = useState(false);
   const router = useRouter();
 
-  const { recoverSession } = useSessionRecovery({
-    onRecovered: () => {
+  const { attemptRecovery } = useSessionRecovery({
+    onRecoverySuccess: () => {
       setIsRecovering(false);
       onRetry?.();
     },
-    onFailed: (error) => {
+    onRecoveryFailure: (error: Error) => {
       setIsRecovering(false);
       console.error('Session recovery failed:', error);
     },
@@ -32,7 +32,7 @@ export default function AuthErrorRecovery({
 
   const handleRecovery = async () => {
     setIsRecovering(true);
-    await recoverSession();
+    await attemptRecovery();
   };
 
   const isAuthError = error.message.toLowerCase().includes('not authenticated') ||

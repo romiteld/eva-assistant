@@ -59,7 +59,7 @@ import {
 import { AutomationRule, RuleCondition, RuleAction } from '@/lib/automation/email-rules';
 import { supabase } from '@/lib/supabase/browser';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface RuleTemplate {
   name: string;
@@ -541,7 +541,7 @@ export function EmailRulesManager() {
                 </Select>
                 
                 <Input
-                  value={Array.isArray(condition.value) ? condition.value.join(', ') : condition.value}
+                  value={Array.isArray(condition.value) ? condition.value.join(', ') : condition.value instanceof RegExp ? condition.value.toString() : condition.value}
                   onChange={(e) => updateCondition(index, { 
                     value: e.target.value.includes(',') 
                       ? e.target.value.split(',').map(v => v.trim())
@@ -812,7 +812,9 @@ export function EmailRulesManager() {
                                   <span className="font-mono bg-gray-100 px-2 py-1 rounded">
                                     {Array.isArray(condition.value) 
                                       ? condition.value.join(', ')
-                                      : condition.value
+                                      : condition.value instanceof RegExp 
+                                        ? condition.value.toString()
+                                        : String(condition.value)
                                     }
                                   </span>
                                 </div>

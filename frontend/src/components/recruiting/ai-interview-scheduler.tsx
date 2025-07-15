@@ -71,6 +71,9 @@ interface ScheduledInterview {
   interviewQuestions?: any;
   interviewGuide?: any;
   feedback?: any;
+  meeting_url?: string;
+  meeting_platform?: string;
+  interviewers?: any[];
 }
 
 interface InterviewSlot {
@@ -737,36 +740,15 @@ export function AIInterviewScheduler() {
               
               <TabsContent value="zoom" className="space-y-4">
                 {selectedInterview.status === 'scheduled' || selectedInterview.status === 'pending_scheduling' ? (
-                  <ZoomMeetingManager
-                    interviewScheduleId={selectedInterview.id}
-                    candidateName={selectedInterview.applicant?.personal_info?.name || selectedInterview.applicant?.name || 'Candidate'}
-                    jobTitle={selectedInterview.job?.title || 'Position'}
-                    interviewType={selectedInterview.type}
-                    round={selectedInterview.round}
-                    scheduledAt={selectedInterview.scheduledAt}
-                    duration={60}
-                    interviewers={selectedInterview.interviewers || []}
-                    onMeetingCreated={(meeting) => {
-                      // Update interview with meeting details
-                      setSelectedInterview({
-                        ...selectedInterview,
-                        meeting_platform: 'zoom',
-                        meeting_id: String(meeting.id),
-                        meeting_url: meeting.join_url,
-                        meeting_password: meeting.password
-                      });
-                    }}
-                    onMeetingDeleted={() => {
-                      // Clear meeting details
-                      setSelectedInterview({
-                        ...selectedInterview,
-                        meeting_platform: null,
-                        meeting_id: null,
-                        meeting_url: null,
-                        meeting_password: null
-                      });
-                    }}
-                  />
+                  <>
+                    <ZoomMeetingManager />
+                    {/* TODO: Pass interview details to ZoomMeetingManager once it supports props */}
+                    {false && (
+                      <div>
+                        Interview: {selectedInterview.applicant?.personal_info?.name || selectedInterview.applicant?.name || 'Candidate'} - {selectedInterview.job?.title || 'Position'}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />

@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, { count: number; totalDuration: number }>);
 
     // Calculate source metrics
-    const sourceMetrics = Object.entries(bySource).reduce((acc: Record<string, { count: number; avgDuration: number }>, [source, data]: [string, { count: number; totalDuration: number }]) => {
+    const sourceMetrics = Object.entries(bySource as Record<string, { count: number; totalDuration: number }>).reduce((acc, [source, data]) => {
       acc[source] = {
         count: data.count,
         avgDuration: data.totalDuration / data.count

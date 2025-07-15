@@ -33,7 +33,13 @@ export async function GET(request: NextRequest) {
         sid: conf.sid,
         status: conf.status,
         dateCreated: conf.dateCreated,
-        participants: [],
+        participants: [] as Array<{
+          callSid: string
+          phoneNumber: string
+          muted: boolean
+          hold: boolean
+          startTime: Date
+        }>,
         metadata: dbData || {}
       }
     })

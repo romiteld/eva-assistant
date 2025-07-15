@@ -224,7 +224,7 @@ export default function ChartCard({
         );
 
       default:
-        return null;
+        return <div />;
     }
   };
 

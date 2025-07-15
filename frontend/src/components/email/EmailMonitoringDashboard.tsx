@@ -548,6 +548,7 @@ export function EmailMonitoringDashboard() {
                         { name: 'Medium (5-7)', value: emails.filter(e => e.priority >= 5 && e.priority < 8).length, fill: '#F59E0B' },
                         { name: 'Low (0-4)', value: emails.filter(e => e.priority < 5).length, fill: '#3B82F6' },
                       ]}
+                      dataKey="value"
                       cx="50%"
                       cy="50%"
                       labelLine={false}
