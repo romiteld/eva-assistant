@@ -43,6 +43,7 @@ next-env.d.ts
 # Supabase
 .supabase/
 supabase/.temp/
+supabase/functions/.env
 
 # MCP Configuration (contains sensitive keys)
 .mcp.json
