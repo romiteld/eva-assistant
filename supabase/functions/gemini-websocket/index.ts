@@ -7,24 +7,23 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 serve(async (req: Request) => {
   try {
-    // Verify authentication
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return new Response('Missing authorization header', { status: 401 })
+    // Extract model and token from query params
+    const url = new URL(req.url)
+    const model = url.searchParams.get('model') || 'gemini-2.0-flash-exp'
+    const token = url.searchParams.get('token')
+    
+    if (!token) {
+      return new Response('Missing authentication token', { status: 401 })
     }
 
     // Create Supabase client to verify JWT
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const token = authHeader.replace('Bearer ', '')
     
     const { data: { user }, error } = await supabase.auth.getUser(token)
     if (error || !user) {
       return new Response('Invalid authentication token', { status: 401 })
     }
 
-    // Extract model from query params
-    const url = new URL(req.url)
-    const model = url.searchParams.get('model') || 'gemini-2.0-flash-exp'
 
     // Check if this is a WebSocket upgrade request
     if (req.headers.get('upgrade') !== 'websocket') {
