@@ -59,7 +59,7 @@ EVA (Executive Virtual Assistant) is an AI-powered recruitment platform for fina
 1. **Agent Orchestrator Backend**: Edge Function not implemented, UI shows static data
 2. **Environment Configuration**:
    - ✅ Supabase credentials configured
-   - ✅ Microsoft Entra ID configured
+   - ✅ Microsoft Entra ID configured (standalone PKCE OAuth, NOT using Supabase OAuth)
    - ✅ Gemini API key configured
    - ✅ Zoho CRM tokens configured
    - ✅ Firecrawl API key configured
@@ -305,3 +305,8 @@ The platform includes comprehensive Microsoft 365 integration through the Micros
   - Local: `http://localhost:3000/auth/microsoft/callback`
 - Client-side PKCE implementation in `/lib/auth/microsoft-oauth.ts`
 - No longer uses Supabase OAuth callback URLs
+
+**Recent Cleanup (2025-07-15):**
+- Removed all OAuth test pages (`test-oauth-flow`, `debug-oauth`, `test-oauth-diagnostics`, `test-microsoft-oauth`, `test-supabase-auth`)
+- Supabase OAuth provider configuration has been removed from the project
+- All authentication now uses either Magic Link (Supabase) or standalone Microsoft OAuth (PKCE)
