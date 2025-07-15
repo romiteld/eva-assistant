@@ -78,28 +78,13 @@ export class VoiceService extends EventEmitter {
         ? this.config.model.substring(7) 
         : this.config?.model || 'gemini-2.0-flash-exp';
       
-      // Get auth token for WebSocket connection
-      const authResponse = await fetch('/api/gemini', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': document.cookie
-            .split('; ')
-            .find(row => row.startsWith('csrf-token='))
-            ?.split('=')[1] || '',
-        },
-        credentials: 'include',
-      });
-      
-      if (!authResponse.ok) {
-        throw new Error('Failed to get WebSocket token');
-      }
-      
-      const { websocket } = await authResponse.json();
+      // Note: We don't need the /api/gemini endpoint anymore since we're using Supabase Edge Function
       
       // Use Supabase Edge Function for WebSocket proxy
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const wsUrl = `${supabaseUrl}/functions/v1/gemini-websocket?model=${encodeURIComponent(modelName)}`;
+      // Convert https to wss for WebSocket
+      const wsBaseUrl = supabaseUrl.replace('https://', 'wss://');
+      const wsUrl = `${wsBaseUrl}/functions/v1/gemini-websocket?model=${encodeURIComponent(modelName)}`;
       console.log('Connecting to Supabase WebSocket proxy:', wsUrl);
       
       // Get Supabase session for Edge Function authentication
@@ -112,6 +97,7 @@ export class VoiceService extends EventEmitter {
       // Add auth token to URL since browsers don't support custom headers in WebSocket
       const authenticatedWsUrl = `${wsUrl}&token=${encodeURIComponent(session.access_token)}`;
       
+      console.log('Creating WebSocket connection with authenticated URL');
       this.ws = new WebSocket(authenticatedWsUrl);
       this.setupWebSocketHandlers();
 
@@ -158,13 +144,21 @@ export class VoiceService extends EventEmitter {
 
     this.ws.onerror = (error) => {
       console.error('WebSocket error:', error);
-      this.handleError(new Error('WebSocket error'), VoiceErrorCode.CONNECTION_ERROR);
+      this.handleError(new Error('WebSocket connection failed. Please check your network and try again.'), VoiceErrorCode.CONNECTION_ERROR);
     };
 
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
+    this.ws.onclose = (event) => {
+      console.log('WebSocket disconnected:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       this.emit(VoiceEvent.DISCONNECTED);
-      this.handleReconnect();
+      
+      // Don't reconnect if it was a clean close
+      if (!event.wasClean) {
+        this.handleReconnect();
+      }
     };
   }
 

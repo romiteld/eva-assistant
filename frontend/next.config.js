@@ -72,6 +72,8 @@ const nextConfig = {
       'object-src': ["'none'"],
       'base-uri': ["'self'"],
       'form-action': ["'self'"],
+      'worker-src': ["'self'", 'blob:'],
+      'media-src': ["'self'", 'blob:', 'data:', 'https:'],
     };
 
     // Convert CSP object to string

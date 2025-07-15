@@ -24,6 +24,7 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2"
   },
   "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
     "@auth/supabase-adapter": "^1.10.0",
     "@google/generative-ai": "^0.23.0",
     "@hookform/resolvers": "^5.1.1",
@@ -60,6 +61,7 @@
     "@tanstack/react-query-devtools": "^5.82.0",
     "@tanstack/react-table": "^8.21.3",
     "@types/react-window": "^1.8.8",
+    "ai": "^4.3.19",
     "axios": "^1.7.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

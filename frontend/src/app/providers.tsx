@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/browser'
 import { authHelpers, AuthUser } from '@/lib/supabase/auth'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { WebSocketProvider } from '@/contexts/WebSocketContext'
+// import { WebSocketProvider } from '@/contexts/WebSocketContext' // Disabled - not needed in production
 
 // Get single instance of Supabase client
 const supabaseClient = createClient()
@@ -122,9 +122,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <SupabaseContext.Provider value={supabaseClient}>
         <AuthProvider>
-          <WebSocketProvider>
-            {children}
-          </WebSocketProvider>
+          {children}
         </AuthProvider>
       </SupabaseContext.Provider>
     </QueryClientProvider>

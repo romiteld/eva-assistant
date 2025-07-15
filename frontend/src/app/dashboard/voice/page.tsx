@@ -8,6 +8,7 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { chatHistory, ChatSession } from '@/lib/services/chatHistory';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TextChatWithHistory } from '@/components/chat/TextChatWithHistory';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -209,38 +210,57 @@ function VoiceAgentPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Voice Interface */}
+          {/* Main Interface with Tabs */}
           <div className="lg:col-span-2">
-            <VoiceAgentWithVisual
-              voice={selectedVoice}
-              tools={enabledToolsList}
-              onFunctionCall={handleFunctionCall}
-              systemInstructions="You are EVA, a helpful AI assistant. Be concise, friendly, and professional."
-              enableHistory={enableHistory}
-              sessionId={selectedSessionId}
-            />
+            <Tabs defaultValue="voice" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="voice" className="flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Voice Chat
+                </TabsTrigger>
+                <TabsTrigger value="text" className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Text Chat
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="voice" className="space-y-6">
+                <VoiceAgentWithVisual
+                  voice={selectedVoice}
+                  tools={enabledToolsList}
+                  onFunctionCall={handleFunctionCall}
+                  systemInstructions="You are EVA, a helpful AI assistant. Be concise, friendly, and professional."
+                  enableHistory={enableHistory}
+                  sessionId={selectedSessionId}
+                />
 
-            {/* Example Queries */}
-            <Card className="mt-6 bg-white/5 border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">Example Queries</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Try asking these questions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {exampleQueries.map((query, index) => (
-                    <div
-                      key={index}
-                      className="p-3 bg-white/5 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-colors cursor-pointer"
-                    >
-                      &quot;{query}&quot;
+                {/* Example Queries for Voice */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white">Example Voice Queries</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Try asking these questions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {exampleQueries.map((query, index) => (
+                        <div
+                          key={index}
+                          className="p-3 bg-white/5 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                          &quot;{query}&quot;
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="text" className="space-y-6">
+                <TextChatWithHistory />
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Side Panel */}
@@ -251,7 +271,7 @@ function VoiceAgentPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
                     <History className="w-5 h-5" />
-                    Chat History
+                    Voice Chat History
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <Switch

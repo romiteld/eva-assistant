@@ -13,7 +13,11 @@ interface VoiceControlProps {
   onToggleListening: () => void;
   onConnect: () => void;
   onDisconnect: () => void;
-  audioLevel: number;
+  onStartListening: () => void;
+  onStopListening: () => void;
+  hasPermission: boolean;
+  onRequestPermission: () => void;
+  audioLevel?: number;
 }
 
 export function VoiceControl({
@@ -24,7 +28,11 @@ export function VoiceControl({
   onToggleListening,
   onConnect,
   onDisconnect,
-  audioLevel,
+  onStartListening,
+  onStopListening,
+  hasPermission,
+  onRequestPermission,
+  audioLevel = 0,
 }: VoiceControlProps) {
   const getMicButtonState = () => {
     if (isProcessing) {
@@ -60,6 +68,28 @@ export function VoiceControl({
 
   const micButtonState = getMicButtonState();
 
+  const handleMicrophoneClick = async () => {
+    console.log('Microphone button clicked', { isConnected, hasPermission });
+    
+    // If not connected, connect first
+    if (!isConnected) {
+      console.log('Not connected, attempting to connect...');
+      await onConnect();
+      return;
+    }
+    
+    // If no permission, request it first
+    if (!hasPermission) {
+      console.log('No permission, requesting...');
+      await onRequestPermission();
+      return;
+    }
+    
+    // Toggle listening state
+    console.log('Toggling listening state');
+    onToggleListening();
+  };
+
   return (
     <div className="flex items-center gap-4">
       {/* Connection Toggle */}
@@ -93,8 +123,8 @@ export function VoiceControl({
         {/* Microphone Button */}
         <Button
           size="icon"
-          onClick={onToggleListening}
-          disabled={micButtonState.disabled}
+          onClick={handleMicrophoneClick}
+          disabled={micButtonState.disabled && isConnected}
           className={cn(
             'h-20 w-20 rounded-full transition-all duration-200',
             micButtonState.className,
