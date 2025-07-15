@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   BarChart3, 
@@ -27,13 +28,17 @@ import {
   Cloud,
   MailOpen,
   TrendingUp as TrendingUpIcon,
-  Target
+  Target,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  isCollapsed?: boolean
+  onCollapsedChange?: (collapsed: boolean) => void
 }
 
 // Glassmorphic card component
@@ -46,9 +51,28 @@ function GlassCard({ children, className = "" }: { children: React.ReactNode, cl
   )
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onCollapsedChange }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const [internalCollapsed, setInternalCollapsed] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
+  
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024)
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
+  
+  // Use controlled state if provided, otherwise use internal state
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed
+  const setIsCollapsed = (collapsed: boolean) => {
+    if (onCollapsedChange) {
+      onCollapsedChange(collapsed)
+    } else {
+      setInternalCollapsed(collapsed)
+    }
+  }
 
   const sidebarItems = [
     { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
@@ -77,10 +101,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   ]
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Overlay */}
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -89,35 +113,53 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={onClose}
           />
-          
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ type: "spring", damping: 25 }}
-            className="fixed left-0 top-0 w-72 h-screen bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col"
-          >
+        )}
+      </AnimatePresence>
+      
+      {/* Sidebar - always visible on desktop, conditional on mobile */}
+      <motion.aside
+        initial={{ x: -280 }}
+        animate={{ x: isOpen || isDesktop ? 0 : -280 }}
+        transition={{ type: "spring", damping: 25 }}
+        className={`fixed left-0 top-0 ${isCollapsed ? 'w-20' : 'w-72'} h-screen bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col transition-all duration-300`}
+      >
             {/* Header - Fixed */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
-              <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
                 <motion.div
-                  className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
                   whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.5 }}
                 >
                   <Zap className="w-6 h-6 text-white" />
                 </motion.div>
-                <div>
-                  <h2 className="text-white font-bold text-base">EVA Enterprise</h2>
-                  <p className="text-gray-400 text-sm">AI Assistant</p>
-                </div>
+                {!isCollapsed && (
+                  <div>
+                    <h2 className="text-white font-bold text-base">EVA Enterprise</h2>
+                    <p className="text-gray-400 text-sm">AI Assistant</p>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors lg:hidden"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Desktop collapse button */}
+                <button
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="hidden lg:block p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="w-5 h-5 text-white" />
+                  ) : (
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                  )}
+                </button>
+                {/* Mobile close button */}
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors lg:hidden"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
             </div>
 
             {/* Navigation - Scrollable */}
@@ -137,12 +179,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         router.push(item.href)
                         onClose()
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative ${
+                      className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all group relative ${
                         isActive 
                           ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 text-white shadow-lg' 
                           : 'text-gray-300 hover:bg-white/10 hover:text-white'
                       }`}
-                      whileHover={{ x: 4 }}
+                      whileHover={{ x: isCollapsed ? 0 : 4 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       {/* Active indicator */}
@@ -154,18 +196,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         />
                       )}
                       
-                      <div className={`relative ${isActive ? 'text-purple-400' : ''}`}>
+                      <div className={`relative ${isActive ? 'text-purple-400' : ''} flex-shrink-0`}>
                         <item.icon className="w-5 h-5" />
                       </div>
-                      <span className="font-medium text-[15px]">{item.label}</span>
+                      {!isCollapsed && (
+                        <span className="font-medium text-[15px]">{item.label}</span>
+                      )}
+                      
+                      {/* Tooltip for collapsed state */}
+                      {isCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                          {item.label}
+                        </div>
+                      )}
                     </motion.button>
                   )
                 })}
               </div>
             </nav>
           </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+    </>
   )
 }

@@ -23,10 +23,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Load collapsed state from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed')
+      return saved ? JSON.parse(saved) : false
+    }
+    return false
+  })
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [user, setUser] = useState<any>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  // Save collapsed state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
+  }, [sidebarCollapsed])
 
   useEffect(() => {
     async function getUser() {
@@ -75,10 +88,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       <div className="relative z-10 flex">
         {/* Sidebar */}
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          isCollapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
 
         {/* Main content */}
-        <div className={`flex-1 ${sidebarOpen ? 'lg:ml-72' : ''} transition-all duration-300`}>
+        <div className={`flex-1 ${sidebarOpen ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72') : ''} transition-all duration-300`}>
           {/* Header */}
           <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 px-8 py-4">
             <div className="flex items-center justify-between">
