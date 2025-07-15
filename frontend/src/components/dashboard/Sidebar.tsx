@@ -30,7 +30,9 @@ import {
   TrendingUp as TrendingUpIcon,
   Target,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  GitBranch,
+  Database
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -81,6 +83,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
     { icon: TrendingUpIcon, label: "Post Predictor", href: "/dashboard/post-predictor" },
     { icon: BrainCircuit, label: "Agent Orchestrator", href: "/dashboard/orchestrator" },
+    { icon: GitBranch, label: "Workflow Designer", href: "/dashboard/workflows" },
     { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
     { icon: Mail, label: "Outreach Campaigns", href: "/dashboard/outreach" },
     { icon: MailOpen, label: "Email Templates", href: "/dashboard/email-templates" },
@@ -89,9 +92,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     { icon: Brain, label: "Recruiter Intel", href: "/dashboard/recruiter-intel" },
     { icon: CheckSquare, label: "Task Management", href: "/dashboard/tasks" },
     { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" },
+    { icon: Database, label: "Zoho CRM", href: "/dashboard/zoho" },
     { icon: Phone, label: "Twilio", href: "/dashboard/twilio" },
     { icon: Linkedin, label: "LinkedIn", href: "/dashboard/linkedin" },
-    { icon: Flame, label: "Firecrawl", href: "/dashboard/firecrawl" },
+    { icon: Brain, label: "Intelligence Hub", href: "/dashboard/firecrawl" },
     { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" },
     { icon: FolderOpen, label: "File Manager", href: "/dashboard/files" },
     { icon: Users, label: "Candidates", href: "/dashboard/candidates" },
