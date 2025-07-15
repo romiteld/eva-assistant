@@ -1,0 +1,948 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Zoom API for EVA Assistant",
+    "version": "2.0.0",
+    "description": "Zoom API integration for EVA Assistant application, including OAuth 2.0 authentication, meeting management, and webhook handling",
+    "contact": {
+      "name": "EVA Assistant Support",
+      "email": "support@thewell.solutions"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.zoom.us/v2",
+      "description": "Zoom API v2 Production Server"
+    },
+    {
+      "url": "https://zoom.us",
+      "description": "Zoom OAuth Server"
+    }
+  ],
+  "paths": {
+    "/oauth/authorize": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Initiate OAuth 2.0 Authorization",
+        "description": "Redirects user to Zoom's OAuth authorization page",
+        "operationId": "authorizeOAuth",
+        "parameters": [
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["code"]
+            },
+            "description": "OAuth response type"
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Your Zoom OAuth app client ID"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Callback URL for OAuth response"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "State parameter for CSRF protection"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Zoom authorization page"
+          }
+        }
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Exchange authorization code for access token",
+        "description": "Exchange OAuth authorization code for access and refresh tokens",
+        "operationId": "getAccessToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type", "code", "redirect_uri"],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["authorization_code", "refresh_token"],
+                    "description": "OAuth grant type"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code from OAuth callback"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "Same redirect URI used in authorization request"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "Refresh token (when grant_type is refresh_token)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/meetings": {
+      "post": {
+        "tags": ["Meetings"],
+        "summary": "Create a meeting",
+        "description": "Create a new Zoom meeting for the authenticated user",
+        "operationId": "createMeeting",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMeetingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Meeting created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meeting"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Meetings"],
+        "summary": "List meetings",
+        "description": "List all meetings for the authenticated user",
+        "operationId": "listMeetings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["scheduled", "live", "upcoming"],
+              "default": "scheduled"
+            },
+            "description": "Type of meetings to list"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 300
+            },
+            "description": "Number of records per page"
+          },
+          {
+            "name": "page_number",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of meetings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meetings/{meetingId}": {
+      "get": {
+        "tags": ["Meetings"],
+        "summary": "Get meeting details",
+        "description": "Retrieve details of a specific meeting",
+        "operationId": "getMeeting",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "meetingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Meeting ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meeting details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meeting"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Meetings"],
+        "summary": "Update meeting",
+        "description": "Update a meeting's details",
+        "operationId": "updateMeeting",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "meetingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Meeting ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeetingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Meeting updated successfully"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Meetings"],
+        "summary": "Delete meeting",
+        "description": "Delete a meeting",
+        "operationId": "deleteMeeting",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "meetingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Meeting ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Meeting deleted successfully"
+          },
+          "404": {
+            "description": "Meeting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meetings/{meetingId}/recordings": {
+      "get": {
+        "tags": ["Recordings"],
+        "summary": "Get meeting recordings",
+        "description": "Retrieve cloud recordings for a meeting",
+        "operationId": "getMeetingRecordings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "meetingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Meeting ID or UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recording details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recording not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Webhook endpoint",
+        "description": "Endpoint to receive Zoom webhook events",
+        "operationId": "receiveWebhook",
+        "parameters": [
+          {
+            "name": "x-zm-signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Webhook signature for verification"
+          },
+          {
+            "name": "x-zm-request-timestamp",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Request timestamp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid signature"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Zoom OAuth 2.0 access token"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using client_id:client_secret"
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "OAuth access token"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": ["Bearer"]
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "OAuth refresh token"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token expiration time in seconds"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Granted scopes"
+          }
+        }
+      },
+      "CreateMeetingRequest": {
+        "type": "object",
+        "required": ["topic", "type"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Meeting topic",
+            "maxLength": 200
+          },
+          "type": {
+            "type": "integer",
+            "enum": [1, 2, 3, 8],
+            "description": "Meeting type: 1=instant, 2=scheduled, 3=recurring with no fixed time, 8=recurring with fixed time"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Meeting start time (required for scheduled meetings)"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Meeting duration in minutes"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Timezone for the meeting"
+          },
+          "password": {
+            "type": "string",
+            "description": "Meeting password",
+            "maxLength": 10
+          },
+          "agenda": {
+            "type": "string",
+            "description": "Meeting agenda",
+            "maxLength": 2000
+          },
+          "settings": {
+            "$ref": "#/components/schemas/MeetingSettings"
+          }
+        }
+      },
+      "UpdateMeetingRequest": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Meeting topic",
+            "maxLength": 200
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Meeting start time"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Meeting duration in minutes"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Timezone for the meeting"
+          },
+          "password": {
+            "type": "string",
+            "description": "Meeting password",
+            "maxLength": 10
+          },
+          "agenda": {
+            "type": "string",
+            "description": "Meeting agenda",
+            "maxLength": 2000
+          },
+          "settings": {
+            "$ref": "#/components/schemas/MeetingSettings"
+          }
+        }
+      },
+      "Meeting": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Meeting ID"
+          },
+          "uuid": {
+            "type": "string",
+            "description": "Meeting UUID"
+          },
+          "host_id": {
+            "type": "string",
+            "description": "Host user ID"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Meeting topic"
+          },
+          "type": {
+            "type": "integer",
+            "description": "Meeting type"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["waiting", "started", "finished"],
+            "description": "Meeting status"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Meeting start time"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Meeting duration in minutes"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Timezone"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Meeting creation time"
+          },
+          "start_url": {
+            "type": "string",
+            "description": "URL for host to start meeting"
+          },
+          "join_url": {
+            "type": "string",
+            "description": "URL for participants to join meeting"
+          },
+          "password": {
+            "type": "string",
+            "description": "Meeting password"
+          },
+          "h323_password": {
+            "type": "string",
+            "description": "H.323/SIP room system password"
+          },
+          "pstn_password": {
+            "type": "string",
+            "description": "PSTN password"
+          },
+          "encrypted_password": {
+            "type": "string",
+            "description": "Encrypted meeting password"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/MeetingSettings"
+          }
+        }
+      },
+      "MeetingList": {
+        "type": "object",
+        "properties": {
+          "page_count": {
+            "type": "integer",
+            "description": "Total number of pages"
+          },
+          "page_number": {
+            "type": "integer",
+            "description": "Current page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "description": "Number of records per page"
+          },
+          "total_records": {
+            "type": "integer",
+            "description": "Total number of records"
+          },
+          "meetings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Meeting"
+            }
+          }
+        }
+      },
+      "MeetingSettings": {
+        "type": "object",
+        "properties": {
+          "host_video": {
+            "type": "boolean",
+            "description": "Start video when host joins"
+          },
+          "participant_video": {
+            "type": "boolean",
+            "description": "Start video when participants join"
+          },
+          "cn_meeting": {
+            "type": "boolean",
+            "description": "Host meeting in China"
+          },
+          "in_meeting": {
+            "type": "boolean",
+            "description": "Host meeting in India"
+          },
+          "join_before_host": {
+            "type": "boolean",
+            "description": "Allow participants to join before host"
+          },
+          "mute_upon_entry": {
+            "type": "boolean",
+            "description": "Mute participants upon entry"
+          },
+          "watermark": {
+            "type": "boolean",
+            "description": "Add watermark"
+          },
+          "use_pmi": {
+            "type": "boolean",
+            "description": "Use Personal Meeting ID"
+          },
+          "approval_type": {
+            "type": "integer",
+            "enum": [0, 1, 2],
+            "description": "Approval type: 0=automatically approve, 1=manually approve, 2=no registration required"
+          },
+          "audio": {
+            "type": "string",
+            "enum": ["both", "telephony", "voip"],
+            "description": "Audio options"
+          },
+          "auto_recording": {
+            "type": "string",
+            "enum": ["local", "cloud", "none"],
+            "description": "Automatic recording"
+          },
+          "waiting_room": {
+            "type": "boolean",
+            "description": "Enable waiting room"
+          },
+          "allow_multiple_devices": {
+            "type": "boolean",
+            "description": "Allow participants to join from multiple devices"
+          }
+        }
+      },
+      "Recording": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Recording ID"
+          },
+          "meeting_id": {
+            "type": "string",
+            "description": "Meeting ID"
+          },
+          "recording_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recording_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "file_type": {
+            "type": "string",
+            "enum": ["MP4", "M4A", "TIMELINE", "TRANSCRIPT", "CHAT", "CC"],
+            "description": "Recording file type"
+          },
+          "file_size": {
+            "type": "integer",
+            "description": "File size in bytes"
+          },
+          "play_url": {
+            "type": "string",
+            "description": "URL to play recording"
+          },
+          "download_url": {
+            "type": "string",
+            "description": "URL to download recording"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "processing"],
+            "description": "Recording status"
+          }
+        }
+      },
+      "RecordingList": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Meeting UUID"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Meeting ID"
+          },
+          "host_id": {
+            "type": "string",
+            "description": "Host user ID"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Meeting topic"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Meeting duration in minutes"
+          },
+          "total_size": {
+            "type": "integer",
+            "description": "Total size of all recording files"
+          },
+          "recording_count": {
+            "type": "integer",
+            "description": "Number of recording files"
+          },
+          "recording_files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recording"
+            }
+          }
+        }
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "required": ["event", "event_ts", "payload"],
+        "properties": {
+          "event": {
+            "type": "string",
+            "description": "Event type",
+            "enum": [
+              "endpoint.url_validation",
+              "meeting.started",
+              "meeting.ended",
+              "meeting.participant_joined",
+              "meeting.participant_left",
+              "recording.started",
+              "recording.stopped",
+              "recording.completed",
+              "recording.transcript_completed"
+            ]
+          },
+          "event_ts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Event timestamp"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "string",
+                "description": "Account ID"
+              },
+              "object": {
+                "type": "object",
+                "description": "Event object data"
+              },
+              "plainToken": {
+                "type": "string",
+                "description": "Plain token for URL validation"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "Error code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "OAuth 2.0 authentication endpoints"
+    },
+    {
+      "name": "Meetings",
+      "description": "Meeting management endpoints"
+    },
+    {
+      "name": "Recordings",
+      "description": "Recording management endpoints"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook event handling"
+    }
+  ]
+}
