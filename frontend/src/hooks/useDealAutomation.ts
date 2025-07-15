@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useAuth } from '@/lib/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { DealAutomationAgent } from '@/lib/agents/deal-automation-agent';
 import { toast } from 'react-hot-toast';
 

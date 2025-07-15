@@ -960,6 +960,96 @@ export class TwilioService extends LegacyTwilioClient {
       throw error
     }
   }
+
+  // Conference Management Methods
+  async listConferences(options?: {
+    status?: 'init' | 'in-progress' | 'completed'
+    limit?: number
+  }): Promise<any[]> {
+    try {
+      return await this.client.conferences.list({
+        status: options?.status || 'in-progress',
+        limit: options?.limit || 20
+      })
+    } catch (error) {
+      console.error('Error listing conferences:', error)
+      throw error
+    }
+  }
+
+  async getConference(conferenceSid: string): Promise<any> {
+    try {
+      return await this.client.conferences(conferenceSid).fetch()
+    } catch (error) {
+      console.error('Error fetching conference:', error)
+      throw error
+    }
+  }
+
+  async updateConference(conferenceSid: string, updates: {
+    status?: 'completed'
+    announceUrl?: string
+    announceMethod?: 'GET' | 'POST'
+  }): Promise<any> {
+    try {
+      return await this.client.conferences(conferenceSid).update(updates)
+    } catch (error) {
+      console.error('Error updating conference:', error)
+      throw error
+    }
+  }
+
+  async listConferenceParticipants(conferenceSid: string): Promise<any[]> {
+    try {
+      return await this.client.conferences(conferenceSid).participants.list()
+    } catch (error) {
+      console.error('Error listing conference participants:', error)
+      throw error
+    }
+  }
+
+  async updateConferenceParticipant(
+    conferenceSid: string, 
+    participantSid: string,
+    updates: {
+      muted?: boolean
+      hold?: boolean
+      holdUrl?: string
+      holdMethod?: 'GET' | 'POST'
+      announceUrl?: string
+      announceMethod?: 'GET' | 'POST'
+    }
+  ): Promise<any> {
+    try {
+      return await this.client.conferences(conferenceSid)
+        .participants(participantSid)
+        .update(updates)
+    } catch (error) {
+      console.error('Error updating conference participant:', error)
+      throw error
+    }
+  }
+
+  async removeConferenceParticipant(conferenceSid: string, participantSid: string): Promise<void> {
+    try {
+      await this.client.conferences(conferenceSid)
+        .participants(participantSid)
+        .remove()
+    } catch (error) {
+      console.error('Error removing conference participant:', error)
+      throw error
+    }
+  }
+
+  // Getter for accountSid (for webhook validation)
+  getAccountSid(): string {
+    return this.accountSid
+  }
+
+  // Getter for authToken (for webhook validation)
+  getAuthToken(): string {
+    return this.authToken
+  }
 }
 
 // Export a factory function for creating instances

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import AuthGuard from '@/components/auth/AuthGuard';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { ServiceProvider } from '@/components/providers/ServiceProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/browser';

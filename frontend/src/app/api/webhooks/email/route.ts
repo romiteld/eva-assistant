@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { EmailAutomationRules } from '@/lib/automation/email-rules';
 import { EmailDealParser } from '@/lib/email/deal-parser';
-import { ZohoClient } from '@/lib/integrations/zoho';
+import { ZohoCRMClient } from '@/lib/integrations/zoho';
 import { Redis } from '@upstash/redis';
 import crypto from 'crypto';
 

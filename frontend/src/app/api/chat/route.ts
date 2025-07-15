@@ -24,9 +24,7 @@ export async function POST(req: Request) {
     }
 
     // Create the Gemini model
-    const gemini = google(model, {
-      apiKey: process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY,
-    });
+    const gemini = google(model);
 
     // Stream the response
     const result = streamText({

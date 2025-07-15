@@ -2062,6 +2062,7 @@ Jane Doe, Morgan Stanley
           </DialogContent>
         </Dialog>
       </div>
+    </div>
     </TooltipProvider>
   )
 }

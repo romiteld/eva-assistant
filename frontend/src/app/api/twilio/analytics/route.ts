@@ -342,7 +342,7 @@ function extractTopKeywords(messages: any[], limit = 5) {
     if (!message.body) return
     
     const words = message.body.toLowerCase().split(/\s+/)
-    words.forEach(word => {
+    words.forEach((word: string) => {
       const cleaned = word.replace(/[^a-z0-9]/g, '')
       if (cleaned.length > 3 && !stopWords.has(cleaned)) {
         keywords[cleaned] = (keywords[cleaned] || 0) + 1

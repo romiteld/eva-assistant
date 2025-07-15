@@ -13,20 +13,20 @@ export async function GET(request: NextRequest) {
     const twilioService = createTwilioService()
     
     // Get active conferences from Twilio
-    const conferences = await twilioService.client.conferences.list({
+    const conferences = await twilioService.listConferences({
       status: 'in-progress',
       limit: 20
     })
     
     // Get conference details from database
-    const conferenceNames = conferences.map(c => c.friendlyName)
+    const conferenceNames = conferences.map((c: any) => c.friendlyName)
     const { data: dbConferences } = await supabase
       .from('twilio_conferences')
       .select('*')
       .in('conference_name', conferenceNames)
     
     // Merge data
-    const activeConferences = conferences.map(conf => {
+    const activeConferences = conferences.map((conf: any) => {
       const dbData = dbConferences?.find(db => db.conference_name === conf.friendlyName)
       return {
         conferenceName: conf.friendlyName,
@@ -40,12 +40,9 @@ export async function GET(request: NextRequest) {
     
     // Get participants for each conference
     for (const conf of activeConferences) {
-      const participants = await twilioService.client
-        .conferences(conf.sid)
-        .participants
-        .list()
+      const participants = await twilioService.listConferenceParticipants(conf.sid)
       
-      conf.participants = participants.map(p => ({
+      conf.participants = participants.map((p: any) => ({
         callSid: p.callSid,
         phoneNumber: p.from || p.to,
         muted: p.muted,
@@ -211,35 +208,37 @@ export async function PUT(request: NextRequest) {
     
     switch (action) {
       case 'mute':
-        await twilioService.client
-          .conferences(conferenceSid)
-          .participants(participantCallSid)
-          .update({ muted: value !== false })
+        await twilioService.updateConferenceParticipant(
+          conferenceSid,
+          participantCallSid,
+          { muted: value !== false }
+        )
         break
         
       case 'hold':
-        await twilioService.client
-          .conferences(conferenceSid)
-          .participants(participantCallSid)
-          .update({ hold: value !== false })
+        await twilioService.updateConferenceParticipant(
+          conferenceSid,
+          participantCallSid,
+          { hold: value !== false }
+        )
         break
         
       case 'remove':
-        await twilioService.client
-          .conferences(conferenceSid)
-          .participants(participantCallSid)
-          .remove()
+        await twilioService.removeConferenceParticipant(
+          conferenceSid,
+          participantCallSid
+        )
         break
         
       case 'coach':
         // Coach mode - participant can hear but not be heard
-        await twilioService.client
-          .conferences(conferenceSid)
-          .participants(participantCallSid)
-          .update({ 
-            muted: true,
-            coaching: true
-          })
+        await twilioService.updateConferenceParticipant(
+          conferenceSid,
+          participantCallSid,
+          { 
+            muted: true
+          }
+        )
         break
         
       default:
@@ -276,9 +275,7 @@ export async function DELETE(request: NextRequest) {
     const twilioService = createTwilioService()
     
     // Update conference status to completed
-    await twilioService.client
-      .conferences(conferenceSid)
-      .update({ status: 'completed' })
+    await twilioService.updateConference(conferenceSid, { status: 'completed' })
     
     // Update database
     await supabase
