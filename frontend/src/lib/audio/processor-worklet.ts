@@ -22,12 +22,28 @@ export class AudioProcessor {
   private calibratedNoiseLevel = 0;
   
   constructor() {
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Don't create AudioContext here - wait for user interaction
+    this.audioContext = null as any;
+    this.analyser = null as any;
+  }
+
+  /**
+   * Initialize audio context on first user interaction
+   */
+  private async ensureAudioContext(): Promise<void> {
+    if (!this.audioContext || this.audioContext.state === 'closed') {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Setup analyser for visualization
+      this.analyser = this.audioContext.createAnalyser();
+      this.analyser.fftSize = this.FFT_SIZE;
+      this.analyser.smoothingTimeConstant = 0.8;
+    }
     
-    // Setup analyser for visualization
-    this.analyser = this.audioContext.createAnalyser();
-    this.analyser.fftSize = this.FFT_SIZE;
-    this.analyser.smoothingTimeConstant = 0.8;
+    // Resume context if suspended (happens on some browsers)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
   }
 
   /**
@@ -36,12 +52,20 @@ export class AudioProcessor {
   async initializeAudioInput(stream: MediaStream): Promise<void> {
     this.stream = stream;
     
+    // Ensure audio context is created and resumed
+    await this.ensureAudioContext();
+    
     // Load the audio worklet module
     try {
       await this.audioContext.audioWorklet.addModule('/audio-processor-worklet.js');
     } catch (error) {
-      console.warn('Failed to load audio worklet, falling back to ScriptProcessorNode');
-      throw error;
+      console.error('Failed to load audio worklet:', error);
+      // Try to recover by recreating the context
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      await this.audioContext.resume();
+      
+      // Try once more
+      await this.audioContext.audioWorklet.addModule('/audio-processor-worklet.js');
     }
     
     // Create source node from stream
@@ -101,6 +125,8 @@ export class AudioProcessor {
    * Get current audio volume level (0-1)
    */
   getVolumeLevel(): number {
+    if (!this.analyser) return 0;
+    
     const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteFrequencyData(dataArray);
     
@@ -116,6 +142,8 @@ export class AudioProcessor {
    * Get frequency data for visualization
    */
   getFrequencyData(): Uint8Array {
+    if (!this.analyser) return new Uint8Array(0);
+    
     const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteFrequencyData(dataArray);
     return dataArray;
@@ -125,6 +153,8 @@ export class AudioProcessor {
    * Get time domain data for waveform visualization
    */
   getWaveformData(): Uint8Array {
+    if (!this.analyser) return new Uint8Array(0);
+    
     const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteTimeDomainData(dataArray);
     return dataArray;
@@ -134,6 +164,8 @@ export class AudioProcessor {
    * Check if voice is detected using frequency analysis
    */
   isVoiceDetected(): boolean {
+    if (!this.audioContext || !this.analyser) return false;
+    
     const frequencyData = this.getFrequencyData();
     const sampleRate = this.audioContext.sampleRate;
     const nyquist = sampleRate / 2;

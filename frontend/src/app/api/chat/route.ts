@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     // Create the Gemini model
     const gemini = google(model, {
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY,
     });
 
     // Stream the response
@@ -53,6 +53,22 @@ Be professional, helpful, and concise in your responses.`,
     return result.toDataStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
-    return new Response('Internal server error', { status: 500 });
+    
+    // Return more detailed error in development
+    if (process.env.NODE_ENV === 'development') {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Chat API error', 
+          message: error instanceof Error ? error.message : 'Unknown error',
+          details: error 
+        }), 
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    return new Response('An error occurred', { status: 500 });
   }
 }

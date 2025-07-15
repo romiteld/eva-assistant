@@ -2,9 +2,9 @@
 
 > **Last Updated**: 2025-07-15  
 > **Total Tasks**: 54  
-> **Completion Status**: 23/25 features complete (92%)  
+> **Completion Status**: 24/25 features complete (96%)  
 > **Last Session**: 2025-07-15
-> **Today's Progress**: 5 major tasks completed (4.75 hours)
+> **Today's Progress**: 8 major tasks completed (7 hours)
 
 ## 🔄 Recent Progress
 - ✅ **Zoom Integration Backend** - API endpoints created with GET/POST support
@@ -16,6 +16,8 @@
 - ✅ **Streaming Chat Implementation** - Added Vercel AI SDK with Gemini integration
 - ✅ **Text Chat History** - Created separate tables and service for text chat persistence
 - ✅ **Voice Page Enhancement** - Added tabbed interface with voice and text chat options
+- ✅ **Text Chat History Integration** - Full session management UI with history
+- ✅ **Voice Agent Microphone Fix** - Fixed WebSocket, permissions, and Edge Function
 - 🚧 **Zoom UI Components** - Backend ready, UI pending
 
 ## 📊 Priority Matrix
@@ -153,6 +155,41 @@
 - [x] Integrated StreamingChat component
 - [x] Maintained existing voice functionality
 - [x] Improved user experience with dual interface
+
+### 6. Text Chat History Integration
+**Status**: ✅ COMPLETE  
+**Time Taken**: 45 minutes  
+**Files Created/Modified**:
+- `frontend/src/components/chat/TextChatWithHistory.tsx` - New component with history UI
+- `frontend/src/components/chat/StreamingChat.tsx` - Added history props support
+- `frontend/src/hooks/useStreamingChat.ts` - Enhanced with full history functionality
+- `frontend/src/app/dashboard/voice/page.tsx` - Integrated TextChatWithHistory
+
+**What was done**:
+- [x] Created TextChatWithHistory component with session management UI
+- [x] Updated StreamingChat to accept enableHistory and sessionId props
+- [x] Enhanced useStreamingChat hook with session CRUD operations
+- [x] Added session loading, creation, and deletion functionality
+- [x] Integrated with existing text_chat_sessions and text_chat_messages tables
+- [x] Added visual distinction between Voice and Text chat histories
+
+### 7. Voice Agent Microphone Fix & Edge Function Setup
+**Status**: ✅ COMPLETE  
+**Time Taken**: 1.5 hours  
+**Files Modified/Created**:
+- `frontend/src/components/voice/VoiceControl.tsx` - Fixed props and click handler
+- `frontend/src/lib/services/voice.ts` - Fixed WebSocket URL and removed unnecessary auth
+- `supabase/functions/gemini-websocket/` - Deployed Edge Function
+- `supabase/functions/.env` - Added GEMINI_API_KEY secret
+
+**What was done**:
+- [x] Fixed VoiceControl component prop mismatches
+- [x] Added proper permission request flow to microphone button
+- [x] Deployed gemini-websocket Edge Function to Supabase
+- [x] Fixed WebSocket URL construction (https:// to wss://)
+- [x] Added debug logging for troubleshooting
+- [x] Set GEMINI_API_KEY as Edge Function secret
+- [x] Added .env to .gitignore for security
 
 ## 📝 Detailed Task Breakdown
 

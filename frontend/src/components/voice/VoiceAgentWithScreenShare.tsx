@@ -2,15 +2,20 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { VoiceAgent } from './VoiceAgent';
+import { VoiceControl } from './VoiceControl';
+import { AudioVisualizer } from './AudioVisualizer';
+import { TranscriptionDisplay } from './TranscriptionDisplay';
+import { ConversationHistory } from './ConversationHistory';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
+import { useAuth } from '@/hooks/useAuth';
 import { ScreenShare } from '../webrtc/ScreenShare';
 import { useScreenShare } from '@/hooks/useScreenShare';
 import { Tool, FunctionCall, VoiceType } from '@/types/voice';
 import { ScreenShareOptions } from '@/types/webrtc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Monitor, Camera, CameraOff, Volume2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Monitor, Camera, CameraOff, Volume2, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VoiceAgentWithScreenShareProps {
@@ -34,6 +39,8 @@ export function VoiceAgentWithScreenShare({
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+  const [pendingFunctionCalls, setPendingFunctionCalls] = useState<FunctionCall[]>([]);
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   
   const {
     isSharing,
@@ -51,6 +58,54 @@ When the user shares their screen or camera:
 - Provide helpful context-aware suggestions
 - Point out specific elements you notice
 - Help with any tasks related to what's being shown`;
+
+  // Use voice agent with visual support enabled
+  const {
+    state,
+    session,
+    isConnected,
+    isListening,
+    isSpeaking,
+    isProcessing,
+    error,
+    turns,
+    currentTranscription,
+    connect,
+    disconnect,
+    toggleListening,
+    sendText,
+    sendFunctionResult,
+    setVisualStream,
+    metrics,
+    analytics,
+    frequencyData,
+    waveformData,
+    hasPermission,
+    requestPermission,
+  } = useVoiceAgent({
+    voice: voice,
+    systemInstructions: enhancedInstructions,
+    tools,
+    enableAnalytics: true,
+    enableHistory,
+    sessionId,
+    enableVisual: true, // Enable visual support
+    onFunctionCall: async (functionCall) => {
+      setPendingFunctionCalls(prev => [...prev, functionCall]);
+      
+      if (onFunctionCall) {
+        try {
+          const result = await onFunctionCall(functionCall);
+          sendFunctionResult(functionCall.id, result);
+          setPendingFunctionCalls(prev => prev.filter(fc => fc.id !== functionCall.id));
+        } catch (error) {
+          console.error('Function call error:', error);
+          sendFunctionResult(functionCall.id, { error: error instanceof Error ? error.message : 'Unknown error' });
+          setPendingFunctionCalls(prev => prev.filter(fc => fc.id !== functionCall.id));
+        }
+      }
+    },
+  });
 
   // Start camera
   const startCamera = useCallback(async () => {
@@ -105,18 +160,25 @@ When the user shares their screen or camera:
     await stopScreenShare();
   }, [stopScreenShare]);
 
-  // Update video element when streams change
+  // Update video element and voice agent visual stream when streams change
   useEffect(() => {
-    if (videoRef.current) {
-      if (screenStream) {
-        videoRef.current.srcObject = screenStream;
-      } else if (cameraStream) {
-        videoRef.current.srcObject = cameraStream;
-      } else {
-        videoRef.current.srcObject = null;
-      }
+    let currentStream: MediaStream | null = null;
+    
+    if (screenStream) {
+      currentStream = screenStream;
+    } else if (cameraStream) {
+      currentStream = cameraStream;
     }
-  }, [screenStream, cameraStream]);
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = currentStream;
+    }
+    
+    // Update voice agent's visual stream
+    setVisualStream(currentStream);
+    
+    setActiveStream(currentStream);
+  }, [screenStream, cameraStream, setVisualStream]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -128,17 +190,107 @@ When the user shares their screen or camera:
     };
   }, [isSharing, stopCamera, stopScreenShare]);
 
+  // Auto-connect on mount
+  useEffect(() => {
+    if (!isConnected && hasPermission) {
+      connect();
+    }
+  }, [hasPermission, connect, isConnected]);
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show auth UI if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Volume2 className="h-5 w-5" />
+            EVA Voice Assistant
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center space-y-4 py-8">
+            <p className="text-muted-foreground">
+              Please sign in to use the voice assistant with visual input
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Voice Agent */}
-      <VoiceAgent
-        systemInstructions={enhancedInstructions}
-        tools={tools}
-        voice={voice}
-        onFunctionCall={onFunctionCall}
-        enableHistory={enableHistory}
-        sessionId={sessionId}
-      />
+      {/* Voice Agent Card */}
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Volume2 className="h-5 w-5" />
+              EVA Voice Assistant with Visual Input
+            </CardTitle>
+            <Badge variant={isConnected ? "default" : "secondary"}>
+              {isConnected ? "Connected" : "Disconnected"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error.message}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Audio Visualizer */}
+          <AudioVisualizer
+            frequencyData={frequencyData}
+            waveformData={waveformData}
+            isActive={isListening || isSpeaking}
+            mode={isListening ? 'input' : 'output'}
+          />
+
+          {/* Voice Control */}
+          <VoiceControl
+            isConnected={isConnected}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            isProcessing={isProcessing}
+            hasPermission={hasPermission}
+            onConnect={connect}
+            onDisconnect={disconnect}
+            onToggleListening={toggleListening}
+            onRequestPermission={requestPermission}
+          />
+
+          {/* Transcription Display */}
+          {currentTranscription && (
+            <TranscriptionDisplay
+              transcription={currentTranscription}
+              isInterim={!currentTranscription.isFinal}
+            />
+          )}
+
+          {/* Conversation History */}
+          {enableHistory && turns.length > 0 && (
+            <ConversationHistory
+              turns={turns}
+              maxHeight="200px"
+            />
+          )}
+        </CardContent>
+      </Card>
 
       {/* Screen/Camera Display */}
       <Card className="bg-white/5 border-white/10">

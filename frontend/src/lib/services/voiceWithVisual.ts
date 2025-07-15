@@ -164,7 +164,10 @@ class VideoProcessor {
       this.canvas.height = this.video.videoHeight;
     };
 
-    this.video.play();
+    // Start playing with error handling
+    this.video.play().catch(error => {
+      console.warn('Video autoplay failed (expected if user has not interacted):', error);
+    });
   }
 
   /**
@@ -205,7 +208,16 @@ class VideoProcessor {
    * Cleanup resources
    */
   cleanup(): void {
-    this.video.pause();
-    this.video.srcObject = null;
+    // Check if video is playing before pausing to avoid interruption errors
+    if (!this.video.paused && this.video.readyState > 0) {
+      // Let any pending play() promises resolve/reject before pausing
+      this.video.play().catch(() => {}).finally(() => {
+        this.video.pause();
+        this.video.srcObject = null;
+      });
+    } else {
+      // Video is already paused or not ready, safe to clean up
+      this.video.srcObject = null;
+    }
   }
 }
