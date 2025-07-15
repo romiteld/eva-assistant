@@ -1,5 +1,4 @@
 // Microsoft OAuth with PKCE implementation
-import { supabase } from '@/lib/supabase/browser';
 
 // PKCE helper functions
 function base64URLEncode(str: ArrayBuffer) {
@@ -30,10 +29,6 @@ export async function signInWithMicrosoftPKCE() {
   // Generate PKCE values
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
-  
-  // Get Supabase project URL
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseProjectRef = supabaseUrl.split('.')[0].replace('https://', '');
   
   // Microsoft OAuth configuration
   const clientId = 'bfa77df6-6952-4d0f-9816-003b3101b9da';
@@ -94,13 +89,12 @@ export async function handleMicrosoftCallback(code: string, state: string) {
   // Exchange code for tokens with Microsoft
   const tenantId = 'organizations'; // Use 'organizations' for multi-tenant, or specify your tenant ID
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-  const supabaseProjectRef = process.env.NEXT_PUBLIC_SUPABASE_URL!.split('.')[0].replace('https://', '');
   
   const tokenParams = new URLSearchParams({
     client_id: 'bfa77df6-6952-4d0f-9816-003b3101b9da',
     grant_type: 'authorization_code',
     code: code,
-    redirect_uri: `https://${supabaseProjectRef}.supabase.co/auth/v1/callback`,
+    redirect_uri: `${window.location.origin}/auth/microsoft/callback`,
     code_verifier: codeVerifier,
     client_secret: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_SECRET || '', // This should be server-side only
   });

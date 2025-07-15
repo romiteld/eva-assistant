@@ -124,7 +124,7 @@ export default function TestOAuthFlow() {
                   <li>Provider: Azure (Microsoft Entra ID)</li>
                   <li>Client ID: bfa77df6-6952-4d0f-9816-003b3101b9da</li>
                   <li>Tenant ID: 29ee1479-b5f7-48c5-b665-7de9a8a9033e</li>
-                  <li>Callback URL: https://[your-project].supabase.co/auth/v1/callback</li>
+                  <li>Callback URL: {typeof window !== 'undefined' ? window.location.origin : ''}/auth/microsoft/callback</li>
                 </ul>
               </div>
 

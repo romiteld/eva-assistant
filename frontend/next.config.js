@@ -27,6 +27,58 @@ const nextConfig = {
   
   // Security headers required by Zoom and OWASP
   async headers() {
+    // Build CSP based on environment
+    const isDev = process.env.NODE_ENV === 'development';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Common CSP rules
+    const cspRules = {
+      'default-src': ["'self'"],
+      'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://challenges.cloudflare.com'],
+      'style-src': ["'self'", "'unsafe-inline'"],
+      'img-src': ["'self'", 'data:', 'https:', 'blob:'],
+      'font-src': ["'self'", 'data:'],
+      'connect-src': [
+        "'self'",
+        'https://*.supabase.co',
+        'wss://*.supabase.co',
+        'https://www.googleapis.com',
+        'https://generativelanguage.googleapis.com',
+        'https://api.zoom.us',
+        'https://zoom.us',
+        'https://login.microsoftonline.com',
+        'https://graph.microsoft.com',
+        'https://api.linkedin.com',
+        'https://www.linkedin.com',
+        'https://oauth2.googleapis.com',
+        'https://accounts.google.com',
+        'https://accounts.zoho.com',
+        'https://api.zoho.com',
+        'https://login.salesforce.com',
+        'https://*.salesforce.com',
+        'wss://generativelanguage.googleapis.com',
+        appUrl,
+        // Allow WebSocket connections in development
+        ...(isDev ? ['ws://localhost:*', 'wss://localhost:*'] : []),
+      ],
+      'frame-src': [
+        "'self'",
+        'https://challenges.cloudflare.com',
+        'https://login.microsoftonline.com',
+        'https://www.linkedin.com',
+        'https://accounts.google.com',
+        'https://zoom.us',
+      ],
+      'object-src': ["'none'"],
+      'base-uri': ["'self'"],
+      'form-action': ["'self'"],
+    };
+
+    // Convert CSP object to string
+    const cspString = Object.entries(cspRules)
+      .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+      .join('; ');
+
     return [
       {
         source: '/:path*',
@@ -57,7 +109,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googleapis.com https://generativelanguage.googleapis.com https://api.zoom.us https://zoom.us; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'",
+            value: cspString,
           },
         ],
       },
@@ -75,7 +127,7 @@ const nextConfig = {
   },
   
   // Handle node: imports for LangGraph
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -92,6 +144,22 @@ const nextConfig = {
         os: false,
       };
     }
+    
+    // Suppress chunk loading errors in development
+    if (dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        runtimeChunk: false,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+          },
+        },
+      };
+    }
+    
     return config;
   },
 }

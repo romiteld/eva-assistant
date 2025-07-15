@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VoiceAgent } from './VoiceAgent';
+import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { ScreenShare } from '../webrtc/ScreenShare';
 import { useScreenShare } from '@/hooks/useScreenShare';
 import { Tool, FunctionCall, VoiceType } from '@/types/voice';
@@ -32,6 +33,7 @@ export function VoiceAgentWithScreenShare({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
   
   const {
     isSharing,

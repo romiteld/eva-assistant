@@ -78,7 +78,7 @@ export default function DebugOAuth() {
           <h2 className="text-lg font-semibold text-white mb-2">Configuration:</h2>
           <p className="text-gray-400">Client ID: bfa77df6-6952-4d0f-9816-003b3101b9da</p>
           <p className="text-gray-400">Tenant ID: 29ee1479-b5f7-48c5-b665-7de9a8a9033e</p>
-          <p className="text-gray-400">Redirect URI: https://[your-project].supabase.co/auth/v1/callback</p>
+          <p className="text-gray-400">Redirect URI: {typeof window !== 'undefined' ? window.location.origin : ''}/auth/microsoft/callback</p>
         </div>
 
         <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-600 rounded">

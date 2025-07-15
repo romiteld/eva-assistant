@@ -181,33 +181,6 @@ export default function LoginPage() {
                 </div>
               </form>
 
-              {/* Development Only - Test Login */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4">
-                  <button
-                    onClick={async () => {
-                      setIsLoading(true);
-                      setError(null);
-                      try {
-                        const res = await fetch('/api/auth/dev-login', { method: 'POST' });
-                        const data = await res.json();
-                        if (data.success) {
-                          router.push(data.redirectUrl);
-                        } else {
-                          setError(data.error || 'Dev login failed');
-                        }
-                      } catch (err) {
-                        setError('Dev login error');
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Development Test Login
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>

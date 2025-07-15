@@ -9,6 +9,7 @@ import {
   WebSocketMessage,
   RealtimeUpdate,
 } from '@/types/websocket';
+import { getHttpWebSocketURL } from '@/lib/utils/url';
 
 class WebSocketService extends EventEmitter {
   private socket: Socket | null = null;
@@ -23,7 +24,7 @@ class WebSocketService extends EventEmitter {
     super();
     
     this.options = {
-      url: process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3000',
+      url: getHttpWebSocketURL(),
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,

@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "src/app/api/auth/callback/route.ts": {
+      "maxDuration": 10
+    }
+  },
+  "redirects": [
+    {
+      "source": "/auth/confirm",
+      "destination": "/auth/callback",
+      "permanent": false
+    }
+  ]
+}

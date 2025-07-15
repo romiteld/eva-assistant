@@ -1,5 +1,6 @@
 import { authService } from '@/lib/auth/auth-service';
 import { supabase } from './browser';
+import { getAuthCallbackURL } from '@/lib/utils/url';
 
 // Auth types
 export interface AuthUser {
@@ -24,12 +25,17 @@ export const authHelpers = {
       data?: Record<string, any>;
     };
   }) => {
+    // Use dynamic URL that works with Vercel preview deployments
+    const redirectUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/callback`
+      : getAuthCallbackURL();
+      
     const { data, error } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
       options: {
         data: params.options?.data,
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: redirectUrl,
       },
     });
 
@@ -39,7 +45,19 @@ export const authHelpers = {
 
   // Send magic link to email (Supabase)
   sendMagicLink: async (email: string) => {
-    const { data, error } = await authService.signInWithOTP(email);
+    // Use dynamic URL that works with Vercel preview deployments
+    const redirectUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/callback`
+      : getAuthCallbackURL();
+    
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectUrl,
+        shouldCreateUser: true, // Allow new users to sign up
+      },
+    });
+    
     if (error) throw error;
     return data;
   },

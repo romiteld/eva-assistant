@@ -9,7 +9,7 @@ EVA (Executive Virtual Assistant) is an AI-powered recruitment platform for fina
 ### Implementation Status
 
 **✅ Fully Working Features (21/25):**
-- Microsoft OAuth with PKCE implementation
+- Microsoft OAuth with PKCE implementation (standalone, no Supabase OAuth)
 - Magic Link authentication via Supabase
 - Token Manager with auto-refresh for OAuth providers
 - Voice Agent with Gemini Live API integration
@@ -295,3 +295,13 @@ The platform includes comprehensive Microsoft 365 integration through the Micros
 - Bulk calendar availability checking
 
 **Note:** While SharePoint, OneDrive, and Teams have full backend implementation, they lack dedicated API routes and UI components. The Microsoft365Client in `/lib/integrations/microsoft365.ts` provides all necessary methods.
+
+### Authentication Configuration Notes
+
+**Microsoft OAuth Setup:**
+- Uses standalone OAuth 2.0 with PKCE flow (no Supabase OAuth provider)
+- Redirect URIs configured in Entra ID app registration:
+  - Production: `https://eva.thewell.solutions/auth/microsoft/callback`
+  - Local: `http://localhost:3000/auth/microsoft/callback`
+- Client-side PKCE implementation in `/lib/auth/microsoft-oauth.ts`
+- No longer uses Supabase OAuth callback URLs

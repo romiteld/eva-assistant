@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { VoiceAgent } from '@/components/voice/VoiceAgent';
-import { VoiceAgentWithScreenShare } from '@/components/voice/VoiceAgentWithScreenShare';
+import { VoiceAgentWithVisual } from '@/components/voice/VoiceAgentWithVisual';
 import { Tool, FunctionCall, VoiceType } from '@/types/voice';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { chatHistory, ChatSession } from '@/lib/services/chatHistory';
@@ -211,7 +211,7 @@ function VoiceAgentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Voice Interface */}
           <div className="lg:col-span-2">
-            <VoiceAgentWithScreenShare
+            <VoiceAgentWithVisual
               voice={selectedVoice}
               tools={enabledToolsList}
               onFunctionCall={handleFunctionCall}

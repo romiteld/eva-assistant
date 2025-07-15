@@ -59,3 +59,11 @@ Thumbs.db
 
 # Claude
 .claude/settings.local.json
+
+# Screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+Screenshot*.png

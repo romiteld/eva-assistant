@@ -109,7 +109,7 @@ export default function OAuthDiagnostics() {
         <div className="mt-8 p-4 bg-gray-900 rounded">
           <h2 className="text-lg font-semibold text-white mb-2">Expected URL Format:</h2>
           <p className="text-gray-400 text-sm">
-            https://login.microsoftonline.com/[tenant-id]/oauth2/v2.0/authorize?client_id=[client-id]&redirect_uri=https://[your-project].supabase.co/auth/v1/callback&...
+            https://login.microsoftonline.com/[tenant-id]/oauth2/v2.0/authorize?client_id=[client-id]&redirect_uri={typeof window !== 'undefined' ? window.location.origin : ''}/auth/microsoft/callback&...
           </p>
         </div>
       </div>

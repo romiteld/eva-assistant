@@ -15,6 +15,7 @@ import {
   VoiceAnalytics,
 } from '@/types/voice';
 import { VoiceService } from '@/lib/services/voice';
+import { VoiceWithVisualService } from '@/lib/services/voiceWithVisual';
 import { chatHistory } from '@/lib/services/chatHistory';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceBroadcastService } from '@/lib/realtime/voice-broadcast';
@@ -29,6 +30,7 @@ interface UseVoiceAgentOptions extends VoiceConfig {
   enableAnalytics?: boolean;
   enableHistory?: boolean;
   sessionId?: string; // Resume existing session
+  enableVisual?: boolean; // Enable visual input (screen/camera share)
 }
 
 interface UseVoiceAgentReturn {
@@ -53,6 +55,7 @@ interface UseVoiceAgentReturn {
   sendText: (text: string) => void;
   sendFunctionResult: (functionCallId: string, result: any) => void;
   toggleListening: () => Promise<void>;
+  setVisualStream: (stream: MediaStream | null) => void;
   
   // Metrics & Analytics
   metrics: VoiceMetrics;
@@ -70,7 +73,7 @@ interface UseVoiceAgentReturn {
 export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgentReturn {
   const { toast: showToast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const voiceServiceRef = useRef<VoiceService | null>(null);
+  const voiceServiceRef = useRef<VoiceService | VoiceWithVisualService | null>(null);
   const broadcastServiceRef = useRef<VoiceBroadcastService | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const chatSessionIdRef = useRef<string | null>(null);
@@ -144,7 +147,12 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
 
   // Initialize voice service
   useEffect(() => {
-    voiceServiceRef.current = new VoiceService(options);
+    // Use VoiceWithVisualService if visual is enabled
+    if (options.enableVisual) {
+      voiceServiceRef.current = new VoiceWithVisualService(options);
+    } else {
+      voiceServiceRef.current = new VoiceService(options);
+    }
     const voiceService = voiceServiceRef.current;
 
     // Setup event listeners
@@ -469,6 +477,12 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
     }
   }, []);
 
+  const setVisualStream = useCallback((stream: MediaStream | null) => {
+    if (voiceServiceRef.current && voiceServiceRef.current instanceof VoiceWithVisualService) {
+      voiceServiceRef.current.setVisualStream(stream);
+    }
+  }, []);
+
   // Computed states
   const isConnected = state !== VoiceAgentState.IDLE && state !== VoiceAgentState.ERROR;
   const isListening = state === VoiceAgentState.LISTENING;
@@ -497,6 +511,7 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
     sendText,
     sendFunctionResult,
     toggleListening,
+    setVisualStream,
     
     // Metrics & Analytics
     metrics,

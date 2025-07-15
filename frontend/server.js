@@ -11,8 +11,6 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// Import Gemini WebSocket proxy after app is prepared
-let initializeGeminiWebSocketProxy;
 
 // WebSocket event types
 const WebSocketEvent = {
@@ -43,14 +41,9 @@ const socketUsers = new Map();
 const userPresence = new Map();
 
 app.prepare().then(() => {
-  // Import Gemini WebSocket proxy after app is prepared
-  try {
-    const geminiModule = require('./src/app/api/gemini/websocket');
-    initializeGeminiWebSocketProxy = geminiModule.initializeGeminiWebSocketProxy;
-  } catch (error) {
-    console.warn('Gemini WebSocket proxy module not found, skipping initialization');
-  }
-
+  // Initialize Gemini WebSocket proxy
+  let geminiProxy;
+  
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
     const { pathname } = parsedUrl;
@@ -62,6 +55,21 @@ app.prepare().then(() => {
     }
 
     handle(req, res, parsedUrl);
+  });
+
+  // Handle upgrade requests separately to avoid Next.js interference
+  server.on('upgrade', (request, socket, head) => {
+    const parsedUrl = parse(request.url, true);
+    const { pathname } = parsedUrl;
+
+    // Skip if it's a Gemini WebSocket request - handled by the proxy
+    if (pathname === '/api/gemini/ws' && geminiProxy) {
+      return;
+    }
+
+    // Handle other WebSocket upgrades here if needed
+    // For now, just close the socket for unhandled upgrades
+    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
   });
 
   // Initialize Socket.IO
@@ -285,15 +293,14 @@ app.prepare().then(() => {
     });
   });
 
-  // Initialize Gemini WebSocket proxy if available
-  let geminiProxy;
-  if (initializeGeminiWebSocketProxy) {
-    try {
-      geminiProxy = initializeGeminiWebSocketProxy(server);
-      console.log('> Gemini WebSocket proxy initialized at /api/gemini/ws');
-    } catch (error) {
-      console.error('Failed to initialize Gemini WebSocket proxy:', error);
-    }
+  // Initialize Gemini WebSocket proxy after server creation
+  try {
+    const { initializeGeminiWebSocketProxy } = require('./src/app/api/gemini/websocket-proxy.js');
+    geminiProxy = initializeGeminiWebSocketProxy(server);
+    console.log('> Gemini WebSocket proxy initialized at /api/gemini/ws');
+  } catch (error) {
+    console.error('Failed to initialize Gemini WebSocket proxy:', error);
+    console.log('> Gemini WebSocket will be handled by Next.js API routes');
   }
 
   server.listen(port, hostname, () => {

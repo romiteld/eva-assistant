@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { supabase } from '@/lib/supabase/browser';
+import { getHttpWebSocketURL } from '@/lib/utils/url';
 
 interface ConnectionState {
   isConnected: boolean;
@@ -82,7 +83,7 @@ export function useRealtimeConnection(options: UseRealtimeConnectionOptions = {}
       return;
     }
 
-    const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001', {
+    const socket = io(getHttpWebSocketURL(), {
       auth: {
         token: session.access_token
       },
@@ -262,7 +263,7 @@ export function useRealtimeNamespace(namespace: string, options?: UseRealtimeCon
   useEffect(() => {
     if (!auth.user) return;
 
-    const socket = io(`${process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001'}/${namespace}`, {
+    const socket = io(`${getHttpWebSocketURL()}/${namespace}`, {
       auth: {
         userId: auth.user.id
       }

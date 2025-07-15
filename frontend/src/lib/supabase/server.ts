@@ -18,7 +18,10 @@ export function createClient(useServiceRole: boolean = false) {
       cookies: {
         get(name: string) {
           const cookie = cookieStore.get(name)
-          console.log(`[Server] Getting cookie ${name}:`, cookie ? 'found' : 'not found')
+          // Only log non-auth token cookies to reduce noise
+          if (!name.includes('auth-token')) {
+            console.log(`[Server] Getting cookie ${name}:`, cookie ? 'found' : 'not found')
+          }
           return cookie?.value
         },
         set(name: string, value: string, options: CookieOptions) {
