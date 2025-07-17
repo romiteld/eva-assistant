@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
 import { createClient } from '@/lib/supabase/server';
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -42,19 +40,7 @@ export async function requireAuth(
   }
 
   try {
-    // Try NextAuth session first
-    const session = await getServerSession(authOptions);
-    
-    if (session?.user) {
-      (request as AuthenticatedRequest).user = {
-        id: session.user.id!,
-        email: session.user.email!,
-        role: session.user.role,
-      };
-      return handler(request as AuthenticatedRequest);
-    }
-
-    // Fallback to Supabase auth
+    // Use Supabase auth for Edge Runtime compatibility
     const supabase = createClient();
     const { data: { session: supabaseSession } } = await supabase.auth.getSession();
     

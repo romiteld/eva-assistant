@@ -89,8 +89,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
     { icon: Mail, label: "Outreach Campaigns", href: "/dashboard/outreach" },
     { icon: MailOpen, label: "Email Templates", href: "/dashboard/email-templates" },
-    { icon: FileSearch, label: "Resume Parser", href: "/dashboard/resume-parser" },
-    { icon: Calendar, label: "Interview Center", href: "/dashboard/interview-center" },
     { icon: Brain, label: "Recruiter Intel", href: "/dashboard/recruiter-intel" },
     { icon: CheckSquare, label: "Task Management", href: "/dashboard/tasks" },
     { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" },
@@ -101,7 +99,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     { icon: Brain, label: "Intelligence Hub", href: "/dashboard/firecrawl" },
     { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" },
     { icon: FolderOpen, label: "File Manager", href: "/dashboard/files" },
-    { icon: Users, label: "Candidates", href: "/dashboard/candidates" },
     { icon: MessageSquare, label: "Messages", href: "/dashboard/messages" },
     { icon: FileText, label: "Documents", href: "/dashboard/documents" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" }

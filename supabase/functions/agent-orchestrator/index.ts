@@ -54,16 +54,6 @@ const AGENT_REGISTRY = {
     type: 'creative',
     handler: 'ai-content-studio'
   },
-  'resume-parser': {
-    name: 'Resume Parser Pipeline',
-    type: 'analysis',
-    handler: 'resume-parser-pipeline'
-  },
-  'interview-center': {
-    name: 'AI Interview Center',
-    type: 'scheduling',
-    handler: 'ai-interview-center'
-  },
   'deep-thinking': {
     name: 'Deep Thinking Orchestrator',
     type: 'orchestrator',

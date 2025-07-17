@@ -5,8 +5,9 @@ import { NextResponse } from 'next/server';
 import { withAuthAndRateLimit } from '@/middleware/api-security';
 import { AuthenticatedRequest } from '@/middleware/auth';
 
-// Create Google AI model instance
+// Create Google AI model instance with explicit API key
 const model = google('gemini-2.0-flash-exp', {
+  apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
   // Optional model settings
   safetySettings: [
     { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },

@@ -162,122 +162,6 @@ export class AIContentStudioExecutor implements AgentExecutor {
   }
 }
 
-// Resume Parser Pipeline Executor
-export class ResumeParserExecutor implements AgentExecutor {
-  private cancelled = false
-
-  async execute(context: AgentExecutionContext): Promise<any> {
-    const { userId, payload, onProgress } = context
-    
-    onProgress(10, 'Extracting resume data using OCR...')
-    
-    try {
-      // Phase 1: Data Extraction
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(30, 'Analyzing skills and experience patterns...')
-      await this.delay(1500)
-      
-      // Phase 2: Matching
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(50, 'Matching against job requirements...')
-      await this.delay(2000)
-      
-      // Phase 3: Verification
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(70, 'Verifying credentials and experience...')
-      await this.delay(1500)
-      
-      // Phase 4: Recommendations
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(90, 'Generating hiring recommendations...')
-      await this.delay(1000)
-      
-      onProgress(100, 'Resume parsing pipeline completed')
-      
-      return {
-        candidatesProcessed: 12,
-        topMatches: 5,
-        averageScore: 78,
-        recommendations: [
-          'Schedule interviews with top 3 candidates',
-          'Review portfolio for candidate #2',
-          'Verify references for candidate #1'
-        ],
-        skillsExtracted: 156,
-        duplicatesFound: 2
-      }
-    } catch (error) {
-      context.onError(error)
-      throw error
-    }
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
-  }
-
-  cancel() {
-    this.cancelled = true
-  }
-}
-
-// AI Interview Center Executor
-export class AIInterviewCenterExecutor implements AgentExecutor {
-  private cancelled = false
-
-  async execute(context: AgentExecutionContext): Promise<any> {
-    const { userId, payload, onProgress } = context
-    
-    onProgress(10, 'Checking calendar availability across platforms...')
-    
-    try {
-      // Phase 1: Calendar Check
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(25, 'Generating personalized interview questions...')
-      await this.delay(1500)
-      
-      // Phase 2: Question Generation
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(50, 'Creating comprehensive interview guides...')
-      await this.delay(2000)
-      
-      // Phase 3: Scheduling
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(75, 'Scheduling meetings with Zoom/Teams integration...')
-      await this.delay(1500)
-      
-      // Phase 4: Notifications
-      if (this.cancelled) throw new Error('Cancelled')
-      onProgress(90, 'Sending notifications to all participants...')
-      await this.delay(1000)
-      
-      onProgress(100, 'Interview center processing completed')
-      
-      return {
-        interviewsScheduled: 3,
-        questionsGenerated: 15,
-        calendarIntegration: 'Microsoft Outlook + Zoom',
-        nextInterview: '2024-01-15 10:00 AM',
-        participantsNotified: 8,
-        meetingLinks: [
-          'https://zoom.us/j/123456789',
-          'https://teams.microsoft.com/l/meetup-join/...'
-        ]
-      }
-    } catch (error) {
-      context.onError(error)
-      throw error
-    }
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
-  }
-
-  cancel() {
-    this.cancelled = true
-  }
-}
 
 // Deep Thinking Orchestrator Executor
 export class DeepThinkingExecutor implements AgentExecutor {
@@ -355,10 +239,6 @@ export function createAgentExecutor(agentId: string): AgentExecutor {
       return new EnhancedLeadGenerationExecutor()
     case 'content-studio':
       return new AIContentStudioExecutor()
-    case 'resume-parser':
-      return new ResumeParserExecutor()
-    case 'interview-center':
-      return new AIInterviewCenterExecutor()
     case 'deep-thinking':
       return new DeepThinkingExecutor()
     default:

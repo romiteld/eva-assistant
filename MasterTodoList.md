@@ -5,6 +5,17 @@
 **Security Hardening**: COMPLETE ✅ See [SECURITY_IMPROVEMENTS_IMPLEMENTED.md](./frontend/SECURITY_IMPROVEMENTS_IMPLEMENTED.md)
 **Implementation Plan**: See [IMPLEMENTATION_PLAN_P0.md](./IMPLEMENTATION_PLAN_P0.md) and [P0_TECHNICAL_DEPENDENCIES.md](./P0_TECHNICAL_DEPENDENCIES.md)
 
+## 🔄 Platform Updates (January 17, 2025):
+### Features Removed:
+- **Resume Parser** - Removed to focus on lead generation and deal automation
+- **Interview Center** - Removed to streamline platform focus on business development
+- **Candidates Module** - All candidate-related functionality removed from database and UI
+- **Related Components**: 
+  - Database tables: candidates, applicants, interview_schedules, job_postings, etc.
+  - UI pages: /dashboard/resume-parser, /dashboard/interview-center, /dashboard/candidates
+  - AI agents: resume-parser-pipeline, ai-interview-center
+  - Email automation: candidate application processing rules
+
 ## 🎉 P0 PRIORITIES COMPLETE - ALL DEMO FEEDBACK ADDRESSED!
 
 ### Executive Summary - P0 Completion (January 15, 2025):
@@ -1688,3 +1699,20 @@ These routes are failing during static rendering because they use `cookies()`:
 - `/api/verify-session` - Error: Route couldn't be rendered statically because it used `cookies`
 
 **Fix**: These API routes need to be marked as dynamic by adding `export const dynamic = 'force-dynamic'` at the top of each route file.
+
+## ✅ Completed Fixes (January 17, 2025)
+
+### Voice Agent Issues Fixed
+1. **Deployed Gemini WebSocket Edge Function** - Was missing from Supabase, now deployed with version 7
+2. **Fixed Environment Variables**:
+   - Added `GOOGLE_GENERATIVE_AI_API_KEY` for @ai-sdk/google package
+   - Updated chat API route to use explicit API key
+   - Created documentation for Vercel env var setup
+3. **Created Debug Tools**:
+   - `/test-voice-connection` - Connection testing page
+   - `/dashboard/voice-debug` - Interactive WebSocket debug console
+4. **Edge Function Security**:
+   - Updated to use environment variable with fallback
+   - Added setup instructions for production deployment
+
+**Result**: Voice agent (chat, voice-to-voice, and streaming) should now be fully functional.

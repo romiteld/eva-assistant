@@ -12,7 +12,7 @@ export interface RuleCondition {
 
 export interface RuleAction {
   type: 'create_deal' | 'update_deal' | 'create_contact' | 'update_contact' | 
-        'parse_resume' | 'match_to_jobs' | 'notify' | 'send_reply' | 
+        'notify' | 'send_reply' | 
         'add_tag' | 'assign_to' | 'create_task' | 'log_activity';
   template?: string;
   params?: Record<string, any>;
@@ -88,29 +88,6 @@ export class EmailAutomationRules {
         { type: 'create_task', params: { title: 'Follow up on inquiry', dueIn: 24 } }
       ],
       stopOnMatch: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: 'candidate-application',
-      name: 'Candidate Application Processing',
-      description: 'Process candidate applications with resume parsing',
-      active: true,
-      priority: 8,
-      conditions: [
-        { field: 'attachments', operator: 'has', value: ['resume', 'cv', 'pdf', 'doc', 'docx'] },
-        { 
-          field: 'body', 
-          operator: 'matches_regex', 
-          value: /interested|apply|application|position/i 
-        }
-      ],
-      actions: [
-        { type: 'create_contact', params: { category: 'candidate' } },
-        { type: 'parse_resume', destination: 'contact_fields' },
-        { type: 'match_to_jobs', notify: true },
-        { type: 'send_reply', template: 'application_received' }
-      ],
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -384,11 +361,6 @@ export class EmailAutomationRules {
       case 'update_contact':
         return await this.updateContactAction(email, action);
       
-      case 'parse_resume':
-        return await this.parseResumeAction(email, action);
-      
-      case 'match_to_jobs':
-        return await this.matchToJobsAction(email, action);
       
       case 'notify':
         return await this.notifyAction(email, action, rule);
@@ -504,56 +476,6 @@ export class EmailAutomationRules {
     return await this.zoho.updateContact(contacts[0].id, action.params || {});
   }
 
-  private async parseResumeAction(email: Email | ParsedEmail, action: RuleAction): Promise<any> {
-    if (!email.attachments || email.attachments.length === 0) {
-      throw new Error('No attachments found for resume parsing');
-    }
-    
-    // Find resume attachment
-    const resumeAttachment = email.attachments.find(att => 
-      /\.(pdf|doc|docx)$/i.test(att.filename)
-    );
-    
-    if (!resumeAttachment) {
-      throw new Error('No resume file found in attachments');
-    }
-    
-    // Parse resume (placeholder - integrate with actual resume parser)
-    const parsedData = {
-      email: email.from.email,
-      name: email.from.name,
-      skills: [],
-      experience: [],
-      education: []
-    };
-    
-    // Store or update based on destination
-    if (action.destination === 'contact_fields') {
-      await this.updateContactAction(email, {
-        type: 'update_contact',
-        params: parsedData
-      });
-    }
-    
-    return parsedData;
-  }
-
-  private async matchToJobsAction(email: Email | ParsedEmail, action: RuleAction): Promise<any> {
-    // Placeholder for job matching logic
-    const matches = [];
-    
-    if (action.notify) {
-      await this.notifyAction(email, {
-        type: 'notify',
-        params: {
-          message: `${matches.length} job matches found for ${email.from.name}`,
-          matches
-        }
-      }, {} as AutomationRule);
-    }
-    
-    return matches;
-  }
 
   private async notifyAction(
     email: Email | ParsedEmail, 
@@ -734,14 +656,6 @@ Our team will review your requirements and get back to you within 24 hours with 
 
 Best regards,
 The Team
-      `,
-      application_received: `
-Thank you for your application. We've received your resume and will review it carefully.
-
-If your qualifications match our current openings, we'll be in touch soon to discuss next steps.
-
-Best regards,
-The Recruitment Team
       `,
       urgent_acknowledgment: `
 We've received your urgent request and understand the time-sensitive nature of your needs.

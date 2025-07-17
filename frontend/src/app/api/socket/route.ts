@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/options';
 import {
   WebSocketEvent,
   AuthPayload,

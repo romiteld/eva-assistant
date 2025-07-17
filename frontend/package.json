@@ -17,6 +17,7 @@
     "db:init": "node ../scripts/init-db.js",
     "db:test": "next dev -p 3001 & sleep 5 && open http://localhost:3001/test",
     "test": "jest",
+    "test:api": "tsx src/test/api-endpoint-validator.ts",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
@@ -125,6 +126,7 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "ts-jest": "^29.1.1",
+    "tsx": "^4.20.3",
     "typescript": "^5.5.2",
     "undici": "^7.11.0"
   }

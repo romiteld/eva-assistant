@@ -96,15 +96,15 @@ function ActivityItem({ activity, index }: any) {
 
 export default function EnterpriseDashboard() {
   const metrics = [
-    { title: "Total Candidates", value: "2,847", change: 12.5, trend: "up", icon: Users },
-    { title: "Active Searches", value: "23", change: 8.2, trend: "up", icon: Search },
+    { title: "Total Leads", value: "2,847", change: 12.5, trend: "up", icon: Users },
+    { title: "Active Campaigns", value: "23", change: 8.2, trend: "up", icon: Search },
     { title: "Placements", value: "156", change: 15.3, trend: "up", icon: TrendingUp },
     { title: "Success Rate", value: "94%", change: 3.1, trend: "down", icon: Activity }
   ]
 
   const activities = [
-    { icon: FileText, title: "New candidate profile added", time: "2 minutes ago" },
-    { icon: MessageSquare, title: "Interview scheduled with John Doe", time: "15 minutes ago" },
+    { icon: FileText, title: "New lead profile added", time: "2 minutes ago" },
+    { icon: MessageSquare, title: "Meeting scheduled with John Doe", time: "15 minutes ago" },
     { icon: Users, title: "Team meeting in 30 minutes", time: "25 minutes ago" },
     { icon: TrendingUp, title: "Weekly report generated", time: "1 hour ago" }
   ]

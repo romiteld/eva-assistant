@@ -5,7 +5,7 @@ export const CompanyTypeEnum = z.enum(['agency', 'independent', 'internal', 'exe
 export const PerformanceTierEnum = z.enum(['platinum', 'gold', 'silver', 'bronze']);
 export const RelationshipTypeEnum = z.enum(['sourced', 'submitted', 'interviewing', 'offered', 'placed', 'rejected', 'withdrawn']);
 export const StatusEnum = z.enum(['active', 'inactive', 'completed']);
-export const ActivityTypeEnum = z.enum(['call', 'email', 'meeting', 'submission', 'interview_scheduled', 'offer_negotiation', 'placement', 'note']);
+export const ActivityTypeEnum = z.enum(['call', 'email', 'meeting', 'submission', 'offer_negotiation', 'placement', 'note']);
 export const PlacementOutcomeEnum = z.enum(['successful', 'guarantee_period', 'terminated', 'resigned']);
 export const PeriodTypeEnum = z.enum(['monthly', 'quarterly', 'yearly']);
 export const RankingTypeEnum = z.enum(['overall', 'by_revenue', 'by_placements', 'by_quality', 'by_speed']);
@@ -55,8 +55,6 @@ export const RecruiterMetricsSchema = z.object({
   
   // Placement metrics
   placements_count: z.number().int().default(0),
-  interviews_scheduled: z.number().int().default(0),
-  candidates_submitted: z.number().int().default(0),
   offers_extended: z.number().int().default(0),
   offers_accepted: z.number().int().default(0),
   
@@ -66,8 +64,6 @@ export const RecruiterMetricsSchema = z.object({
   highest_placement_fee: z.number().nullable(),
   
   // Performance ratios
-  submission_to_interview_ratio: z.number().nullable(),
-  interview_to_offer_ratio: z.number().nullable(),
   offer_acceptance_ratio: z.number().nullable(),
   fill_rate: z.number().nullable(),
   
@@ -77,47 +73,12 @@ export const RecruiterMetricsSchema = z.object({
   
   // Quality metrics
   placement_retention_rate: z.number().nullable(),
-  candidate_quality_score: z.number().min(0).max(10).nullable(),
   client_satisfaction_score: z.number().min(0).max(10).nullable(),
   
   created_at: z.string().datetime(),
   updated_at: z.string().datetime()
 });
 
-// Recruiter candidates schema
-export const RecruiterCandidateSchema = z.object({
-  id: z.string().uuid(),
-  recruiter_id: z.string().uuid(),
-  candidate_id: z.string().uuid(),
-  job_posting_id: z.string().uuid().nullable(),
-  
-  // Relationship details
-  relationship_type: RelationshipTypeEnum,
-  status: StatusEnum,
-  
-  // Key dates
-  first_contact_date: z.string().datetime().nullable(),
-  submission_date: z.string().datetime().nullable(),
-  interview_dates: z.array(z.string().datetime()),
-  offer_date: z.string().datetime().nullable(),
-  placement_date: z.string().datetime().nullable(),
-  
-  // Financial details
-  placement_fee: z.number().nullable(),
-  fee_percentage: z.number().nullable(),
-  guarantee_period_days: z.number().int().default(90),
-  guarantee_end_date: z.string().nullable(),
-  
-  // Quality tracking
-  candidate_rating: z.number().int().min(1).max(5).nullable(),
-  client_feedback: z.string().nullable(),
-  placement_outcome: PlacementOutcomeEnum.nullable(),
-  
-  notes: z.string().nullable(),
-  metadata: z.record(z.string(), z.unknown()).default({}),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime()
-});
 
 // Recruiter activity schema
 export const RecruiterActivitySchema = z.object({
@@ -127,8 +88,7 @@ export const RecruiterActivitySchema = z.object({
   activity_date: z.string().datetime(),
   
   // Related entities
-  candidate_id: z.string().uuid().nullable(),
-  job_posting_id: z.string().uuid().nullable(),
+  contact_id: z.string().uuid().nullable(),
   
   // Activity details
   duration_minutes: z.number().int().nullable(),
@@ -172,14 +132,13 @@ export const RecruiterDashboardSchema = z.object({
   is_active: z.boolean(),
   recent_placements: z.number().int(),
   recent_revenue: z.number(),
-  active_candidates: z.number().int(),
+  active_contacts: z.number().int(),
   last_activity: z.string().datetime()
 });
 
 // Type exports
 export type Recruiter = z.infer<typeof RecruiterSchema>;
 export type RecruiterMetrics = z.infer<typeof RecruiterMetricsSchema>;
-export type RecruiterCandidate = z.infer<typeof RecruiterCandidateSchema>;
 export type RecruiterActivity = z.infer<typeof RecruiterActivitySchema>;
 export type RecruiterRanking = z.infer<typeof RecruiterRankingSchema>;
 export type RecruiterDashboard = z.infer<typeof RecruiterDashboardSchema>;
@@ -192,11 +151,6 @@ export const RecruiterFormSchema = RecruiterSchema.omit({
   updated_at: true
 });
 
-export const RecruiterCandidateFormSchema = RecruiterCandidateSchema.omit({
-  id: true,
-  created_at: true,
-  updated_at: true
-});
 
 export const RecruiterActivityFormSchema = RecruiterActivitySchema.omit({
   id: true,
@@ -205,7 +159,6 @@ export const RecruiterActivityFormSchema = RecruiterActivitySchema.omit({
 
 // Type exports for forms
 export type RecruiterForm = z.infer<typeof RecruiterFormSchema>;
-export type RecruiterCandidateForm = z.infer<typeof RecruiterCandidateFormSchema>;
 export type RecruiterActivityForm = z.infer<typeof RecruiterActivityFormSchema>;
 
 // Search/filter schemas

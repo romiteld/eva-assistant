@@ -104,38 +104,3 @@ export interface ZoomWebhookEvent {
   };
 }
 
-export interface InterviewScheduleWithMeeting {
-  id: string;
-  user_id: string;
-  applicant_id: string;
-  job_posting_id: string;
-  interview_type: 'phone' | 'video' | 'onsite' | 'technical';
-  round: number;
-  status: 'pending_scheduling' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
-  scheduled_at?: string;
-  duration_minutes: number;
-  timezone: string;
-  meeting_platform?: 'zoom' | 'teams' | 'google_meet' | 'phone' | 'in_person';
-  meeting_id?: string;
-  meeting_url?: string;
-  meeting_password?: string;
-  dial_in_info?: any;
-  interviewers: Array<{
-    id: string;
-    name: string;
-    email: string;
-    role?: string;
-  }>;
-  interview_questions?: any[];
-  interview_guide?: any;
-  feedback?: any;
-  recording_url?: string;
-  transcript_url?: string;
-  metadata?: any;
-  created_at: string;
-  updated_at: string;
-  // Relations
-  applicant?: any;
-  job?: any;
-  zoom_meeting?: ZoomMeeting;
-}

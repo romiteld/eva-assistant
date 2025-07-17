@@ -1,0 +1,455 @@
+{
+  "timestamp": "2025-07-17T19:05:44.380Z",
+  "summary": {
+    "total": 53,
+    "working": 43,
+    "broken": 10,
+    "partial": 0,
+    "percentageWorking": "81.1"
+  },
+  "results": [
+    {
+      "endpoint": "/api/auth/test-login",
+      "method": "POST",
+      "category": "Authentication",
+      "status": "broken",
+      "statusCode": 405,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/auth-status",
+      "method": "GET",
+      "category": "Authentication",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/auth/signout",
+      "method": "POST",
+      "category": "Authentication",
+      "status": "broken",
+      "statusCode": 405,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/auth/microsoft/callback",
+      "method": "GET",
+      "category": "Authentication",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "Expects OAuth parameters"
+    },
+    {
+      "endpoint": "/api/agents",
+      "method": "GET",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "List agents"
+    },
+    {
+      "endpoint": "/api/agents",
+      "method": "POST",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false,
+      "notes": "Execute agent"
+    },
+    {
+      "endpoint": "/api/agents/monitor",
+      "method": "GET",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "Monitor agents"
+    },
+    {
+      "endpoint": "/api/agents/assign",
+      "method": "POST",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false,
+      "notes": "Assign tasks"
+    },
+    {
+      "endpoint": "/api/agents/rebalance",
+      "method": "POST",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "Rebalance tasks"
+    },
+    {
+      "endpoint": "/api/agents/stats",
+      "method": "GET",
+      "category": "Agent Management",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false,
+      "notes": "Get statistics"
+    },
+    {
+      "endpoint": "/api/agents/workflows",
+      "method": "GET",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "List workflows"
+    },
+    {
+      "endpoint": "/api/agents/workflows",
+      "method": "POST",
+      "category": "Agent Management",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false,
+      "notes": "Create workflow"
+    },
+    {
+      "endpoint": "/api/deals/create-from-email",
+      "method": "POST",
+      "category": "Business Logic",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/deals/create-from-template",
+      "method": "POST",
+      "category": "Business Logic",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/deals/quick-create",
+      "method": "POST",
+      "category": "Business Logic",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/deals/metrics",
+      "method": "GET",
+      "category": "Business Logic",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/microsoft/emails",
+      "method": "GET",
+      "category": "Integration - Microsoft",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/microsoft/emails",
+      "method": "POST",
+      "category": "Integration - Microsoft",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/microsoft/calendar",
+      "method": "GET",
+      "category": "Integration - Microsoft",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/microsoft/calendar",
+      "method": "POST",
+      "category": "Integration - Microsoft",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/microsoft/contacts",
+      "method": "GET",
+      "category": "Integration - Microsoft",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/microsoft/contacts",
+      "method": "POST",
+      "category": "Integration - Microsoft",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/zoom/meetings",
+      "method": "GET",
+      "category": "Integration - Zoom",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/zoom/meetings",
+      "method": "POST",
+      "category": "Integration - Zoom",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/twilio/sms",
+      "method": "POST",
+      "category": "Integration - Twilio",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/voice",
+      "method": "POST",
+      "category": "Integration - Twilio",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/status",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/config",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/ivr",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/ivr",
+      "method": "POST",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/ivr/execute",
+      "method": "POST",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/sms/templates",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/sms/campaigns",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/sync",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/sync/websocket",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/analytics",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/conferences",
+      "method": "GET",
+      "category": "Integration - Twilio",
+      "status": "broken",
+      "statusCode": 500,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/twilio/conferences",
+      "method": "POST",
+      "category": "Integration - Twilio",
+      "status": "working",
+      "statusCode": 400,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/zoho/queue",
+      "method": "GET",
+      "category": "Integration - Zoho",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/zoho/queue",
+      "method": "POST",
+      "category": "Integration - Zoho",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/chat",
+      "method": "POST",
+      "category": "AI/Chat",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/chat/stream",
+      "method": "POST",
+      "category": "AI/Chat",
+      "status": "working",
+      "statusCode": 401,
+      "authRequired": true
+    },
+    {
+      "endpoint": "/api/gemini",
+      "method": "POST",
+      "category": "AI/Chat",
+      "status": "working",
+      "statusCode": 403,
+      "authRequired": false
+    },
+    {
+      "endpoint": "/api/upload",
+      "method": "POST",
+      "category": "File Operations",
+      "status": "working",
+      "statusCode": 403,
+      "authRequired": false,
+      "notes": "Requires proper FormData with file"
+    },
+    {
+      "endpoint": "/api/webhooks/zoom",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "Zoom webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/webhooks/email",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 500,
+      "authRequired": false,
+      "notes": "Email webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/twilio/webhooks/sms",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 500,
+      "authRequired": false,
+      "notes": "Twilio SMS webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/twilio/webhooks/voice",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "Twilio Voice webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/twilio/webhooks/call-status",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 500,
+      "authRequired": false,
+      "notes": "Twilio Call Status webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/twilio/webhooks/ivr-handler",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 200,
+      "authRequired": false,
+      "notes": "Twilio IVR Handler webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/twilio/webhooks/recording",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 500,
+      "authRequired": false,
+      "notes": "Twilio Recording webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/twilio/webhooks/transcription",
+      "method": "POST",
+      "category": "Webhooks",
+      "status": "working",
+      "statusCode": 500,
+      "authRequired": false,
+      "notes": "Twilio Transcription webhook - Should not require auth"
+    },
+    {
+      "endpoint": "/api/agents/stats",
+      "method": "GET",
+      "category": "Rate Limiting",
+      "status": "broken",
+      "statusCode": 200,
+      "notes": "Rate limiting not detected after 25 requests",
+      "rateLimitChecked": true
+    }
+  ]
+}

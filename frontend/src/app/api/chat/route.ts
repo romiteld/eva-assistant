@@ -5,8 +5,7 @@ import { NextRequest } from 'next/server';
 import { withAuthAndRateLimit } from '@/middleware/api-security';
 import { AuthenticatedRequest } from '@/middleware/auth';
 
-// Allow streaming responses
-export const runtime = 'edge';
+// Note: Removed edge runtime due to next-auth dependency in auth middleware
 
 async function handlePost(req: AuthenticatedRequest) {
   try {
