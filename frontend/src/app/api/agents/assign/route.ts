@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { workloadBalancer, WorkloadTask, BalancingStrategy } from '@/lib/agents/workload-balancer';
 import { createClient } from '@/lib/supabase/server';
+import { AuthenticatedRequest } from '@/middleware/auth';
+import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
 // POST /api/agents/assign - Assign a task to an agent
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(handlePostAssign, API_SECURITY_TYPES.AI);
+
+async function handlePostAssign(request: AuthenticatedRequest) {
   try {
     const supabaseAdmin = await createClient(true);
     const body = await request.json();
@@ -66,7 +70,9 @@ export async function POST(request: NextRequest) {
 }
 
 // POST /api/agents/assign/batch - Assign multiple tasks
-export async function PUT(request: NextRequest) {
+export const PUT = withAuthAndRateLimit(handlePutAssign, API_SECURITY_TYPES.AI);
+
+async function handlePutAssign(request: AuthenticatedRequest) {
   try {
     const supabaseAdmin = await createClient(true);
     const body = await request.json();

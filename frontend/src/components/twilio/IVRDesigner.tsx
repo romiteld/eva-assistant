@@ -526,7 +526,7 @@ export function IVRDesigner({
 
                   {(editingFlow?.steps || newFlow.steps).length === 0 && (
                     <div className="text-center py-8 text-gray-500">
-                      No steps added yet. Click "Add Step" to get started.
+                      No steps added yet. Click &quot;Add Step&quot; to get started.
                     </div>
                   )}
                 </div>

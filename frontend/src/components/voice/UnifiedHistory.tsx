@@ -155,21 +155,21 @@ export function UnifiedHistory({
                         {format(new Date(session.created_at), 'MMM d, h:mm a')}
                       </span>
                       
-                      {session.message_count > 0 && (
+                      {session.message_count && session.message_count > 0 && (
                         <span className="flex items-center gap-1">
                           <MessageSquare className="w-3 h-3" />
                           {session.message_count}
                         </span>
                       )}
                       
-                      {session.participant_count > 0 && (
+                      {session.participant_count && session.participant_count > 0 && (
                         <span className="flex items-center gap-1">
                           <Users className="w-3 h-3" />
                           {session.participant_count}
                         </span>
                       )}
                       
-                      {session.recording_count > 0 && (
+                      {session.recording_count && session.recording_count > 0 && (
                         <span className="flex items-center gap-1">
                           <Film className="w-3 h-3" />
                           {session.recording_count}

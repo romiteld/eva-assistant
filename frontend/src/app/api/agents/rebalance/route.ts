@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { workloadBalancer } from '@/lib/agents/workload-balancer';
+import { AuthenticatedRequest } from '@/middleware/auth';
+import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
 // POST /api/agents/rebalance - Trigger manual workload rebalancing
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(handlePostRebalance, API_SECURITY_TYPES.AI);
+
+async function handlePostRebalance(request: AuthenticatedRequest) {
   try {
     const result = await workloadBalancer.rebalanceWorkload();
 
@@ -25,7 +29,9 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT /api/agents/rebalance - Configure auto-rebalancing
-export async function PUT(request: NextRequest) {
+export const PUT = withAuthAndRateLimit(handlePutRebalance, API_SECURITY_TYPES.AI);
+
+async function handlePutRebalance(request: AuthenticatedRequest) {
   try {
     const body = await request.json();
     const { enabled, intervalMs = 60000 } = body;

@@ -433,7 +433,7 @@ export function useTwilio() {
     }
   }, [])
 
-  const activateIVRFlow = useCallback(async (flowId: string, phoneNumberSid: string) => {
+  const activateIVRFlow = useCallback(async (flowId: string, phoneNumberSid: string): Promise<void> => {
     if (!service) throw new Error('Twilio service not initialized')
     
     try {
@@ -446,8 +446,6 @@ export function useTwilio() {
         isActive: f.id === flowId,
         phoneNumberSid: f.id === flowId ? phoneNumberSid : f.phoneNumberSid
       })))
-      
-      return true
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to activate IVR flow'
       setError(error)

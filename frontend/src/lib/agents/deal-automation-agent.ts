@@ -107,7 +107,7 @@ const CreateDealFromEmailSchema = z.object({
 
 const CreateDealFromTemplateSchema = z.object({
   templateId: z.string(),
-  customFields: z.record(z.any()).optional(),
+  customFields: z.record(z.string(), z.any()).optional(),
   userId: z.string()
 });
 
@@ -144,32 +144,38 @@ export class DealAutomationAgent extends Agent {
   constructor(config: Omit<AgentConfig, 'type'>) {
     super({
       ...config,
-      type: AgentType.ORCHESTRATOR,
+      type: AgentType.DEAL_AUTOMATION,
       name: config.name || 'Deal Automation Agent',
       description: 'Automates deal creation from emails and templates with <30 second performance'
     });
 
+    // Initialize Zoho integration
+    this.zoho = new QueuedZohoCRMIntegration(config.metadata?.userId || '');
+    
     this.initializeTemplates();
   }
 
   protected async onInitialize(): Promise<void> {
     // Register actions
     this.registerAction('createDealFromEmail', {
+      name: 'createDealFromEmail',
+      description: 'Create a deal from an email with AI extraction',
       inputSchema: CreateDealFromEmailSchema,
-      outputSchema: DealResponseSchema,
-      handler: this.createDealFromEmail.bind(this)
+      outputSchema: DealResponseSchema
     });
 
     this.registerAction('createDealFromTemplate', {
+      name: 'createDealFromTemplate',
+      description: 'Create a deal from a pre-defined template',
       inputSchema: CreateDealFromTemplateSchema,
-      outputSchema: DealResponseSchema,
-      handler: this.createDealFromTemplate.bind(this)
+      outputSchema: DealResponseSchema
     });
 
     this.registerAction('quickCreateDeal', {
+      name: 'quickCreateDeal',
+      description: 'Quick create a deal with minimal inputs',
       inputSchema: QuickCreateDealSchema,
-      outputSchema: DealResponseSchema,
-      handler: this.quickCreateDeal.bind(this)
+      outputSchema: DealResponseSchema
     });
 
     // Initialize Zoho client - will be set when processing requests
@@ -187,12 +193,17 @@ export class DealAutomationAgent extends Agent {
       this.zoho = new QueuedZohoCRMIntegration(userId);
     }
 
-    const handler = this.actions.get(message.action)?.handler;
-    if (!handler) {
-      throw new Error(`Unknown action: ${message.action}`);
+    // Execute the action handler based on the action name
+    switch (message.action) {
+      case 'createDealFromEmail':
+        return this.createDealFromEmail(message.payload);
+      case 'createDealFromTemplate':
+        return this.createDealFromTemplate(message.payload);
+      case 'quickCreateDeal':
+        return this.quickCreateDeal(message.payload);
+      default:
+        throw new Error(`Unknown action: ${message.action}`);
     }
-
-    return handler(message.payload);
   }
 
   /**

@@ -2,18 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { DealAutomationAgent } from '@/lib/agents/deal-automation-agent';
+import { withAuthAndRateLimit } from '@/middleware/api-security';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: AuthenticatedRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
-    // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const body = await request.json();
     const { email } = body;
@@ -25,21 +21,21 @@ export async function POST(request: NextRequest) {
     // Initialize agent
     const agent = new DealAutomationAgent({
       name: 'Deal Automation Agent',
-      metadata: { userId: session.user.id }
+      metadata: { userId: request.user?.id }
     });
     await agent.initialize();
 
     // Create deal from email
     const result = await agent.createDealFromEmail({
       email,
-      userId: session.user.id
+      userId: request.user?.id || ''
     });
 
     // Log performance metrics
     await supabase
       .from('deal_creation_metrics')
       .insert({
-        user_id: session.user.id,
+        user_id: request.user?.id,
         deal_id: result.deal.id,
         duration_ms: result.metrics.duration,
         source: 'email',
@@ -60,3 +56,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export the POST handler with authentication and AI rate limiting
+export const POST = withAuthAndRateLimit(handlePost, 'ai');

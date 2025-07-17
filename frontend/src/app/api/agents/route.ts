@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AgentRegistry } from '@/lib/agents/base/AgentRegistry';
 import { AgentMonitor } from '@/lib/agents/monitoring/AgentMonitor';
 import { AgentLogger } from '@/lib/agents/monitoring/AgentLogger';
+import { AuthenticatedRequest } from '@/middleware/auth';
+import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
 // GET /api/agents - List all agents and their status
-export async function GET(request: NextRequest) {
+export const GET = withAuthAndRateLimit(handleGetAgents, API_SECURITY_TYPES.API);
+
+async function handleGetAgents(request: AuthenticatedRequest) {
   try {
     const registry = AgentRegistry.getInstance();
     const monitor = AgentMonitor.getInstance();
@@ -35,7 +39,9 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/agents/:agentId/execute - Execute an action on an agent
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(handlePostAgent, API_SECURITY_TYPES.AI);
+
+async function handlePostAgent(request: AuthenticatedRequest) {
   try {
     const { agentId, action, payload } = await request.json();
     

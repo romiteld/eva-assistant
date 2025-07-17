@@ -43,17 +43,14 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
   const [showSender, setShowSender] = useState(false);
 
   useEffect(() => {
-    loadTemplates();
-  }, [selectedCategory, refresh]);
-
-  const loadTemplates = async () => {
+    const loadTemplates = async () => {
     setIsLoading(true);
     try {
       const filters = selectedCategory !== 'all' ? { category: selectedCategory } : undefined;
       const data = await emailTemplateService.getTemplates(filters);
       setTemplates(data);
     } catch (error) {
-      console.error('Error loading templates:', error);
+      // Error loading templates
       toast({
         title: 'Error',
         description: 'Failed to load email templates',
@@ -63,6 +60,9 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
       setIsLoading(false);
     }
   };
+  
+    loadTemplates();
+  }, [selectedCategory, refresh]);
 
   const handleDelete = async (templateId: string) => {
     if (!confirm('Are you sure you want to delete this template?')) return;

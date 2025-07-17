@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { zoomService } from '@/lib/services/zoom';
+import { withRateLimit } from '@/middleware/rate-limit';
 
 const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN!;
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const body = await request.text();
     const signature = request.headers.get('x-zm-signature');
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, 'webhook');
 
 function verifyWebhookSignature(body: string, signature: string, timestamp: string): boolean {
   const message = `v0:${timestamp}:${body}`;

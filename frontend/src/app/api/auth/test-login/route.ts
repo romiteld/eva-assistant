@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
+import { withRateLimit } from '@/middleware/rate-limit';
 
-export async function GET() {
+export const GET = withRateLimit(async (request: NextRequest) => {
   try {
     const supabase = createClient();
     
@@ -32,4 +33,4 @@ export async function GET() {
     console.error('Test login error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+}, 'auth');

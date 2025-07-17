@@ -72,6 +72,8 @@ When the user shares their screen or camera:
     currentTranscription,
     connect,
     disconnect,
+    startListening,
+    stopListening,
     toggleListening,
     sendText,
     sendFunctionResult,
@@ -272,6 +274,8 @@ When the user shares their screen or camera:
             onDisconnect={disconnect}
             onToggleListening={toggleListening}
             onRequestPermission={requestPermission}
+            onStartListening={startListening}
+            onStopListening={stopListening}
           />
 
           {/* Transcription Display */}
@@ -286,7 +290,7 @@ When the user shares their screen or camera:
           {enableHistory && turns.length > 0 && (
             <ConversationHistory
               turns={turns}
-              maxHeight="200px"
+              maxHeight={200}
             />
           )}
         </CardContent>

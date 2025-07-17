@@ -2,19 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { graphHelpers } from '@/lib/microsoft/graph-client';
+import { withAuthAndRateLimit } from '@/middleware/api-security';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
-    const contacts = await graphHelpers.getContacts(session.user.id, {
+    const contacts = await graphHelpers.getContacts(request.user?.id || '', {
       top: 25,
     });
 
@@ -28,16 +22,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+// Export the GET handler with authentication and API rate limiting
+export const GET = withAuthAndRateLimit(handleGet, 'api');
+
+async function handlePost(request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
     const body = await request.json();
     const { givenName, surname, email, phone, company, jobTitle } = body;
@@ -63,7 +52,7 @@ export async function POST(request: NextRequest) {
       contact.jobTitle = jobTitle;
     }
 
-    const result = await graphHelpers.createContact(session.user.id, contact);
+    const result = await graphHelpers.createContact(request.user?.id || '', contact);
 
     return NextResponse.json({ success: true, result });
   } catch (error) {
@@ -74,3 +63,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export the POST handler with authentication and API rate limiting
+export const POST = withAuthAndRateLimit(handlePost, 'api');

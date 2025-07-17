@@ -10,6 +10,7 @@ export enum AgentType {
   DATA = 'data',
   WORKFLOW = 'workflow',
   RECRUITER_INTEL = 'recruiter_intel',
+  DEAL_AUTOMATION = 'deal_automation',
 }
 
 // Message types

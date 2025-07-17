@@ -184,7 +184,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
                       transition={{ delay: index * 0.03 }}
                       onClick={() => {
                         router.push(item.href)
-                        onClose()
+                        // Only close on mobile
+                        if (!isDesktop) {
+                          onClose()
+                        }
                       }}
                       className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all group relative ${
                         isActive 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Upload, X, FileText, Image, FileSpreadsheet, File, CheckCircle, AlertCircle } from 'lucide-react';
 import { FileUploadService, FileUploadOptions, FileUploadResult } from '@/lib/services/file-upload';
 import { cn } from '@/lib/utils';
@@ -43,7 +43,7 @@ export function FileUploader({
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const uploadService = new FileUploadService();
+  const uploadService = useMemo(() => new FileUploadService(), []);
 
   const getFileIcon = (fileType: string) => {
     for (const [key, Icon] of Object.entries(FILE_ICONS)) {

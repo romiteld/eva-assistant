@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowAgent } from '@/lib/agents/WorkflowAgent';
 import { WorkflowTemplates } from '@/lib/workflows/WorkflowTemplates';
 import { StateManager } from '@/lib/workflows/StateManager';
+import { AuthenticatedRequest } from '@/middleware/auth';
+import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
 const stateManager = new StateManager();
 
 // GET /api/agents/workflows - List workflows and templates
-export async function GET(request: NextRequest) {
+export const GET = withAuthAndRateLimit(handleGetWorkflows, API_SECURITY_TYPES.API);
+
+async function handleGetWorkflows(request: AuthenticatedRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
@@ -38,7 +42,9 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/agents/workflows - Create and execute a workflow
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(handlePostWorkflows, API_SECURITY_TYPES.AI);
+
+async function handlePostWorkflows(request: AuthenticatedRequest) {
   try {
     const body = await request.json();
     const { templateId, workflow, context } = body;
@@ -85,7 +91,9 @@ export async function POST(request: NextRequest) {
 }
 
 // DELETE /api/agents/workflows/:id - Cancel a workflow
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuthAndRateLimit(handleDeleteWorkflows, API_SECURITY_TYPES.AI);
+
+async function handleDeleteWorkflows(request: AuthenticatedRequest) {
   try {
     const { pathname } = new URL(request.url);
     const workflowId = pathname.split('/').pop();

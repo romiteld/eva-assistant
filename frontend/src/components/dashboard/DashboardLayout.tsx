@@ -22,6 +22,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const [isDesktop, setIsDesktop] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // Load collapsed state from localStorage
@@ -35,6 +36,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [searchFocused, setSearchFocused] = useState(false)
   const [user, setUser] = useState<any>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  // Check if desktop and manage sidebar visibility
+  useEffect(() => {
+    const checkDesktop = () => {
+      const desktop = window.innerWidth >= 1024
+      setIsDesktop(desktop)
+      // Always show sidebar on desktop
+      if (desktop) {
+        setSidebarOpen(true)
+      }
+    }
+    
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   // Save collapsed state to localStorage when it changes
   useEffect(() => {
@@ -102,7 +119,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <motion.button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  onClick={() => {
+                    // On desktop, toggle collapse instead of open/close
+                    if (isDesktop) {
+                      setSidebarCollapsed(!sidebarCollapsed)
+                    } else {
+                      setSidebarOpen(!sidebarOpen)
+                    }
+                  }}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

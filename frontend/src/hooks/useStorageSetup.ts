@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { StorageSetupService, StorageSetupResult, StorageStatus } from '@/lib/services/storage-setup'
-import { useAuth } from '@/lib/auth/auth-service'
+import { useAuth } from '@/hooks/useAuth'
 
 export function useStorageSetup() {
   const { user } = useAuth()

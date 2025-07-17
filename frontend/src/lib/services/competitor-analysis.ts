@@ -135,6 +135,39 @@ export class CompetitorAnalysisService extends EventEmitter {
     }
   }
 
+  async compareCompetitors(competitorIds: string[]): Promise<any> {
+    try {
+      // For now, return a basic comparison matrix
+      // This can be enhanced later with actual comparison logic
+      const competitors = await this.getCompetitors();
+      const selectedCompetitors = competitors.filter(c => competitorIds.includes(c.id));
+      
+      return {
+        competitors: selectedCompetitors,
+        features: [
+          'pricing',
+          'features',
+          'performance',
+          'support',
+          'integrations'
+        ],
+        matrix: selectedCompetitors.reduce((acc, competitor) => {
+          acc[competitor.id] = {
+            pricing: Math.random() * 5,
+            features: Math.random() * 5,
+            performance: Math.random() * 5,
+            support: Math.random() * 5,
+            integrations: Math.random() * 5
+          };
+          return acc;
+        }, {} as Record<string, Record<string, number>>)
+      };
+    } catch (error) {
+      this.emit('error', error);
+      throw error;
+    }
+  }
+
   // Cleanup
   destroy() {
     if (this.updateInterval) {

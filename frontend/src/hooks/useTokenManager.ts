@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
 import { getTokenManager } from '@/lib/auth/token-manager';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface TokenStatus {
   hasToken: boolean;

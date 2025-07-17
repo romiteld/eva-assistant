@@ -2,10 +2,10 @@
 import twilio from 'twilio'
 
 export class TwilioClient {
-  private client: any
-  private accountSid: string
-  private authToken: string
-  private phoneNumber: string
+  protected client: any
+  protected accountSid: string
+  protected authToken: string
+  protected phoneNumber: string
 
   constructor(config: {
     accountSid: string

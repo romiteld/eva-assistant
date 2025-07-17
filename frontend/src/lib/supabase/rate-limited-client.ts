@@ -60,7 +60,9 @@ class RateLimitedSupabaseClient {
       
       // Pass through other methods
       signOut: originalAuth.signOut.bind(originalAuth),
-      signIn: originalAuth.signIn.bind(originalAuth),
+      signInWithPassword: originalAuth.signInWithPassword.bind(originalAuth),
+      signInWithOAuth: originalAuth.signInWithOAuth.bind(originalAuth),
+      signInWithOtp: originalAuth.signInWithOtp.bind(originalAuth),
       signUp: originalAuth.signUp.bind(originalAuth),
       refreshSession: originalAuth.refreshSession.bind(originalAuth),
       onAuthStateChange: originalAuth.onAuthStateChange.bind(originalAuth)
@@ -76,7 +78,7 @@ class RateLimitedSupabaseClient {
         if (!canProceed) {
           throw new Error('Rate limit exceeded for database queries. Please wait.');
         }
-        return target(...args);
+        return target.apply(thisArg, args);
       }
     });
   }

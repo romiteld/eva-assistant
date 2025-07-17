@@ -173,17 +173,17 @@ export function ChatMode({ sessionId, onNewSession }: ChatModeProps) {
                   )}
                 >
                   {message.role === 'assistant' ? (
-                    <ReactMarkdown
-                      className="prose prose-invert prose-sm max-w-none"
-                      components={{
-                        code({ node, inline, className, children, ...props }) {
+                    <div className="prose prose-invert prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          code({ node, className, children, ...props }) {
+                          const inline = node?.position?.start.line === node?.position?.end.line;
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
                             <SyntaxHighlighter
-                              style={vscDarkPlus}
+                              style={vscDarkPlus as any}
                               language={match[1]}
                               PreTag="div"
-                              {...props}
                             >
                               {String(children).replace(/\n$/, '')}
                             </SyntaxHighlighter>
@@ -197,6 +197,7 @@ export function ChatMode({ sessionId, onNewSession }: ChatModeProps) {
                     >
                       {message.content}
                     </ReactMarkdown>
+                    </div>
                   ) : (
                     <p className="whitespace-pre-wrap">{message.content}</p>
                   )}

@@ -3,13 +3,14 @@ import { createTwilioService } from '@/lib/services/twilio'
 import { createClient } from '@supabase/supabase-js'
 import twilio from 'twilio'
 import { broadcastTwilioEvent, formatSMSEvent } from '@/lib/utils/twilio-broadcast'
+import { withRateLimit } from '@/middleware/rate-limit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const body = await request.text()
     const signature = request.headers.get('X-Twilio-Signature') || ''
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+}, 'webhook')
 
 function extractMediaUrls(params: Record<string, any>): string[] {
   const urls: string[] = []

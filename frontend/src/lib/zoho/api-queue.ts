@@ -135,23 +135,29 @@ export class ZohoAPIQueue {
       }
       
       // Initialize Zoho client
-      const zoho = new ZohoCRMIntegration(request.userId);
+      const encryptionKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-key';
+      const webhookToken = process.env.ZOHO_WEBHOOK_TOKEN || 'default-token';
+      const zoho = new ZohoCRMIntegration(encryptionKey, webhookToken);
       
-      // Make API call
+      // Make API call based on endpoint
       let result;
-      switch (request.method) {
-        case 'GET':
-          result = await zoho.makeApiCall(request.endpoint);
-          break;
-        case 'POST':
-          result = await zoho.makeApiCall(request.endpoint, 'POST', request.data);
-          break;
-        case 'PUT':
-          result = await zoho.makeApiCall(request.endpoint, 'PUT', request.data);
-          break;
-        case 'DELETE':
-          result = await zoho.makeApiCall(request.endpoint, 'DELETE');
-          break;
+      
+      // Parse endpoint to determine operation
+      if (request.endpoint.includes('/Leads') && request.method === 'POST') {
+        result = await zoho.createLead(request.userId, request.data);
+      } else if (request.endpoint.includes('/Leads') && request.method === 'GET') {
+        result = await zoho.getLeads(request.userId);
+      } else if (request.endpoint.includes('/Leads/') && request.method === 'PUT') {
+        const leadId = request.endpoint.split('/').pop() || '';
+        result = await zoho.updateLead(request.userId, leadId, request.data);
+      } else if (request.endpoint.includes('/Contacts') && request.method === 'POST') {
+        result = await zoho.createContact(request.userId, request.data);
+      } else if (request.endpoint.includes('/Deals') && request.method === 'POST') {
+        result = await zoho.createDeal(request.userId, request.data);
+      } else {
+        // For other endpoints, make a direct API call
+        // This would need to be implemented if the authenticated API supports it
+        throw new Error(`Unsupported endpoint: ${request.endpoint}`);
       }
       
       // Cache GET requests

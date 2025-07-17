@@ -646,7 +646,12 @@ export class TwilioService extends LegacyTwilioClient {
     }
 
     if (options.gather) {
-      const gather = response.gather(options.gather)
+      const gatherOptions: any = { ...options.gather };
+      // Convert input string to array format if needed
+      if (gatherOptions.input && typeof gatherOptions.input === 'string') {
+        gatherOptions.input = gatherOptions.input.split(' ').filter(Boolean);
+      }
+      const gather = response.gather(gatherOptions)
       if (options.say) {
         gather.say(options.say)
       }
@@ -946,8 +951,8 @@ export class TwilioService extends LegacyTwilioClient {
       
       const recordingStats = {
         total: recordings.length,
-        totalDuration: recordings.reduce((sum, r) => sum + parseInt(r.duration), 0),
-        totalCost: recordings.reduce((sum, r) => sum + (parseFloat(r.price || '0')), 0),
+        totalDuration: recordings.reduce((sum: number, r: any) => sum + parseInt(r.duration), 0),
+        totalCost: recordings.reduce((sum: number, r: any) => sum + (parseFloat(r.price || '0')), 0),
       }
       
       return {

@@ -273,10 +273,9 @@ When the user shares their screen or camera:
               </Badge>
             )}
             <VoiceSettings
-              currentVoice={selectedVoice}
+              selectedVoice={selectedVoice}
               onVoiceChange={setSelectedVoice}
-              isOpen={showSettings}
-              onOpenChange={setShowSettings}
+              isConnected={isConnected}
             />
           </div>
         </CardHeader>
@@ -324,7 +323,6 @@ When the user shares their screen or camera:
           {pendingFunctionCalls.length > 0 && (
             <FunctionCallHandler
               functionCalls={pendingFunctionCalls}
-              onResult={handleFunctionResult}
             />
           )}
         </CardContent>
@@ -394,7 +392,9 @@ When the user shares their screen or camera:
           {screenShareError && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{screenShareError}</AlertDescription>
+              <AlertDescription>
+                {screenShareError instanceof Error ? screenShareError.message : String(screenShareError)}
+              </AlertDescription>
             </Alert>
           )}
         </CardContent>
@@ -409,7 +409,6 @@ When the user shares their screen or camera:
         <TabsContent value="history" className="mt-4">
           <ConversationHistory
             turns={turns}
-            onSendMessage={handleSendText}
           />
         </TabsContent>
         <TabsContent value="analytics" className="mt-4">

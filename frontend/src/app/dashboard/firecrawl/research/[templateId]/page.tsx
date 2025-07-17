@@ -307,7 +307,7 @@ export default function ResearchTemplatePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-gray-100">
                     <CheckCircle2 className="h-5 w-5 text-green-400" />
-                    What You'll Receive
+                    What You&apos;ll Receive
                   </CardTitle>
                   <CardDescription>
                     Comprehensive research deliverables from our AI analysis

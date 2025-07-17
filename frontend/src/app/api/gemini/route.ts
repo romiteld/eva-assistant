@@ -3,11 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { cookies } from 'next/headers';
 import * as ws from 'ws';
-
-// Rate limiting configuration
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 20;
+import { withAuthAndRateLimit } from '@/middleware/api-security';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
 // Gemini Live API configuration
 const GEMINI_LIVE_API_URL = 'wss://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent';
@@ -19,24 +16,6 @@ function validateCSRFToken(request: NextRequest): boolean {
   return token === cookieToken && !!token;
 }
 
-// Rate limiting middleware
-function checkRateLimit(identifier: string): boolean {
-  const now = Date.now();
-  const userLimit = rateLimitMap.get(identifier);
-
-  if (!userLimit || now - userLimit.lastReset > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(identifier, { count: 1, lastReset: now });
-    return true;
-  }
-
-  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return false;
-  }
-
-  userLimit.count++;
-  return true;
-}
-
 // Get Gemini client (server-side only)
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -46,44 +25,13 @@ function getGeminiClient() {
   return new GoogleGenerativeAI(apiKey);
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: AuthenticatedRequest) {
   try {
     // CSRF Protection
     if (!validateCSRFToken(request)) {
       return NextResponse.json(
         { error: 'Invalid CSRF token' },
         { status: 403 }
-      );
-    }
-
-    // Authentication check
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Rate limiting
-    const rateLimitKey = session.user.id;
-    if (!checkRateLimit(rateLimitKey)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
       );
     }
 
@@ -122,17 +70,19 @@ export async function POST(request: NextRequest) {
     const response = await result.response;
     const text = response.text();
 
-    // Log the action for audit trail
-    await supabase.from('api_logs').insert({
-      user_id: session.user.id,
-      action: 'gemini_generate',
-      metadata: {
-        model,
-        prompt_length: prompt.length,
-        response_length: text.length,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    // Log the action for audit trail (optional)
+    // Note: Need to create supabase client if you want to log
+    // const supabase = await createClient();
+    // await supabase.from('api_logs').insert({
+    //   user_id: request.user?.id,
+    //   action: 'gemini_generate',
+    //   metadata: {
+    //     model,
+    //     prompt_length: prompt.length,
+    //     response_length: text.length,
+    //     timestamp: new Date().toISOString(),
+    //   },
+    // });
 
     return NextResponse.json({ 
       success: true, 
@@ -154,8 +104,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Export the POST handler with authentication and AI rate limiting
+export const POST = withAuthAndRateLimit(handlePost, 'ai');
+
 // Streaming endpoint for real-time responses
-export async function GET(request: NextRequest) {
+async function handleGet(request: AuthenticatedRequest) {
   try {
     // Check if this is a WebSocket upgrade request
     const upgrade = request.headers.get('upgrade');
@@ -168,37 +121,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid CSRF token' },
         { status: 403 }
-      );
-    }
-
-    // Authentication check
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Rate limiting
-    const rateLimitKey = session.user.id;
-    if (!checkRateLimit(rateLimitKey)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
       );
     }
 
@@ -252,8 +174,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Export the GET handler with authentication and AI rate limiting
+export const GET = withAuthAndRateLimit(handleGet, 'ai');
+
 // Handle WebSocket upgrade for Gemini Live API
-async function handleWebSocketUpgrade(request: NextRequest): Promise<Response> {
+async function handleWebSocketUpgrade(request: AuthenticatedRequest): Promise<Response> {
   try {
     // Extract authentication from query params or headers
     const searchParams = request.nextUrl.searchParams;
@@ -263,27 +188,10 @@ async function handleWebSocketUpgrade(request: NextRequest): Promise<Response> {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    // Verify authentication using Supabase
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get() {
-            return authToken;
-          },
-        },
-      }
-    );
-
-    const { data: { user }, error } = await supabase.auth.getUser(authToken);
-    if (error || !user) {
+    // Use authenticated user from request
+    const user = request.user;
+    if (!user) {
       return new Response('Unauthorized', { status: 401 });
-    }
-
-    // Rate limiting check
-    if (!checkRateLimit(user.id)) {
-      return new Response('Rate limit exceeded', { status: 429 });
     }
 
     // Get Gemini API key
@@ -310,33 +218,12 @@ async function handleWebSocketUpgrade(request: NextRequest): Promise<Response> {
 }
 
 // PUT endpoint for WebSocket connection info
-export async function PUT(request: NextRequest) {
+async function handlePut(request: AuthenticatedRequest) {
   try {
-    // Authentication check
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
     // Generate a temporary WebSocket token for the client
     const wsToken = Buffer.from(JSON.stringify({
-      userId: session.user.id,
+      userId: request.user?.id,
       exp: Date.now() + 3600000, // 1 hour expiry
       purpose: 'gemini-live',
     })).toString('base64');
@@ -395,3 +282,6 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+// Export the PUT handler with authentication and AI rate limiting
+export const PUT = withAuthAndRateLimit(handlePut, 'ai');

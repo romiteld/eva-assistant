@@ -739,13 +739,13 @@ export function AIInterviewScheduler() {
               </TabsContent>
               
               <TabsContent value="zoom" className="space-y-4">
-                {selectedInterview.status === 'scheduled' || selectedInterview.status === 'pending_scheduling' ? (
+                {selectedInterview && (selectedInterview.status === 'scheduled' || selectedInterview.status === 'pending_scheduling') ? (
                   <>
                     <ZoomMeetingManager />
                     {/* TODO: Pass interview details to ZoomMeetingManager once it supports props */}
-                    {false && (
+                    {false && selectedInterview && (
                       <div>
-                        Interview: {selectedInterview.applicant?.personal_info?.name || selectedInterview.applicant?.name || 'Candidate'} - {selectedInterview.job?.title || 'Position'}
+                        Interview: {selectedInterview?.applicant?.personal_info?.name || selectedInterview?.applicant?.name || 'Candidate'} - {selectedInterview?.job?.title || 'Position'}
                       </div>
                     )}
                   </>

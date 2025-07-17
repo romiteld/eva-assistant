@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createTwilioService } from '@/lib/services/twilio'
 import twilio from 'twilio'
+import { withRateLimit } from '@/middleware/rate-limit'
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const body = await request.text()
     const signature = request.headers.get('X-Twilio-Signature') || ''
@@ -84,4 +85,4 @@ export async function POST(request: NextRequest) {
       },
     })
   }
-}
+}, 'webhook')

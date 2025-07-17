@@ -86,7 +86,7 @@ export const useDealAutomation = () => {
       if (result.metrics.duration < 30000) {
         toast.success(`⚡ Deal created in ${(result.metrics.duration / 1000).toFixed(1)}s!`);
       } else {
-        toast.warning(`Deal created in ${(result.metrics.duration / 1000).toFixed(1)}s (target: <30s)`);
+        toast(`Deal created in ${(result.metrics.duration / 1000).toFixed(1)}s (target: <30s)`)
       }
       
       return result;

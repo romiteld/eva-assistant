@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { workloadBalancer } from '@/lib/agents/workload-balancer';
 import { createClient } from '@/lib/supabase/server';
+import { AuthenticatedRequest } from '@/middleware/auth';
+import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
 // GET /api/agents/stats - Get workload statistics
-export async function GET(request: NextRequest) {
+export const GET = withAuthAndRateLimit(handleGetStats, API_SECURITY_TYPES.API);
+
+async function handleGetStats(request: AuthenticatedRequest) {
   try {
     const supabaseAdmin = await createClient(true);
     const searchParams = request.nextUrl.searchParams;
@@ -93,7 +97,9 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/agents/stats/metrics - Configure metrics collection
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(handlePostStats, API_SECURITY_TYPES.API);
+
+async function handlePostStats(request: AuthenticatedRequest) {
   try {
     const body = await request.json();
     const { enabled, intervalMs = 300000 } = body; // Default 5 minutes

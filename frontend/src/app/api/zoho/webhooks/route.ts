@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getZohoCache } from '@/lib/zoho/cache-manager';
 import crypto from 'crypto';
+import { withRateLimit } from '@/middleware/rate-limit';
 
 // Webhook event types we handle
 const SUPPORTED_EVENTS = [
@@ -22,7 +23,7 @@ const SUPPORTED_EVENTS = [
 /**
  * POST /api/zoho/webhooks - Handle Zoho CRM webhooks
  */
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const body = await request.text();
     const headers = Object.fromEntries(request.headers.entries());
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Return 200 to prevent Zoho from retrying
     return NextResponse.json({ success: false });
   }
-}
+}, 'webhook');
 
 /**
  * GET /api/zoho/webhooks - Webhook verification endpoint

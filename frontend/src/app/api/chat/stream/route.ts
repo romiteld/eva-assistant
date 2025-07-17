@@ -2,6 +2,8 @@ import { streamText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { withAuthAndRateLimit } from '@/middleware/api-security';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
 // Create Google AI model instance
 const model = google('gemini-2.0-flash-exp', {
@@ -14,15 +16,8 @@ const model = google('gemini-2.0-flash-exp', {
   ],
 });
 
-export async function POST(request: Request) {
+async function handlePost(request: AuthenticatedRequest) {
   try {
-    // Authenticate user
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Parse request body
     const { messages, id: sessionId } = await request.json();
@@ -54,7 +49,7 @@ Be professional, knowledgeable, and helpful. Provide specific, actionable advice
         console.log('Stream finished:', {
           tokensUsed: usage?.totalTokens,
           sessionId,
-          userId: user.id,
+          userId: request.user?.id,
         });
       },
     });
@@ -69,3 +64,6 @@ Be professional, knowledgeable, and helpful. Provide specific, actionable advice
     );
   }
 }
+
+// Export the POST handler with authentication and AI rate limiting
+export const POST = withAuthAndRateLimit(handlePost, 'ai');

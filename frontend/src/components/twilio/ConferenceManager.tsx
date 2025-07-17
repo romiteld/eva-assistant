@@ -346,7 +346,7 @@ export function ConferenceManager({
                     <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                       <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                       <p>No participants added yet</p>
-                      <p className="text-sm">Click "Add Participant" to get started</p>
+                      <p className="text-sm">Click &quot;Add Participant&quot; to get started</p>
                     </div>
                   ) : (
                     <div className="space-y-2">

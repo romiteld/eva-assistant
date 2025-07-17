@@ -185,12 +185,12 @@ export class ZohoCacheManager {
   
   // Warm up cache with frequently accessed data
   async warmUp(userId: string, modules: string[] = ['Leads', 'Contacts', 'Deals']): Promise<void> {
-    console.log('Cache warm-up started for modules:', modules);
+    // Cache warm-up started for modules
     
     // This would typically fetch and cache common queries
     // Implementation depends on specific use cases
-    for (const module of modules) {
-      const key = `/${module}?page=1&per_page=20&sort_by=Modified_Time&sort_order=desc`;
+    for (const moduleName of modules) {
+      const key = `/${moduleName}?page=1&per_page=20&sort_by=Modified_Time&sort_order=desc`;
       // The actual fetching would be done by the Zoho client
       // This is just a placeholder for the warm-up logic
     }

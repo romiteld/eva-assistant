@@ -43,24 +43,7 @@ serve(async (req: Request) => {
     geminiSocket.onopen = () => {
       console.log('Connected to Gemini WebSocket')
       geminiConnected = true
-      
-      // Send initial setup message
-      const setupMessage = {
-        setup: {
-          model: `models/${model}`,
-          generation_config: {
-            temperature: 0.7,
-            top_p: 0.95,
-            max_output_tokens: 4096,
-            response_modalities: ['TEXT', 'AUDIO']
-          },
-          tools: []
-        }
-      }
-      
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        geminiSocket.send(JSON.stringify(setupMessage))
-      }
+      // Don't send any setup message here - let the client send its own
     }
 
     // Relay messages from client to Gemini

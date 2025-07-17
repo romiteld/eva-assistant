@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
+import { withRateLimit } from '@/middleware/rate-limit';
 
 // Zoom webhook verification
 function verifyWebhook(body: string, signature: string, secret: string): boolean {
@@ -10,7 +11,7 @@ function verifyWebhook(body: string, signature: string, secret: string): boolean
   return signature === expectedSignature;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   try {
     const body = await request.text();
     const headersList = headers();
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, 'webhook');
 
 async function handleChatMessage(data: any) {
   const { cmd, userId, accountId, channelName } = data.payload;

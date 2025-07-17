@@ -53,6 +53,8 @@ export function VoiceAgent({
     currentTranscription,
     connect,
     disconnect,
+    startListening,
+    stopListening,
     toggleListening,
     sendText,
     sendFunctionResult,
@@ -228,6 +230,10 @@ export function VoiceAgent({
               onToggleListening={hasPermission ? toggleListening : handleFirstInteraction}
               onConnect={connect}
               onDisconnect={disconnect}
+              onStartListening={startListening}
+              onStopListening={stopListening}
+              hasPermission={hasPermission}
+              onRequestPermission={requestPermission}
               audioLevel={metrics.audioLevel}
             />
           </div>

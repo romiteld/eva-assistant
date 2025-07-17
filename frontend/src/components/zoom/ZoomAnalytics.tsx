@@ -113,12 +113,12 @@ export function ZoomAnalytics() {
       totalMeetings,
       totalDuration,
       averageDuration,
-      totalParticipants: meetings.reduce((sum, m) => sum + (m.participants?.length || 0), 0),
+      totalParticipants: 0, // Participant data not available in current API
       meetingsByType,
       meetingsByDay,
       participationTrend,
       recordingStats: {
-        total: meetings.filter(m => m.recording_urls?.length > 0).length,
+        total: 0, // Recording data requires separate API call
         totalSize: 0 // Would need to calculate from recording data
       }
     })

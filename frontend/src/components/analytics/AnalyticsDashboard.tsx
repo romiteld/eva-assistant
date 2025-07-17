@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, Users, Mail, Briefcase, 
   CheckCircle, Clock, Zap, BarChart3,
@@ -264,30 +264,31 @@ export default function AnalyticsDashboard() {
     }
   };
 
-  const fetchAllData = async () => {
-    setIsLoading(true);
-    try {
-      await Promise.all([
-        fetchOverviewMetrics(),
-        fetchLeadMetrics(),
-        fetchCampaignMetrics(),
-        fetchAgentMetrics(),
-        fetchUserMetrics(),
-      ]);
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchOverviewMetrics(),
+          fetchLeadMetrics(),
+          fetchCampaignMetrics(),
+          fetchAgentMetrics(),
+          fetchUserMetrics(),
+        ]);
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
     fetchAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
   const handleExport = () => {
     // Implement export functionality
-    console.log('Exporting analytics data...');
+    // TODO: Add export functionality
   };
 
   return (

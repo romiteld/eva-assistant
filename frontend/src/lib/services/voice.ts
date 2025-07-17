@@ -171,7 +171,7 @@ export class VoiceService extends EventEmitter {
     const setupConfig: GeminiLiveConfig = {
       model: this.config.model!,
       generationConfig: {
-        responseModalities: this.config.responseModalities,
+        responseModalities: ['AUDIO', 'TEXT'], // Ensure both audio and text are enabled
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {

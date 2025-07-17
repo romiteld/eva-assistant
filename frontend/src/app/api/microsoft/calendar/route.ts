@@ -2,17 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { graphHelpers } from '@/lib/microsoft/graph-client';
+import { withAuthAndRateLimit } from '@/middleware/api-security';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
     // Get current date range (this week)
     const startDate = new Date();
@@ -22,7 +16,7 @@ export async function GET(request: NextRequest) {
     endDate.setDate(endDate.getDate() + 7);
     endDate.setHours(23, 59, 59, 999);
 
-    const events = await graphHelpers.getCalendarEvents(session.user.id, {
+    const events = await graphHelpers.getCalendarEvents(request.user?.id || '', {
       startDateTime: startDate.toISOString(),
       endDateTime: endDate.toISOString(),
     });
@@ -37,16 +31,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+// Export the GET handler with authentication and API rate limiting
+export const GET = withAuthAndRateLimit(handleGet, 'api');
+
+async function handlePost(request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
     const body = await request.json();
     const { subject, start, end, attendees, isOnline } = body;
@@ -75,7 +64,7 @@ export async function POST(request: NextRequest) {
       event.onlineMeetingProvider = 'teamsForBusiness';
     }
 
-    const result = await graphHelpers.createCalendarEvent(session.user.id, event);
+    const result = await graphHelpers.createCalendarEvent(request.user?.id || '', event);
 
     return NextResponse.json({ success: true, result });
   } catch (error) {
@@ -86,3 +75,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export the POST handler with authentication and API rate limiting
+export const POST = withAuthAndRateLimit(handlePost, 'api');

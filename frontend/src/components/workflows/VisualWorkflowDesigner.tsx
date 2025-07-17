@@ -635,7 +635,13 @@ export function VisualWorkflowDesigner() {
 
       const node: WorkflowNode = {
         id: step.id,
-        ...nodeTemplate,
+        type: (nodeTemplate.type || 'action') as 'trigger' | 'action' | 'condition' | 'output',
+        category: nodeTemplate.category || 'action',
+        name: nodeTemplate.name,
+        description: nodeTemplate.description,
+        icon: nodeTemplate.icon,
+        agent: nodeTemplate.agent,
+        action: nodeTemplate.action,
         config: {
           ...nodeTemplate.config,
           input: step.input

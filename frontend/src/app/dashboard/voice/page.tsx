@@ -51,7 +51,7 @@ export default function UnifiedVoicePage() {
     if (user) {
       loadSessions();
     }
-  }, [user]);
+  }, [user, loadSessions]);
 
   const handleModeChange = useCallback((newMode: CommunicationMode) => {
     // Stop any active streams when switching modes

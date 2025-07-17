@@ -244,7 +244,7 @@ export default function TwilioMessaging() {
 
       // Save successful messages to database
       for (const result of results) {
-        if (result.success) {
+        if (result.success && 'messageId' in result) {
           await supabase.from('twilio_messages').insert({
             sid: result.messageId,
             user_id: user.user.id,

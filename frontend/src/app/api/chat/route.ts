@@ -1,19 +1,15 @@
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { createClient } from '@/lib/supabase/server';
+import { NextRequest } from 'next/server';
+import { withAuthAndRateLimit } from '@/middleware/api-security';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
 // Allow streaming responses
 export const runtime = 'edge';
 
-export async function POST(req: Request) {
+async function handlePost(req: AuthenticatedRequest) {
   try {
-    // Verify authentication
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return new Response('Unauthorized', { status: 401 });
-    }
 
     // Get the messages from the request
     const { messages, model = 'gemini-2.0-flash-exp' } = await req.json();
@@ -40,7 +36,7 @@ Be professional, helpful, and concise in your responses.`,
       onFinish: async ({ text, usage }) => {
         // Optionally log usage to database
         console.log('Chat completion:', {
-          userId: user.id,
+          userId: req.user?.id,
           tokensUsed: usage.totalTokens,
           model,
         });
@@ -70,3 +66,6 @@ Be professional, helpful, and concise in your responses.`,
     return new Response('An error occurred', { status: 500 });
   }
 }
+
+// Export the POST handler with authentication and AI rate limiting
+export const POST = withAuthAndRateLimit(handlePost, 'ai');

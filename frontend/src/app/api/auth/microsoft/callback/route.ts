@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { withRateLimit } from '@/middleware/rate-limit';
 
 // Microsoft OAuth configuration
 const MICROSOFT_TENANT_ID = '29ee1479-b5f7-48c5-b665-7de9a8a9033e';
 const MICROSOFT_CLIENT_ID = 'bfa77df6-6952-4d0f-9816-003b3101b9da';
 // Note: This is a public client app, no client secret needed for PKCE flow
 
-export async function GET(request: NextRequest) {
+export const GET = withRateLimit(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const state = searchParams.get('state');
@@ -111,4 +112,4 @@ export async function GET(request: NextRequest) {
     console.error('Unexpected error in Microsoft OAuth callback:', error);
     return NextResponse.redirect(`${request.nextUrl.origin}/login?error=unexpected_error`);
   }
-}
+}, 'auth');

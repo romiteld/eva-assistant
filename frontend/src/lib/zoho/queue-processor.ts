@@ -136,14 +136,27 @@ export class ZohoQueueProcessor {
     
     try {
       // Execute the API call
-      const zoho = new ZohoCRMIntegration(item.user_id);
+      const encryptionKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-key';
+      const webhookToken = process.env.ZOHO_WEBHOOK_TOKEN || 'default-token';
+      const zoho = new ZohoCRMIntegration(encryptionKey, webhookToken);
       const startTime = Date.now();
       
-      const response = await zoho.makeApiCall(
-        item.endpoint,
-        item.method as any,
-        item.payload
-      );
+      // Parse endpoint to determine operation
+      let response;
+      if (item.endpoint.includes('/Leads') && item.method === 'POST') {
+        response = await zoho.createLead(item.user_id, item.payload);
+      } else if (item.endpoint.includes('/Leads') && item.method === 'GET') {
+        response = await zoho.getLeads(item.user_id);
+      } else if (item.endpoint.includes('/Leads/') && item.method === 'PUT') {
+        const leadId = item.endpoint.split('/').pop() || '';
+        response = await zoho.updateLead(item.user_id, leadId, item.payload);
+      } else if (item.endpoint.includes('/Contacts') && item.method === 'POST') {
+        response = await zoho.createContact(item.user_id, item.payload);
+      } else if (item.endpoint.includes('/Deals') && item.method === 'POST') {
+        response = await zoho.createDeal(item.user_id, item.payload);
+      } else {
+        throw new Error(`Unsupported endpoint: ${item.endpoint}`);
+      }
       
       const responseTime = Date.now() - startTime;
       
@@ -300,11 +313,7 @@ export class ZohoQueueProcessor {
         rate_limited_requests: 0,
         avg_response_time_ms: responseTime
       }, {
-        onConflict: 'user_id,org_id,date,hour,endpoint,method',
-        // Increment counts instead of replacing
-        count: 'total_requests,successful_requests,failed_requests',
-        // Average the response time
-        avg: 'avg_response_time_ms'
+        onConflict: 'user_id,org_id,date,hour,endpoint,method'
       });
     
     if (error) {
@@ -337,15 +346,20 @@ export class ZohoQueueProcessor {
   async getStatistics() {
     const { data, error } = await supabase
       .from('zoho_request_queue')
-      .select('status, count(*)')
-      .group('status');
+      .select('status');
     
     if (error) {
       console.error('Error getting queue statistics:', error);
       return null;
     }
     
-    return data;
+    // Group by status manually
+    const stats = data?.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return stats;
   }
   
   /**

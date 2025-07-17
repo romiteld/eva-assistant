@@ -6,6 +6,7 @@ import { EmailDealParser } from '@/lib/email/deal-parser';
 import { ZohoCRMClient } from '@/lib/integrations/zoho';
 import { Redis } from '@upstash/redis';
 import crypto from 'crypto';
+import { withRateLimit } from '@/middleware/rate-limit';
 
 // Force dynamic to prevent static rendering issues
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ function verifyWebhookSignature(
   );
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(async (request: NextRequest) => {
   const startTime = Date.now();
   
   try {
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, 'webhook');
 
 // Calculate email priority based on content and sender
 function calculateEmailPriority(email: any): number {

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/lib/auth/auth-service'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/browser'
 import { AgentOrchestratorService } from '@/lib/services/agent-orchestrator'
 import { Agent } from '@/types/agent'
@@ -26,6 +26,22 @@ export interface AgentUpdate {
   timestamp: string
 }
 
+// Map service agent status to types/agent status
+function mapAgentStatus(status: string): 'active' | 'inactive' | 'error' {
+  switch (status) {
+    case 'idle':
+    case 'paused':
+    case 'completed':
+      return 'inactive'
+    case 'active':
+      return 'active'
+    case 'error':
+      return 'error'
+    default:
+      return 'inactive'
+  }
+}
+
 export function useAgentOrchestrator() {
   const { user } = useAuth()
   const [agents, setAgents] = useState<Agent[]>([])
@@ -34,8 +50,8 @@ export function useAgentOrchestrator() {
   const [error, setError] = useState<string | null>(null)
   const [connected, setConnected] = useState(false)
 
-  const supabase = createClient()
-  const orchestratorService = new AgentOrchestratorService()
+  const supabase = useMemo(() => createClient(), [])
+  const orchestratorService = useMemo(() => new AgentOrchestratorService(), [])
 
   // Load initial agent states
   const loadAgents = useCallback(async () => {
@@ -46,8 +62,17 @@ export function useAgentOrchestrator() {
       setError(null)
 
       // Get all available agents
-      const agentsData = await orchestratorService.listAgents(user.id)
-      setAgents(agentsData)
+      const agentsData = await orchestratorService.listAgents()
+      // Map service Agent type to types/agent Agent type
+      const mappedAgents: Agent[] = agentsData.map(agent => ({
+        ...agent,
+        type: agent.type as any, // Map string to AgentType enum
+        status: mapAgentStatus(agent.status), // Map status to allowed values
+        capabilities: [], // Service doesn't provide capabilities
+        configuration: agent.metadata,
+        metadata: agent.metadata
+      }))
+      setAgents(mappedAgents)
 
       // Get recent executions
       const { data: executionsData, error: executionsError } = await supabase
@@ -79,12 +104,12 @@ export function useAgentOrchestrator() {
       // Update agent status optimistically
       setAgents(prev => prev.map(agent => 
         agent.id === agentId 
-          ? { ...agent, status: 'active', progress: 0, currentTask: 'Starting...' }
+          ? { ...agent, status: 'active' as const, progress: 0, currentTask: 'Starting...' }
           : agent
       ))
 
       // Execute the agent
-      const result = await orchestratorService.executeAgent(agentId, payload, user.id)
+      const result = await orchestratorService.executeAgent(agentId, payload)
       
       // The real-time updates will handle the progress
       // Final result will be broadcast when complete
@@ -108,12 +133,12 @@ export function useAgentOrchestrator() {
     if (!user) return
 
     try {
-      await orchestratorService.pauseAgent(agentId, user.id)
+      await orchestratorService.pauseAgent(agentId)
       
       // Update local state
       setAgents(prev => prev.map(agent => 
         agent.id === agentId 
-          ? { ...agent, status: 'paused' }
+          ? { ...agent, status: 'inactive' as const } // paused maps to inactive
           : agent
       ))
     } catch (err) {
@@ -127,7 +152,7 @@ export function useAgentOrchestrator() {
     if (!user) return
 
     try {
-      await orchestratorService.resumeAgent(agentId, user.id)
+      await orchestratorService.resumeAgent(agentId)
       
       // Update local state
       setAgents(prev => prev.map(agent => 
@@ -146,12 +171,12 @@ export function useAgentOrchestrator() {
     if (!user) return
 
     try {
-      await orchestratorService.stopAgent(agentId, user.id)
+      await orchestratorService.stopAgent(agentId)
       
       // Update local state
       setAgents(prev => prev.map(agent => 
         agent.id === agentId 
-          ? { ...agent, status: 'idle', progress: 0, currentTask: undefined }
+          ? { ...agent, status: 'inactive' as const, progress: 0, currentTask: undefined }
           : agent
       ))
     } catch (err) {
@@ -175,7 +200,7 @@ export function useAgentOrchestrator() {
       ))
 
       // Execute all agents
-      const results = await orchestratorService.startMultipleAgents(agentIds, payload, user.id)
+      const results = await orchestratorService.startAgents(agentIds, payload)
       return results
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to execute agents')
@@ -203,7 +228,7 @@ export function useAgentOrchestrator() {
                     ...agent, 
                     progress: update.progress,
                     currentTask: update.currentTask,
-                    status: update.status as any,
+                    status: mapAgentStatus(update.status),
                     error: update.error,
                     lastActivity: update.timestamp
                   }
@@ -293,7 +318,7 @@ export function useAgentOrchestrator() {
 
   // Get completed agents
   const getCompletedAgents = useCallback(() => {
-    return agents.filter(agent => agent.status === 'completed')
+    return agents.filter(agent => agent.status === 'inactive')
   }, [agents])
 
   return {

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgentMonitor } from '@/lib/agents/monitoring/AgentMonitor';
 import { AgentLogger, LogLevel } from '@/lib/agents/monitoring/AgentLogger';
+import { AuthenticatedRequest } from '@/middleware/auth';
+import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
 // GET /api/agents/monitor - Get monitoring data
-export async function GET(request: NextRequest) {
+export const GET = withAuthAndRateLimit(handleGetMonitor, API_SECURITY_TYPES.API);
+
+async function handleGetMonitor(request: AuthenticatedRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
@@ -75,7 +79,9 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/agents/monitor/logs - Search logs
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndRateLimit(handlePostMonitor, API_SECURITY_TYPES.API);
+
+async function handlePostMonitor(request: AuthenticatedRequest) {
   try {
     const { query } = await request.json();
     
@@ -103,7 +109,9 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT /api/agents/monitor/config - Update monitoring configuration
-export async function PUT(request: NextRequest) {
+export const PUT = withAuthAndRateLimit(handlePutMonitor, API_SECURITY_TYPES.API);
+
+async function handlePutMonitor(request: AuthenticatedRequest) {
   try {
     const { logLevel, config } = await request.json();
     

@@ -64,10 +64,7 @@ export function CompetitorCard({
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    loadMetrics();
-  }, [competitor.id]);
-
-  const loadMetrics = async () => {
+    const loadMetrics = async () => {
     try {
       // In a real app, this would fetch from the service
       // For now, using placeholder data
@@ -94,6 +91,9 @@ export function CompetitorCard({
       console.error('Failed to load metrics:', error);
     }
   };
+  
+    loadMetrics();
+  }, [competitor.id]);
 
   const handleAnalyze = async () => {
     setLoading(true);

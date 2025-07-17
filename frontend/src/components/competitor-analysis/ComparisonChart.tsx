@@ -165,10 +165,7 @@ export function ComparisonChart({ competitorIds }: ComparisonChartProps) {
   const service = getCompetitorAnalysisService();
 
   useEffect(() => {
-    loadComparisonData();
-  }, [competitorIds]);
-
-  const loadComparisonData = async () => {
+    const loadComparisonData = async () => {
     setLoading(true);
     try {
       // Load competitors
@@ -216,6 +213,9 @@ export function ComparisonChart({ competitorIds }: ComparisonChartProps) {
       setLoading(false);
     }
   };
+  
+    loadComparisonData();
+  }, [competitorIds]);
 
   const getCompetitorName = (competitorId: string): string => {
     return competitors.find(c => c.id === competitorId)?.name || 'Unknown';
