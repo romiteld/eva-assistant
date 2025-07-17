@@ -77,31 +77,71 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     }
   }
 
-  const sidebarItems = [
-    { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
-    { icon: Mic, label: "Voice Agent", href: "/dashboard/voice" },
-    { icon: Zap, label: "Deal Automation", href: "/dashboard/deals" },
-    { icon: Megaphone, label: "Lead Generation", href: "/dashboard/lead-generation" },
-    { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
-    { icon: TrendingUpIcon, label: "Post Predictor", href: "/dashboard/post-predictor" },
-    { icon: BrainCircuit, label: "Agent Orchestrator", href: "/dashboard/orchestrator" },
-    { icon: GitBranch, label: "Workflow Designer", href: "/dashboard/workflows" },
-    { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
-    { icon: Mail, label: "Outreach Campaigns", href: "/dashboard/outreach" },
-    { icon: MailOpen, label: "Email Templates", href: "/dashboard/email-templates" },
-    { icon: Brain, label: "Recruiter Intel", href: "/dashboard/recruiter-intel" },
-    { icon: CheckSquare, label: "Task Management", href: "/dashboard/tasks" },
-    { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" },
-    { icon: Database, label: "Zoho CRM", href: "/dashboard/zoho" },
-    { icon: Phone, label: "Twilio", href: "/dashboard/twilio" },
-    { icon: Video, label: "Zoom", href: "/dashboard/zoom" },
-    { icon: Linkedin, label: "LinkedIn", href: "/dashboard/linkedin" },
-    { icon: Brain, label: "Intelligence Hub", href: "/dashboard/firecrawl" },
-    { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" },
-    { icon: FolderOpen, label: "File Manager", href: "/dashboard/files" },
-    { icon: MessageSquare, label: "Messages", href: "/dashboard/messages" },
-    { icon: FileText, label: "Documents", href: "/dashboard/documents" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" }
+  const sidebarGroups = [
+    {
+      label: "Overview",
+      items: [
+        { icon: BarChart3, label: "Dashboard", href: "/dashboard" }
+      ]
+    },
+    {
+      label: "AI Tools",
+      items: [
+        { icon: Mic, label: "Voice Agent", href: "/dashboard/voice" },
+        { icon: BrainCircuit, label: "Agent Orchestrator", href: "/dashboard/orchestrator" },
+        { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
+        { icon: Brain, label: "Intelligence Hub", href: "/dashboard/firecrawl" },
+        { icon: Brain, label: "Recruiter Intel", href: "/dashboard/recruiter-intel" },
+        { icon: TrendingUpIcon, label: "Post Predictor", href: "/dashboard/post-predictor" }
+      ]
+    },
+    {
+      label: "Workflow & Automation",
+      items: [
+        { icon: Zap, label: "Deal Automation", href: "/dashboard/deals" },
+        { icon: GitBranch, label: "Workflow Designer", href: "/dashboard/workflows" },
+        { icon: CheckSquare, label: "Task Management", href: "/dashboard/tasks" }
+      ]
+    },
+    {
+      label: "Communication",
+      items: [
+        { icon: Megaphone, label: "Lead Generation", href: "/dashboard/lead-generation" },
+        { icon: Mail, label: "Outreach Campaigns", href: "/dashboard/outreach" },
+        { icon: MailOpen, label: "Email Templates", href: "/dashboard/email-templates" },
+        { icon: MessageSquare, label: "Messages", href: "/dashboard/messages" }
+      ]
+    },
+    {
+      label: "Integrations",
+      items: [
+        { icon: Database, label: "Zoho CRM", href: "/dashboard/zoho" },
+        { icon: Phone, label: "Twilio", href: "/dashboard/twilio" },
+        { icon: Video, label: "Zoom", href: "/dashboard/zoom" },
+        { icon: Linkedin, label: "LinkedIn", href: "/dashboard/linkedin" },
+        { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" }
+      ]
+    },
+    {
+      label: "Analytics & Data",
+      items: [
+        { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
+        { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" }
+      ]
+    },
+    {
+      label: "Files & Documents",
+      items: [
+        { icon: FolderOpen, label: "File Manager", href: "/dashboard/files" },
+        { icon: FileText, label: "Documents", href: "/dashboard/documents" }
+      ]
+    },
+    {
+      label: "System",
+      items: [
+        { icon: Settings, label: "Settings", href: "/dashboard/settings" }
+      ]
+    }
   ]
 
   return (
@@ -126,6 +166,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
         animate={{ x: isOpen || isDesktop ? 0 : -280 }}
         transition={{ type: "spring", damping: 25 }}
         className={`fixed left-0 top-0 ${isCollapsed ? 'w-20' : 'w-72'} h-screen bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col transition-all duration-300`}
+        role="complementary"
+        aria-label="Sidebar navigation"
       >
             {/* Header - Fixed */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -148,7 +190,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
                 {/* Desktop collapse button */}
                 <button
                   onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="hidden lg:block p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="hidden lg:block p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-5 h-5 text-white" />
@@ -159,7 +202,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
                 {/* Mobile close button */}
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors lg:hidden"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors lg:hidden focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  aria-label="Close sidebar"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
@@ -167,58 +211,83 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
             </div>
 
             {/* Navigation - Scrollable */}
-            <nav className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin">
-              <div className="space-y-1.5">
-                {sidebarItems.map((item, index) => {
-                  const isActive = pathname === item.href || 
-                    (item.href !== '/dashboard' && pathname.startsWith(item.href))
-                  
-                  return (
-                    <motion.button
-                      key={item.label}
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: index * 0.03 }}
-                      onClick={() => {
-                        router.push(item.href)
-                        // Only close on mobile
-                        if (!isDesktop) {
-                          onClose()
-                        }
-                      }}
-                      className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all group relative ${
-                        isActive 
-                          ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 text-white shadow-lg' 
-                          : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                      }`}
-                      whileHover={{ x: isCollapsed ? 0 : 4 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {/* Active indicator */}
-                      {isActive && (
-                        <motion.div
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-purple-500 to-blue-500 rounded-r-full"
-                          layoutId="activeIndicator"
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                      
-                      <div className={`relative ${isActive ? 'text-purple-400' : ''} flex-shrink-0`}>
-                        <item.icon className="w-5 h-5" />
-                      </div>
-                      {!isCollapsed && (
-                        <span className="font-medium text-[15px]">{item.label}</span>
-                      )}
-                      
-                      {/* Tooltip for collapsed state */}
-                      {isCollapsed && (
-                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                          {item.label}
-                        </div>
-                      )}
-                    </motion.button>
-                  )
-                })}
+            <nav 
+              className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin"
+              aria-label="Main navigation"
+              role="navigation"
+            >
+              <div className="space-y-6">
+                {sidebarGroups.map((group, groupIndex) => (
+                  <div key={group.label}>
+                    {groupIndex > 0 && isCollapsed && (
+                      <div className="mx-4 my-2 border-t border-gray-800" aria-hidden="true" />
+                    )}
+                    {!isCollapsed && (
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
+                        {group.label}
+                      </h3>
+                    )}
+                    <div className="space-y-1">
+                      {group.items.map((item, itemIndex) => {
+                        const isActive = pathname === item.href || 
+                          (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                        const animationDelay = groupIndex * 0.05 + itemIndex * 0.03
+                        
+                        return (
+                          <motion.button
+                            key={item.label}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: animationDelay }}
+                            onClick={() => {
+                              router.push(item.href)
+                              // Only close on mobile
+                              if (!isDesktop) {
+                                onClose()
+                              }
+                            }}
+                            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all group relative ${
+                              isActive 
+                                ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 text-white shadow-lg' 
+                                : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                            } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900`}
+                            whileHover={{ x: isCollapsed ? 0 : 4 }}
+                            whileTap={{ scale: 0.98 }}
+                            aria-label={item.label}
+                            aria-current={isActive ? 'page' : undefined}
+                          >
+                            {/* Active indicator */}
+                            {isActive && (
+                              <>
+                                <motion.div
+                                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-purple-500 to-blue-500 rounded-r-full"
+                                  layoutId="activeIndicator"
+                                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                  aria-hidden="true"
+                                />
+                                <span className="sr-only">Current page</span>
+                              </>
+                            )}
+                            
+                            <div className={`relative ${isActive ? 'text-purple-400' : ''} flex-shrink-0`}>
+                              <item.icon className="w-5 h-5" />
+                            </div>
+                            {!isCollapsed && (
+                              <span className="font-medium text-[15px]">{item.label}</span>
+                            )}
+                            
+                            {/* Tooltip for collapsed state */}
+                            {isCollapsed && (
+                              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                                {item.label}
+                              </div>
+                            )}
+                          </motion.button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </nav>
           </motion.aside>

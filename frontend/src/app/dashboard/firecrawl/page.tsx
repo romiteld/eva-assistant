@@ -831,7 +831,7 @@ export default function RecruiterIntelligenceHub() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-gray-100">
-                      Research Intelligence Hub
+                      Intelligence Hub
                     </h1>
                     <p className="text-gray-400 mt-1">
                       AI-powered research for smarter recruiting decisions
