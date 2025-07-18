@@ -1,5 +1,6 @@
 // Optimized icon imports - only import what we use
 export { TrendingUp } from 'lucide-react/dist/esm/icons/trending-up';
+export { TrendingDown } from 'lucide-react/dist/esm/icons/trending-down';
 export { Users } from 'lucide-react/dist/esm/icons/users';
 export { Mail } from 'lucide-react/dist/esm/icons/mail';
 export { Briefcase } from 'lucide-react/dist/esm/icons/briefcase';
