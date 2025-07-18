@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 const ZOOM_AUTH_URL = 'https://zoom.us/oauth/authorize';
 const ZOOM_CLIENT_ID = process.env.ZOOM_CLIENT_ID!;
 const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 'http://localhost:3000/api/auth/zoom/callback';

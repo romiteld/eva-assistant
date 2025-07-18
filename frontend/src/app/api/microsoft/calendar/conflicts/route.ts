@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { Microsoft365Client } from '@/lib/integrations/microsoft365';
 import { z } from 'zod';
 
@@ -10,7 +10,7 @@ const ConflictCheckSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
