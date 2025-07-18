@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createTwilioService } from '@/lib/services/twilio'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function GET(request: NextRequest) {
   try {
@@ -74,6 +69,7 @@ export async function GET(request: NextRequest) {
 
 async function getTwilioUsageStats(startDate: Date, endDate: Date) {
   const twilioService = createTwilioService()
+  const supabase = createClient()
   
   try {
     const stats = await twilioService.getUsageStatistics(startDate, endDate)
@@ -115,6 +111,7 @@ async function getTwilioUsageStats(startDate: Date, endDate: Date) {
 }
 
 async function getCallAnalytics(startDate: Date, endDate: Date, groupBy: string) {
+  const supabase = createClient()
   const { data: calls } = await supabase
     .from('twilio_call_logs')
     .select('*')
@@ -145,6 +142,7 @@ async function getCallAnalytics(startDate: Date, endDate: Date, groupBy: string)
 }
 
 async function getMessageAnalytics(startDate: Date, endDate: Date, groupBy: string) {
+  const supabase = createClient()
   const { data: messages } = await supabase
     .from('twilio_messages')
     .select('*')
@@ -174,6 +172,7 @@ async function getMessageAnalytics(startDate: Date, endDate: Date, groupBy: stri
 }
 
 async function getRecordingAnalytics(startDate: Date, endDate: Date) {
+  const supabase = createClient()
   const { data: recordings } = await supabase
     .from('twilio_recordings')
     .select(`
@@ -217,6 +216,7 @@ async function getRecordingAnalytics(startDate: Date, endDate: Date) {
 }
 
 async function getConferenceAnalytics(startDate: Date, endDate: Date) {
+  const supabase = createClient()
   const { data: conferences } = await supabase
     .from('twilio_conferences')
     .select(`
@@ -247,6 +247,7 @@ async function getConferenceAnalytics(startDate: Date, endDate: Date) {
 }
 
 async function getCampaignAnalytics(startDate: Date, endDate: Date) {
+  const supabase = createClient()
   const { data: campaigns } = await supabase
     .from('sms_campaigns')
     .select(`
@@ -359,6 +360,7 @@ function extractTopKeywords(messages: any[], limit = 5) {
 }
 
 async function getUniqueContacts(startDate: Date, endDate: Date) {
+  const supabase = createClient()
   const { data: calls } = await supabase
     .from('twilio_call_logs')
     .select('from_number, to_number')
@@ -390,6 +392,7 @@ async function getUniqueContacts(startDate: Date, endDate: Date) {
 
 async function getConversionRate(startDate: Date, endDate: Date) {
   // This is a simplified example - you'd implement your actual conversion logic
+  const supabase = createClient()
   const { data: conversions } = await supabase
     .from('candidate_conversions')
     .select('*')
@@ -408,6 +411,7 @@ async function getConversionRate(startDate: Date, endDate: Date) {
 }
 
 async function getResponseRate(startDate: Date, endDate: Date) {
+  const supabase = createClient()
   const { data: outbound } = await supabase
     .from('twilio_messages')
     .select('*')
