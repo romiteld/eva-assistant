@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 // Validation schemas
@@ -22,7 +22,7 @@ interface RouteParams {
 // GET /api/tasks/[taskId]/comments - Get all comments for a task
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST /api/tasks/[taskId]/comments - Create a new comment
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 // PUT /api/tasks/[taskId]/comments - Update a comment
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -205,7 +205,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/tasks/[taskId]/comments - Soft delete a comment
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
