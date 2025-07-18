@@ -119,7 +119,7 @@ export default function TestVoiceConnection() {
           <h2 className="text-xl font-bold mb-4">Test Results:</h2>
           <div className="space-y-2 font-mono text-sm">
             {status.length === 0 ? (
-              <p className="text-gray-500">Click "Run Connection Test" to start</p>
+              <p className="text-gray-500">Click &quot;Run Connection Test&quot; to start</p>
             ) : (
               status.map((line, i) => (
                 <div key={i} className={line.includes('✓') ? 'text-green-400' : line.includes('❌') ? 'text-red-400' : 'text-gray-300'}>
@@ -133,7 +133,7 @@ export default function TestVoiceConnection() {
         <div className="mt-8 bg-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-bold mb-4">Troubleshooting Tips:</h2>
           <ul className="list-disc list-inside space-y-2 text-gray-300">
-            <li>Make sure you're logged in to the application</li>
+            <li>Make sure you&apos;re logged in to the application</li>
             <li>Check that the Gemini API key is set in environment variables</li>
             <li>Ensure the Supabase Edge Function is deployed</li>
             <li>Check browser console for additional error details</li>

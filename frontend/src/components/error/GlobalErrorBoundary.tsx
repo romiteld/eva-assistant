@@ -157,7 +157,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
             </h1>
             
             <p className="text-gray-400 text-center mb-6">
-              We're sorry, but something unexpected happened. Our team has been notified.
+              We&apos;re sorry, but something unexpected happened. Our team has been notified.
             </p>
 
             {showDetails && this.state.error && (
