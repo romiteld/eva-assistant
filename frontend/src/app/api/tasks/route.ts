@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 // Validation schemas
@@ -43,7 +43,7 @@ const QuerySchema = z.object({
 // GET /api/tasks - List tasks with filtering, sorting, and pagination
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
 // POST /api/tasks - Create a new task
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
 // PUT /api/tasks - Update an existing task
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -270,7 +270,7 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/tasks - Soft delete a task
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
