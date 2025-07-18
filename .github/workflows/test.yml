@@ -47,11 +47,11 @@ jobs:
     - name: Create test environment file
       working-directory: ./frontend
       run: |
-        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env.test
-        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env.test
-        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
-        echo "FIRECRAWL_API_KEY=${{ secrets.FIRECRAWL_API_KEY }}" >> .env.test
-        echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env.test
+        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}" >> .env.test
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || 'test-anon-key' }}" >> .env.test
+        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key' }}" >> .env.test
+        echo "FIRECRAWL_API_KEY=${{ secrets.FIRECRAWL_API_KEY || 'test-firecrawl-key' }}" >> .env.test
+        echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'test-gemini-key' }}" >> .env.test
         echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eva_test" >> .env.test
 
     - name: Run database migrations
@@ -97,11 +97,11 @@ jobs:
     - name: Create test environment file
       working-directory: ./frontend
       run: |
-        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env.test
-        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env.test
-        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
-        echo "FIRECRAWL_API_KEY=${{ secrets.FIRECRAWL_API_KEY }}" >> .env.test
-        echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env.test
+        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}" >> .env.test
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || 'test-anon-key' }}" >> .env.test
+        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key' }}" >> .env.test
+        echo "FIRECRAWL_API_KEY=${{ secrets.FIRECRAWL_API_KEY || 'test-firecrawl-key' }}" >> .env.test
+        echo "NEXT_PUBLIC_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || 'test-gemini-key' }}" >> .env.test
 
     - name: Build application
       working-directory: ./frontend
@@ -170,6 +170,7 @@ jobs:
       run: npm audit --audit-level=high || true
 
     - name: Run Snyk security scan
+      if: ${{ secrets.SNYK_TOKEN != '' }}
       uses: snyk/actions/node@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
