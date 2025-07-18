@@ -207,7 +207,7 @@ export function MicrophonePermissionModal({
               <div className="text-center space-y-2">
                 <Mic className="w-12 h-12 text-purple-500 mx-auto" />
                 <p className="text-sm text-gray-600">
-                  Click "Allow Microphone" to enable voice features
+                  Click &quot;Allow Microphone&quot; to enable voice features
                 </p>
               </div>
             )}

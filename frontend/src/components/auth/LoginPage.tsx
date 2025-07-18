@@ -55,7 +55,8 @@ export default function LoginPage() {
                   setStatus('idle');
                   setEmail('');
                 }}
-                className="text-blue-500 hover:text-blue-400 text-sm font-medium"
+                className="text-blue-500 hover:text-blue-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded-md px-2 py-1"
+                aria-label="Use a different email address"
               >
                 Use a different email
               </button>
@@ -78,14 +79,18 @@ export default function LoginPage() {
                     className="appearance-none block w-full px-3 py-2 pl-10 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="you@example.com"
                   />
-                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" aria-hidden="true" />
                 </div>
               </div>
 
               {status === 'error' && (
-                <div className="rounded-lg bg-red-900/20 border border-red-800 p-4">
+                <div 
+                  className="rounded-lg bg-red-900/20 border border-red-800 p-4"
+                  role="alert"
+                  aria-live="polite"
+                >
                   <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" aria-hidden="true" />
                     <div className="ml-3">
                       <p className="text-sm text-red-400">{errorMessage}</p>
                     </div>
@@ -100,7 +105,7 @@ export default function LoginPage() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                    <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" aria-hidden="true" />
                     Sending magic link...
                   </>
                 ) : (

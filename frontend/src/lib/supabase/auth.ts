@@ -71,13 +71,13 @@ export const authHelpers = {
       }
       
       // We'll use a custom OAuth flow that properly handles PKCE
-      const module = await import('@/lib/auth/microsoft-oauth');
+      const msOAuthModule = await import('@/lib/auth/microsoft-oauth');
       
-      if (!module.signInWithMicrosoftPKCE) {
+      if (!msOAuthModule.signInWithMicrosoftPKCE) {
         throw new Error('Microsoft OAuth module not loaded properly');
       }
       
-      await module.signInWithMicrosoftPKCE();
+      await msOAuthModule.signInWithMicrosoftPKCE();
       
       // The function will redirect, so we return success
       return { url: null, provider: 'azure' };

@@ -34,7 +34,7 @@ export async function signInWithLinkedInPKCE() {
   // LinkedIn OAuth configuration
   const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!;
   const redirectUri = `${window.location.origin}/auth/linkedin/callback`;
-  const scope = 'r_liteprofile r_emailaddress w_member_social';
+  const scope = 'r_liteprofile r_emailaddress w_member_social r_organization_social';
   
   // Create state parameter
   const state = {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LinkedInProfileViewer } from '@/components/linkedin/profile-viewer';
 import { LinkedInMessaging } from '@/components/linkedin/messaging';
+import { LinkedInLeadEnrichment } from '@/components/linkedin/lead-enrichment';
+import { LinkedInContentSharing } from '@/components/linkedin/content-sharing';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Linkedin, Users, MessageSquare, Share2, TrendingUp, UserPlus } from 'lucide-react';
@@ -53,12 +55,11 @@ export default function LinkedInIntegrationPage() {
     try {
       setIsConnecting(true);
       await authHelpers.signInWithLinkedIn();
-      // Reload stats after connection
-      setTimeout(() => loadLinkedInStats(), 2000);
+      // The OAuth flow will redirect to /auth/linkedin/callback
+      // No need to reload stats here as the page will redirect
     } catch (error) {
       console.error('LinkedIn connection error:', error);
-      toast.error('Failed to connect to LinkedIn');
-    } finally {
+      toast.error('Failed to connect to LinkedIn. Please try again.');
       setIsConnecting(false);
     }
   };
@@ -175,74 +176,11 @@ export default function LinkedInIntegrationPage() {
           </TabsContent>
 
           <TabsContent value="lead-enrichment" className="space-y-6">
-            <Card className="bg-black/40 backdrop-blur-xl border-zinc-800">
-              <CardHeader>
-                <CardTitle className="text-white">Lead Enrichment</CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Automatically enrich your leads with LinkedIn data
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-700">
-                    <h4 className="font-medium text-white mb-2">How it works:</h4>
-                    <ol className="list-decimal list-inside space-y-2 text-sm text-zinc-400">
-                      <li>Import leads from your CRM or CSV file</li>
-                      <li>Our AI searches for matching LinkedIn profiles</li>
-                      <li>Enrich lead data with professional information</li>
-                      <li>Export enriched data back to your CRM</li>
-                    </ol>
-                  </div>
-                  
-                  <div className="flex gap-4">
-                    <Button variant="outline">
-                      Import Leads
-                    </Button>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      Start Enrichment
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <LinkedInLeadEnrichment />
           </TabsContent>
 
           <TabsContent value="content-sharing" className="space-y-6">
-            <Card className="bg-black/40 backdrop-blur-xl border-zinc-800">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Share2 className="w-5 h-5" />
-                  Content Sharing
-                </CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Share content and updates with your LinkedIn network
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <textarea
-                    placeholder="What would you like to share?"
-                    className="w-full h-32 p-4 bg-zinc-900/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 resize-none"
-                  />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Add Image
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Add Link
-                      </Button>
-                    </div>
-                    
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share on LinkedIn
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <LinkedInContentSharing />
           </TabsContent>
         </Tabs>
       </div>

@@ -318,11 +318,11 @@ export function UIEnhancementsExample() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert>
-                <AlertDescription>
+              <div className="border border-blue-200 bg-blue-50 p-4 rounded-lg">
+                <p className="text-blue-800">
                   Click the button below to trigger a test error and see the enhanced error boundary in action.
-                </AlertDescription>
-              </Alert>
+                </p>
+              </div>
               
               <EnhancedErrorBoundary
                 onError={(error, errorInfo) => {

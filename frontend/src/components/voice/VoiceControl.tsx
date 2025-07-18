@@ -170,11 +170,13 @@ export function VoiceControl({
             variant="outline"
             onClick={isConnected ? onDisconnect : onConnect}
             className="h-12 w-12"
+            aria-label={isConnected ? 'Disconnect voice assistant' : 'Connect voice assistant'}
+            aria-pressed={isConnected}
           >
             {isConnected ? (
-              <Power className="h-5 w-5 text-green-500" />
+              <Power className="h-5 w-5 text-green-500" aria-hidden="true" />
             ) : (
-              <PowerOff className="h-5 w-5 text-gray-500" />
+              <PowerOff className="h-5 w-5 text-gray-500" aria-hidden="true" />
             )}
           </Button>
 
@@ -200,13 +202,26 @@ export function VoiceControl({
                 isListening && 'shadow-lg shadow-red-500/50',
                 isConnected && !hasPermission && 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-black'
               )}
+              aria-label={
+                isProcessing ? 'Processing speech...' :
+                isSpeaking ? 'AI is speaking' :
+                isListening ? 'Stop listening' :
+                !isConnected ? 'Connect to start voice conversation' :
+                !hasPermission ? 'Grant microphone permission' :
+                'Start listening'
+              }
+              aria-pressed={isListening}
+              aria-describedby={isConnected && !hasPermission ? 'permission-status' : undefined}
             >
-              {micButtonState.icon}
+              {React.cloneElement(micButtonState.icon, { 'aria-hidden': true })}
             </Button>
             
             {/* Permission Badge */}
             {isConnected && !hasPermission && (
-              <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1 z-20">
+              <div 
+                className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1 z-20"
+                aria-hidden="true"
+              >
                 <AlertCircle className="w-4 h-4 text-black" />
               </div>
             )}
@@ -219,12 +234,19 @@ export function VoiceControl({
             onClick={() => setShowSettingsDialog(true)}
             className="h-12 w-12"
             disabled={!isConnected}
+            aria-label="Open voice settings"
+            aria-expanded={showSettingsDialog}
           >
-            <Settings className="h-5 w-5" />
+            <Settings className="h-5 w-5" aria-hidden="true" />
           </Button>
 
           {/* Status Text */}
-          <div className="text-sm text-muted-foreground">
+          <div 
+            className="text-sm text-muted-foreground"
+            role="status"
+            aria-live="polite"
+            id="permission-status"
+          >
             {isCalibrating && <span className="text-blue-500">Calibrating...</span>}
             {isProcessing && <span>Processing...</span>}
             {isSpeaking && <span>Speaking...</span>}
@@ -277,9 +299,9 @@ export function VoiceControl({
           <div className="space-y-2">
             <h4 className="text-sm font-medium">How to enable microphone access:</h4>
             <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Click "Allow Microphone Access" below</li>
-              <li>When your browser asks, click "Allow"</li>
-              <li>If you accidentally blocked access, click the lock icon in your browser's address bar</li>
+              <li>Click &quot;Allow Microphone Access&quot; below</li>
+              <li>When your browser asks, click &quot;Allow&quot;</li>
+              <li>If you accidentally blocked access, click the lock icon in your browser&apos;s address bar</li>
             </ol>
           </div>
           
@@ -326,16 +348,28 @@ export function VoiceControl({
           {/* Input Gain */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Input Gain</label>
-              <span className="text-sm text-muted-foreground">{Math.round(inputGain * 100)}%</span>
+              <label 
+                htmlFor="input-gain-slider" 
+                className="text-sm font-medium"
+              >
+                Input Gain
+              </label>
+              <span 
+                className="text-sm text-muted-foreground"
+                aria-label={`Input gain level: ${Math.round(inputGain * 100)} percent`}
+              >
+                {Math.round(inputGain * 100)}%
+              </span>
             </div>
             <Slider
+              id="input-gain-slider"
               value={[inputGain]}
               onValueChange={handleInputGainChange}
               min={0}
               max={2}
               step={0.1}
               className="w-full"
+              aria-label="Adjust input gain level"
             />
             <div className="flex items-center gap-2">
               <Mic className="w-4 h-4 text-muted-foreground" />
@@ -352,16 +386,28 @@ export function VoiceControl({
           {/* Output Gain */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Output Gain</label>
-              <span className="text-sm text-muted-foreground">{Math.round(outputGain * 100)}%</span>
+              <label 
+                htmlFor="output-gain-slider" 
+                className="text-sm font-medium"
+              >
+                Output Gain
+              </label>
+              <span 
+                className="text-sm text-muted-foreground"
+                aria-label={`Output gain level: ${Math.round(outputGain * 100)} percent`}
+              >
+                {Math.round(outputGain * 100)}%
+              </span>
             </div>
             <Slider
+              id="output-gain-slider"
               value={[outputGain]}
               onValueChange={handleOutputGainChange}
               min={0}
               max={2}
               step={0.1}
               className="w-full"
+              aria-label="Adjust output gain level"
             />
             <div className="flex items-center gap-2">
               <Volume2 className="w-4 h-4 text-muted-foreground" />

@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { TasksTable } from '@/components/dashboard/TasksTable';
+import { TaskCalendar } from '@/components/dashboard/TaskCalendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckSquare, Clock, AlertCircle, TrendingUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckSquare, Clock, AlertCircle, TrendingUp, List, Calendar } from 'lucide-react';
 import { useTasks, useTaskStatistics } from '@/hooks/useTasks';
 import { LoadingStates } from '@/components/ui/loading-states';
 
@@ -110,10 +112,33 @@ export default function TaskManagementPage() {
 
         <Card className="bg-white/5 backdrop-blur-xl border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">All Tasks</CardTitle>
+            <CardTitle className="text-white">Task Management</CardTitle>
           </CardHeader>
           <CardContent>
-            <TasksTable />
+            <Tabs defaultValue="list" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-white/5 border-white/10">
+                <TabsTrigger 
+                  value="list"
+                  className="flex items-center gap-2 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+                >
+                  <List className="w-4 h-4" />
+                  List View
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="calendar"
+                  className="flex items-center gap-2 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Calendar View
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="list" className="mt-4">
+                <TasksTable />
+              </TabsContent>
+              <TabsContent value="calendar" className="mt-4">
+                <TaskCalendar />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
