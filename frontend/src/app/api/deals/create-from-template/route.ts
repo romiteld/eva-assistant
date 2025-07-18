@@ -5,7 +5,10 @@ import { DealAutomationAgent } from '@/lib/agents/deal-automation-agent';
 import { withAuthAndRateLimit } from '@/middleware/api-security';
 import { AuthenticatedRequest } from '@/middleware/auth';
 
+// API route configuration
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const preferredRegion = 'auto';
 
 async function handlePost(request: AuthenticatedRequest) {
   try {
@@ -60,4 +63,14 @@ async function handlePost(request: AuthenticatedRequest) {
 }
 
 // Export the POST handler with authentication and API rate limiting
-export const POST = withAuthAndRateLimit(handlePost, 'api');
+export async function POST(request: NextRequest) {
+  try {
+    return await withAuthAndRateLimit(handlePost, 'api')(request);
+  } catch (error) {
+    console.error('Error in POST handler:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

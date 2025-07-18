@@ -36,25 +36,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!clientSecret) {
-      console.error('MICROSOFT_CLIENT_SECRET not configured');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      );
-    }
-
     // Exchange code for tokens with Microsoft
     const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     
+    // For public clients (SPAs), do NOT include client_secret
     const tokenParams = new URLSearchParams({
       client_id: clientId,
-      client_secret: clientSecret, // Server-side only!
       grant_type: 'authorization_code',
       code: code,
       redirect_uri: redirectUri || `${process.env.NEXT_PUBLIC_APP_URL}/auth/microsoft/callback`,
       code_verifier: codeVerifier,
     });
+
+    // Only add client_secret if it exists AND we're not using PKCE
+    // For PKCE flow with public clients, client_secret should NOT be sent
+    if (clientSecret && !codeVerifier) {
+      tokenParams.append('client_secret', clientSecret);
+    }
 
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',

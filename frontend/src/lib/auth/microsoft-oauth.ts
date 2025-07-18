@@ -72,7 +72,8 @@ export async function signInWithMicrosoftPKCE() {
     );
   }
 
-  const redirectUri = `${window.location.origin}/auth/microsoft/callback`;
+  // Use environment variable for redirect URI, fallback to current origin for local development
+  const redirectUri = process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`;
   const scope =
     "openid email profile offline_access https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Contacts.ReadWrite https://graph.microsoft.com/Files.ReadWrite.All";
 
@@ -164,7 +165,7 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     body: JSON.stringify({
       code,
       codeVerifier,
-      redirectUri: `${window.location.origin}/auth/microsoft/callback`,
+      redirectUri: process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`,
     }),
   });
 
