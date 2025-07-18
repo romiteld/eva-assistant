@@ -64,20 +64,24 @@ export class PerformanceCollector {
       
       // Override performance.mark
       const originalMark = window.performance.mark.bind(window.performance)
-      window.performance.mark = function(name) {
+      window.performance.mark = function (name: string): PerformanceMark {
         (window as any).__performanceMetrics.marks[name] = performance.now()
         return originalMark(name)
       }
       
       // Override performance.measure  
       const originalMeasure = window.performance.measure.bind(window.performance)
-      window.performance.measure = function(name, start, end) {
-        const result = originalMeasure(name, start, end)
-        (window as any).__performanceMetrics.measures[name] = {
-          start: (window as any).__performanceMetrics.marks[start] || 0,
-          end: (window as any).__performanceMetrics.marks[end] || performance.now(),
-          duration: ((window as any).__performanceMetrics.marks[end] || performance.now()) - 
-                   ((window as any).__performanceMetrics.marks[start] || 0)
+      window.performance.measure = function (
+        name: string,
+        start?: string,
+        end?: string
+      ): PerformanceMeasure {
+        const result = originalMeasure(name, start as any, end as any)
+        const marks = (window as any).__performanceMetrics.marks as Record<string, number>
+        ;(window as any).__performanceMetrics.measures[name] = {
+          start: marks[start ?? ""] || 0,
+          end: marks[end ?? ""] || performance.now(),
+          duration: (marks[end ?? ""] || performance.now()) - (marks[start ?? ""] || 0)
         }
         return result
       }
