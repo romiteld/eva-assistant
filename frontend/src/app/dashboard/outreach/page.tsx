@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +40,7 @@ export default function OutreachPage() {
   ]);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -187,6 +186,6 @@ export default function OutreachPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -34,7 +34,8 @@ import {
   ChevronRight,
   GitBranch,
   Database,
-  Video
+  Video,
+  Building2
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -91,7 +92,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     {
       label: "AI Tools",
       items: [
-        { icon: Mic, label: "Voice Agent", href: "/dashboard/voice" },
+        { icon: Video, label: "Talk to EVA", href: "/dashboard/eva-voice" },
         { icon: BrainCircuit, label: "Agent Orchestrator", href: "/dashboard/orchestrator" },
         { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
         { icon: Brain, label: "Firecrawl", href: "/dashboard/firecrawl" },
@@ -110,6 +111,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     {
       label: "Communication",
       items: [
+        { icon: Building2, label: "Company Research", href: "/dashboard/company-research" },
         { icon: Megaphone, label: "Lead Generation", href: "/dashboard/lead-generation" },
         { icon: Mail, label: "Outreach Campaigns", href: "/dashboard/outreach" },
         { icon: MailOpen, label: "Email Templates", href: "/dashboard/email-templates" },
@@ -222,7 +224,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
         initial={{ x: -280 }}
         animate={{ x: isOpen || isDesktop ? 0 : -280 }}
         transition={{ type: "spring", damping: 25 }}
-        className={`fixed left-0 top-0 ${isCollapsed ? 'w-20' : 'w-full sm:w-72'} h-full bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col transition-all duration-300 safe-area-inset`}
+        className={`fixed left-0 top-0 ${isCollapsed ? 'w-20' : 'w-full sm:w-72'} h-full bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col transition-[width] duration-150 safe-area-inset`}
         role="navigation"
         aria-label="Main navigation"
       >

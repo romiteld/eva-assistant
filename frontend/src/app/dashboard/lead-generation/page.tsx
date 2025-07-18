@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { EnhancedLeadGenerationAgent } from '@/lib/agents/enhanced-lead-generation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -139,7 +138,7 @@ export default function LeadGenerationPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -245,7 +244,7 @@ export default function LeadGenerationPage() {
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div className="space-y-2 flex-1">
                           <h3 className="text-lg font-semibold text-white">{lead.name}</h3>
-                          <p className="text-gray-400 text-sm sm:text-base">{lead.title} at {lead.company}</p>
+                          <p className="text-gray-400 text-sm sm:text-base">{lead.title} at {lead.company?.name || lead.company}</p>
                           <div className="flex flex-wrap gap-2">
                             <Badge variant="secondary" className="text-xs">{lead.location}</Badge>
                             <Badge variant="secondary" className="text-xs">{lead.experience}</Badge>
@@ -381,6 +380,6 @@ export default function LeadGenerationPage() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

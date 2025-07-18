@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { ServiceProvider } from '@/components/providers/ServiceProvider'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AuthErrorBoundary } from '@/components/error/AuthErrorBoundary'
+import { DashboardLayout as DashboardWrapper } from '@/components/dashboard/DashboardLayout'
 
 export default function DashboardLayout({
   children,
@@ -15,7 +16,9 @@ export default function DashboardLayout({
       <AuthGuard fallbackUrl="/login">
         <ServiceProvider>
           <AuthErrorBoundary>
-            {children}
+            <DashboardWrapper>
+              {children}
+            </DashboardWrapper>
           </AuthErrorBoundary>
         </ServiceProvider>
       </AuthGuard>

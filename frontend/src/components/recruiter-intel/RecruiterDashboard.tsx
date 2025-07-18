@@ -48,7 +48,9 @@ export function RecruiterDashboard() {
       if (filterTier) params.append('performance_tier', filterTier);
       if (filterActive !== null) params.append('is_active', filterActive.toString());
 
-      const response = await fetch(`/api/recruiters?${params}`);
+      const response = await fetch(`/api/recruiters?${params}`, {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch recruiters');
       
       const { data } = await response.json();
@@ -68,7 +70,9 @@ export function RecruiterDashboard() {
   const fetchExecutiveMetrics = async () => {
     // Fetch high-level metrics for CEO view
     try {
-      const response = await fetch(`/api/recruiters/metrics?period=${timeRange}`);
+      const response = await fetch(`/api/recruiters/metrics?period=${timeRange}`, {
+        credentials: 'include'
+      });
       if (response.ok) {
         const { data, aggregatedMetrics } = await response.json();
         // Process executive metrics

@@ -113,7 +113,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
 
         {/* Main content */}
-        <div className={`flex-1 min-h-screen flex flex-col ${sidebarOpen ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72') : ''} transition-all duration-300`}>
+        <div className={`flex-1 min-h-screen flex flex-col ${sidebarOpen ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72') : ''} transition-[margin] duration-150`}>
           {/* Header */}
           <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 safe-area-inset">
             <div className="flex items-center justify-between">

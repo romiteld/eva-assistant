@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -208,16 +207,16 @@ export default function TeamsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center h-screen">
           <Loader2 className="w-8 h-8 animate-spin text-white" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -421,6 +420,6 @@ export default function TeamsPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

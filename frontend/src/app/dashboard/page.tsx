@@ -13,7 +13,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react'
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 
 // Glassmorphic card component
 function GlassCard({ children, className = "", delay = 0 }: { children: React.ReactNode, className?: string, delay?: number }) {
@@ -120,8 +119,7 @@ export default function EnterpriseDashboard() {
   ]
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -178,6 +176,5 @@ export default function EnterpriseDashboard() {
           </GlassCard>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

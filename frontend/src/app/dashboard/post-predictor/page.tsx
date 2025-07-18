@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { PostPredictorForm } from '@/components/post-predictor/PostPredictorForm';
 import { PredictionResults } from '@/components/post-predictor/PredictionResults';
 import { OptimalTimingChart } from '@/components/post-predictor/OptimalTimingChart';
@@ -84,7 +83,7 @@ export default function PostPredictorPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <motion.div 
@@ -288,6 +287,6 @@ export default function PostPredictorPage() {
           ))}
         </motion.div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

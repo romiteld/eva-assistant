@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { TasksTable } from '@/components/dashboard/TasksTable';
 import { TaskCalendar } from '@/components/dashboard/TaskCalendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, Clock, AlertCircle, TrendingUp, List, Calendar } from 'lucide-react';
 import { useTasks, useTaskStatistics } from '@/hooks/useTasks';
-import { LoadingStates } from '@/components/ui/loading-states';
+import { LoadingState } from '@/components/ui/loading-states';
 
 export default function TaskManagementPage() {
   const { tasks, loading: tasksLoading } = useTasks();
@@ -33,7 +32,7 @@ export default function TaskManagementPage() {
   const productivityRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Task Management</h1>
@@ -50,7 +49,7 @@ export default function TaskManagementPage() {
             </CardHeader>
             <CardContent>
               {tasksLoading ? (
-                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+                <LoadingState variant="skeleton" className="h-8 w-12 mb-2" />
               ) : (
                 <div className="text-2xl font-bold text-white">{completedTasks}</div>
               )}
@@ -67,7 +66,7 @@ export default function TaskManagementPage() {
             </CardHeader>
             <CardContent>
               {tasksLoading ? (
-                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+                <LoadingState variant="skeleton" className="h-8 w-12 mb-2" />
               ) : (
                 <div className="text-2xl font-bold text-white">{inProgressTasks}</div>
               )}
@@ -84,7 +83,7 @@ export default function TaskManagementPage() {
             </CardHeader>
             <CardContent>
               {tasksLoading ? (
-                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+                <LoadingState variant="skeleton" className="h-8 w-12 mb-2" />
               ) : (
                 <div className="text-2xl font-bold text-white">{dueTodayTasks}</div>
               )}
@@ -101,7 +100,7 @@ export default function TaskManagementPage() {
             </CardHeader>
             <CardContent>
               {tasksLoading ? (
-                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+                <LoadingState variant="skeleton" className="h-8 w-12 mb-2" />
               ) : (
                 <div className="text-2xl font-bold text-white">{productivityRate}%</div>
               )}
@@ -142,6 +141,6 @@ export default function TaskManagementPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
