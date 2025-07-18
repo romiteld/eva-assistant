@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LinkedInProfileViewer } from '@/components/linkedin/profile-viewer';
 import { LinkedInMessaging } from '@/components/linkedin/messaging';
@@ -15,11 +15,46 @@ export default function LinkedInIntegrationPage() {
   const { user } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [hasLinkedInToken, setHasLinkedInToken] = useState(false);
+  const [stats, setStats] = useState({
+    connections: 0,
+    messagesSent: 0,
+    profileViews: 0,
+    leadsEnriched: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadLinkedInStats();
+  }, []);
+
+  const loadLinkedInStats = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/linkedin/stats');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setHasLinkedInToken(data.hasIntegration);
+        if (data.stats) {
+          setStats(data.stats);
+        }
+      } else {
+        setHasLinkedInToken(false);
+      }
+    } catch (error) {
+      console.error('Failed to load LinkedIn stats:', error);
+      setHasLinkedInToken(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const connectLinkedIn = async () => {
     try {
       setIsConnecting(true);
       await authHelpers.signInWithLinkedIn();
+      // Reload stats after connection
+      setTimeout(() => loadLinkedInStats(), 2000);
     } catch (error) {
       console.error('LinkedIn connection error:', error);
       toast.error('Failed to connect to LinkedIn');

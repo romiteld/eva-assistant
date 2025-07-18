@@ -161,4 +161,43 @@ export const graphHelpers = {
     const client = createGraphClient(userId);
     return await client.api('/me/drive/root/search(q=\'' + query + '\')').get();
   },
+
+  // Teams API methods
+  async getTeams(userId: string) {
+    const client = createGraphClient(userId);
+    return await client.api('/me/joinedTeams').get();
+  },
+
+  async getTeamChannels(userId: string, teamId: string) {
+    const client = createGraphClient(userId);
+    return await client.api(`/teams/${teamId}/channels`).get();
+  },
+
+  async sendTeamsMessage(userId: string, teamId: string, channelId: string, message: string) {
+    const client = createGraphClient(userId);
+    return await client.api(`/teams/${teamId}/channels/${channelId}/messages`).post({
+      body: {
+        content: message,
+        contentType: 'text'
+      }
+    });
+  },
+
+  async createTeamsChannel(userId: string, teamId: string, channelData: any) {
+    const client = createGraphClient(userId);
+    return await client.api(`/teams/${teamId}/channels`).post(channelData);
+  },
+
+  async createTeamsMeeting(userId: string, meetingData: any) {
+    const client = createGraphClient(userId);
+    return await client.api('/me/onlineMeetings').post({
+      ...meetingData,
+      meetingType: 'scheduled'
+    });
+  },
+
+  async getTeamMessages(userId: string, teamId: string, channelId: string, limit = 20) {
+    const client = createGraphClient(userId);
+    return await client.api(`/teams/${teamId}/channels/${channelId}/messages`).top(limit).get();
+  },
 };

@@ -2,7 +2,13 @@
 
 // PKCE helper functions
 function base64URLEncode(str: ArrayBuffer) {
-  return btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(str))))
+  // Use a more reliable method that won't cause stack overflow
+  const bytes = new Uint8Array(str);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
@@ -26,24 +32,37 @@ async function generateCodeChallenge(codeVerifier: string) {
 }
 
 export async function signInWithMicrosoftPKCE() {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('Microsoft OAuth can only be used in the browser');
+  }
+  
+  // Check if crypto.subtle is available
+  if (!window.crypto || !window.crypto.subtle) {
+    throw new Error('Web Crypto API is not available in this browser');
+  }
+  
   // Generate PKCE values
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
   
-  // Microsoft OAuth configuration
-  const clientId = 'bfa77df6-6952-4d0f-9816-003b3101b9da';
-  const tenantId = '29ee1479-b5f7-48c5-b665-7de9a8a9033e';
-  const redirectUri = `${window.location.origin}/auth/microsoft/callback`;
-  const scope = 'openid email profile offline_access';
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  // Microsoft OAuth configuration - Use environment variables
+  const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID;
+  const tenantId = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID || process.env.NEXT_PUBLIC_ENTRA_TENANT_ID;
   
-  // Create state parameter that includes the code verifier
+  if (!clientId || !tenantId) {
+    throw new Error('Microsoft OAuth configuration missing. Please set NEXT_PUBLIC_MICROSOFT_CLIENT_ID and NEXT_PUBLIC_MICROSOFT_TENANT_ID environment variables.');
+  }
+  
+  const redirectUri = `${window.location.origin}/auth/microsoft/callback`;
+  const scope = 'openid email profile offline_access https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Contacts.ReadWrite https://graph.microsoft.com/Files.ReadWrite.All';
+  
+  // Create secure state parameter without sensitive data
   const state = {
     redirectTo: `${window.location.origin}/dashboard`,
     provider: 'azure',
-    supabaseUrl: supabaseUrl,
     timestamp: Date.now(),
-    codeVerifier: codeVerifier  // Include code verifier in state
+    nonce: generateCodeVerifier() // Add nonce for CSRF protection
   };
   
   const encodedState = btoa(JSON.stringify(state));
@@ -82,6 +101,17 @@ export async function handleMicrosoftCallback(code: string, state: string) {
   
   if (state !== savedState) {
     throw new Error('State mismatch - possible CSRF attack');
+  }
+  
+  // Validate state timestamp (prevent replay attacks)
+  try {
+    const stateData = JSON.parse(atob(state));
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    if (stateData.timestamp < fiveMinutesAgo) {
+      throw new Error('OAuth state has expired');
+    }
+  } catch (e) {
+    throw new Error('Invalid OAuth state parameter');
   }
   
   // Clean up session storage

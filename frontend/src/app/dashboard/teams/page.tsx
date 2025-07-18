@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Microsoft365Client } from '@/lib/integrations/microsoft365';
 import { 
   Users, 
   MessageSquare, 
@@ -64,30 +63,30 @@ export default function TeamsPage() {
   const loadTeams = async () => {
     try {
       setLoading(true);
-      // In a real implementation, this would fetch from Microsoft Graph API
-      // For now, we'll use mock data
-      const mockTeams: Team[] = [
-        {
-          id: '1',
-          displayName: 'Recruiting Team',
-          description: 'Main recruiting team for all positions',
-          webUrl: 'https://teams.microsoft.com/...'
-        },
-        {
-          id: '2',
-          displayName: 'Financial Advisors',
-          description: 'Team for financial advisor recruitment',
-          webUrl: 'https://teams.microsoft.com/...'
-        }
-      ];
-      setTeams(mockTeams);
-      if (mockTeams.length > 0) {
-        setSelectedTeam(mockTeams[0]);
+      
+      // Fetch real teams from Microsoft Graph API
+      const response = await fetch('/api/microsoft/teams');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch teams');
       }
-    } catch (error) {
+
+      const data = await response.json();
+      const fetchedTeams = data.value?.map((team: any) => ({
+        id: team.id,
+        displayName: team.displayName,
+        description: team.description,
+        webUrl: team.webUrl
+      })) || [];
+
+      setTeams(fetchedTeams);
+      if (fetchedTeams.length > 0) {
+        setSelectedTeam(fetchedTeams[0]);
+      }
+    } catch (error: any) {
       toast({
         title: 'Error loading teams',
-        description: error.message,
+        description: error.message || 'Failed to load teams',
         variant: 'destructive',
       });
     } finally {
@@ -97,35 +96,29 @@ export default function TeamsPage() {
 
   const loadChannels = async (teamId: string) => {
     try {
-      // In a real implementation, this would fetch from Microsoft Graph API
-      const mockChannels: Channel[] = [
-        {
-          id: '1',
-          displayName: 'General',
-          description: 'General team discussions',
-          membershipType: 'standard'
-        },
-        {
-          id: '2',
-          displayName: 'Candidate Pipeline',
-          description: 'Discussion about active candidates',
-          membershipType: 'standard'
-        },
-        {
-          id: '3',
-          displayName: 'Interview Scheduling',
-          description: 'Coordinate interview schedules',
-          membershipType: 'standard'
-        }
-      ];
-      setChannels(mockChannels);
-      if (mockChannels.length > 0) {
-        setSelectedChannel(mockChannels[0]);
+      // Fetch real channels from Microsoft Graph API
+      const response = await fetch(`/api/microsoft/teams?teamId=${teamId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch channels');
       }
-    } catch (error) {
+
+      const data = await response.json();
+      const fetchedChannels = data.value?.map((channel: any) => ({
+        id: channel.id,
+        displayName: channel.displayName,
+        description: channel.description,
+        membershipType: channel.membershipType
+      })) || [];
+
+      setChannels(fetchedChannels);
+      if (fetchedChannels.length > 0) {
+        setSelectedChannel(fetchedChannels[0]);
+      }
+    } catch (error: any) {
       toast({
         title: 'Error loading channels',
-        description: error.message,
+        description: error.message || 'Failed to load channels',
         variant: 'destructive',
       });
     }
@@ -137,13 +130,23 @@ export default function TeamsPage() {
     try {
       setSending(true);
       
-      // Initialize Microsoft365 client
-      const client = new Microsoft365Client();
-      await client.sendTeamsMessage(
-        selectedTeam.id,
-        selectedChannel.id,
-        message
-      );
+      // Send message via API
+      const response = await fetch('/api/microsoft/teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId: selectedTeam.id,
+          channelId: selectedChannel.id,
+          action: 'send_message',
+          data: { message }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
 
       toast({
         title: 'Message sent',
@@ -151,10 +154,10 @@ export default function TeamsPage() {
       });
 
       setMessage('');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error sending message',
-        description: error.message,
+        description: error.message || 'Failed to send message',
         variant: 'destructive',
       });
     } finally {
@@ -166,11 +169,24 @@ export default function TeamsPage() {
     if (!selectedTeam || !newChannelName.trim()) return;
 
     try {
-      const client = new Microsoft365Client();
-      await client.createTeamsChannel(selectedTeam.id, {
-        displayName: newChannelName,
-        description: newChannelDescription,
+      const response = await fetch('/api/microsoft/teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId: selectedTeam.id,
+          action: 'create_channel',
+          data: {
+            displayName: newChannelName,
+            description: newChannelDescription,
+          }
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to create channel');
+      }
 
       toast({
         title: 'Channel created',
@@ -181,10 +197,10 @@ export default function TeamsPage() {
       setNewChannelDescription('');
       setShowNewChannel(false);
       loadChannels(selectedTeam.id);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error creating channel',
-        description: error.message,
+        description: error.message || 'Failed to create channel',
         variant: 'destructive',
       });
     }

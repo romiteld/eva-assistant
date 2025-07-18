@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { withRateLimit } from '@/middleware/rate-limit';
 
-// Microsoft OAuth configuration
-const MICROSOFT_TENANT_ID = '29ee1479-b5f7-48c5-b665-7de9a8a9033e';
-const MICROSOFT_CLIENT_ID = 'bfa77df6-6952-4d0f-9816-003b3101b9da';
-// Note: This is a public client app, no client secret needed for PKCE flow
+// Microsoft OAuth configuration - Use environment variables
+const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID || process.env.ENTRA_TENANT_ID;
+const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID || process.env.ENTRA_CLIENT_ID;
+
+if (!MICROSOFT_TENANT_ID || !MICROSOFT_CLIENT_ID) {
+  console.error('Microsoft OAuth configuration missing. Please set environment variables.');
+}
 
 export const GET = withRateLimit(async (request: NextRequest) => {
   const searchParams = request.nextUrl.searchParams;

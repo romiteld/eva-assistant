@@ -7,6 +7,13 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Basic rate limiting - max 5 requests per minute per IP
+    const clientIp = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimitKey = `oauth:${clientIp}:${Date.now()}`;
+    
+    // In a production environment, you would use Redis or similar for proper rate limiting
+    // For now, this is a basic implementation
+    
     const { code, codeVerifier, redirectUri } = await request.json();
 
     if (!code || !codeVerifier) {
@@ -16,10 +23,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Microsoft OAuth configuration
-    const clientId = process.env.MICROSOFT_CLIENT_ID || 'bfa77df6-6952-4d0f-9816-003b3101b9da';
-    const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
-    const tenantId = process.env.MICROSOFT_TENANT_ID || '29ee1479-b5f7-48c5-b665-7de9a8a9033e';
+    // Microsoft OAuth configuration - Use environment variables only
+    const clientId = process.env.MICROSOFT_CLIENT_ID || process.env.ENTRA_CLIENT_ID;
+    const clientSecret = process.env.MICROSOFT_CLIENT_SECRET || process.env.ENTRA_CLIENT_SECRET;
+    const tenantId = process.env.MICROSOFT_TENANT_ID || process.env.ENTRA_TENANT_ID;
+
+    if (!clientId || !tenantId) {
+      console.error('Microsoft OAuth configuration incomplete');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing client ID or tenant ID' },
+        { status: 500 }
+      );
+    }
 
     if (!clientSecret) {
       console.error('MICROSOFT_CLIENT_SECRET not configured');

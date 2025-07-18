@@ -26,22 +26,15 @@ export async function GET(request: NextRequest) {
     // This won't work directly because Supabase expects its own flow
     // But it shows the PKCE requirement
     
-    const tokenUrl = `https://login.microsoftonline.com/29ee1479-b5f7-48c5-b665-7de9a8a9033e/oauth2/v2.0/token`
+    // SECURITY WARNING: This endpoint should not be used in production
+    // Client secrets must never be exposed in client-side code
+    // Use the secure /api/auth/microsoft/token endpoint instead
     
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: 'bfa77df6-6952-4d0f-9816-003b3101b9da',
-        client_secret: 'z.z8Q~KRb~Qek1dewl8OC6wzqjdypY6Xh8hTeamA',
-        code: code,
-        redirect_uri: 'http://localhost:3000/auth/callback',
-        grant_type: 'authorization_code',
-        code_verifier: 'stored-in-session', // This would come from sessionStorage
-      }),
-    })
+    return NextResponse.json({ 
+      error: 'This endpoint is deprecated for security reasons',
+      message: 'Use /api/auth/microsoft/token for secure token exchange',
+      redirect: `${requestUrl.origin}/login?error=deprecated_endpoint`
+    }, { status: 410 }) // Gone
 
     const data = await response.json()
     

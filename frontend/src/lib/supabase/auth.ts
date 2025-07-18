@@ -65,9 +65,19 @@ export const authHelpers = {
   // Sign in with Microsoft (using custom OAuth with PKCE)
   signInWithMicrosoft: async () => {
     try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        throw new Error('Microsoft OAuth can only be used in the browser');
+      }
+      
       // We'll use a custom OAuth flow that properly handles PKCE
-      const { signInWithMicrosoftPKCE } = await import('@/lib/auth/microsoft-oauth');
-      await signInWithMicrosoftPKCE();
+      const module = await import('@/lib/auth/microsoft-oauth');
+      
+      if (!module.signInWithMicrosoftPKCE) {
+        throw new Error('Microsoft OAuth module not loaded properly');
+      }
+      
+      await module.signInWithMicrosoftPKCE();
       
       // The function will redirect, so we return success
       return { url: null, provider: 'azure' };

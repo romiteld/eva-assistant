@@ -5,8 +5,31 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { TasksTable } from '@/components/dashboard/TasksTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckSquare, Clock, AlertCircle, TrendingUp } from 'lucide-react';
+import { useTasks, useTaskStatistics } from '@/hooks/useTasks';
+import { LoadingStates } from '@/components/ui/loading-states';
 
 export default function TaskManagementPage() {
+  const { tasks, loading: tasksLoading } = useTasks();
+  const { statistics, loading: statsLoading } = useTaskStatistics();
+
+  // Calculate task statistics
+  const completedTasks = tasks.filter(task => task.status === 'completed').length;
+  const inProgressTasks = tasks.filter(task => task.status === 'in_progress').length;
+  const pendingTasks = tasks.filter(task => task.status === 'pending').length;
+  
+  // Calculate due today tasks
+  const today = new Date();
+  const dueTodayTasks = tasks.filter(task => {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    return dueDate.toDateString() === today.toDateString() && 
+           !['completed', 'cancelled'].includes(task.status);
+  }).length;
+
+  // Calculate productivity as completion rate
+  const totalTasks = tasks.length;
+  const productivityRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
   return (
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -24,8 +47,12 @@ export default function TaskManagementPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">24</div>
-              <p className="text-xs text-gray-400">This week</p>
+              {tasksLoading ? (
+                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+              ) : (
+                <div className="text-2xl font-bold text-white">{completedTasks}</div>
+              )}
+              <p className="text-xs text-gray-400">Total completed</p>
             </CardContent>
           </Card>
 
@@ -37,7 +64,11 @@ export default function TaskManagementPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">12</div>
+              {tasksLoading ? (
+                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+              ) : (
+                <div className="text-2xl font-bold text-white">{inProgressTasks}</div>
+              )}
               <p className="text-xs text-gray-400">Active tasks</p>
             </CardContent>
           </Card>
@@ -50,7 +81,11 @@ export default function TaskManagementPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">5</div>
+              {tasksLoading ? (
+                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+              ) : (
+                <div className="text-2xl font-bold text-white">{dueTodayTasks}</div>
+              )}
               <p className="text-xs text-gray-400">Urgent tasks</p>
             </CardContent>
           </Card>
@@ -63,15 +98,19 @@ export default function TaskManagementPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">87%</div>
-              <p className="text-xs text-gray-400">This month</p>
+              {tasksLoading ? (
+                <LoadingStates.Skeleton className="h-8 w-12 mb-2" />
+              ) : (
+                <div className="text-2xl font-bold text-white">{productivityRate}%</div>
+              )}
+              <p className="text-xs text-gray-400">Completion rate</p>
             </CardContent>
           </Card>
         </div>
 
         <Card className="bg-white/5 backdrop-blur-xl border-white/10">
           <CardHeader>
-            <CardTitle>All Tasks</CardTitle>
+            <CardTitle className="text-white">All Tasks</CardTitle>
           </CardHeader>
           <CardContent>
             <TasksTable />

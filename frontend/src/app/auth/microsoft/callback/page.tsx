@@ -30,55 +30,45 @@ export default function MicrosoftCallbackPage() {
       }
 
       try {
-        // Parse state to get code verifier
+        // Parse state and validate
         const stateData = state ? JSON.parse(atob(state)) : {};
-        const codeVerifier = stateData.codeVerifier;
+        const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
+        const savedState = sessionStorage.getItem('oauth_state');
 
         if (!codeVerifier) {
-          // Try to get from sessionStorage as backup
-          const storedVerifier = sessionStorage.getItem('pkce_code_verifier');
-          if (!storedVerifier) {
-            throw new Error('PKCE code verifier not found');
-          }
-          stateData.codeVerifier = storedVerifier;
+          throw new Error('PKCE code verifier not found');
         }
 
-        // Exchange code for tokens (client-side for SPA)
-        const tokenUrl = `https://login.microsoftonline.com/29ee1479-b5f7-48c5-b665-7de9a8a9033e/oauth2/v2.0/token`;
-        
-        const tokenParams = new URLSearchParams({
-          client_id: 'bfa77df6-6952-4d0f-9816-003b3101b9da',
-          grant_type: 'authorization_code',
-          code: code,
-          redirect_uri: `${window.location.origin}/auth/microsoft/callback`,
-          code_verifier: stateData.codeVerifier,
-          scope: 'openid email profile offline_access',
-        });
+        if (state !== savedState) {
+          throw new Error('State mismatch - possible CSRF attack');
+        }
 
-        const tokenResponse = await fetch(tokenUrl, {
+        // Validate state timestamp (prevent replay attacks)
+        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+        if (stateData.timestamp < fiveMinutesAgo) {
+          throw new Error('OAuth state has expired');
+        }
+
+        // Exchange code for tokens using our secure server-side endpoint
+        const tokenResponse = await fetch('/api/auth/microsoft/token', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
           },
-          body: tokenParams.toString(),
+          body: JSON.stringify({
+            code,
+            codeVerifier,
+            redirectUri: `${window.location.origin}/auth/microsoft/callback`,
+          }),
         });
 
         const tokenData = await tokenResponse.json();
 
-        if (tokenData.error) {
-          throw new Error(tokenData.error_description || 'Token exchange failed');
+        if (!tokenResponse.ok) {
+          throw new Error(tokenData.error || 'Token exchange failed');
         }
 
-        // Get user info from Microsoft
-        const userResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
-          headers: {
-            Authorization: `Bearer ${tokenData.access_token}`,
-          },
-        });
-
-        const userData = await userResponse.json();
-
-        // Send user data to our API to create Supabase session
+        // Create session using the user data returned from token exchange
         const sessionResponse = await fetch('/api/auth/microsoft/session', {
           method: 'POST',
           headers: {
@@ -86,9 +76,9 @@ export default function MicrosoftCallbackPage() {
           },
           body: JSON.stringify({
             userData: {
-              email: userData.mail || userData.userPrincipalName,
-              name: userData.displayName || userData.givenName || 'User',
-              microsoftId: userData.id,
+              email: tokenData.user.email,
+              name: tokenData.user.name,
+              microsoftId: tokenData.user.id,
             },
             redirectTo: stateData.redirectTo || '/dashboard',
           }),
@@ -102,6 +92,7 @@ export default function MicrosoftCallbackPage() {
 
         // Clear storage
         sessionStorage.removeItem('pkce_code_verifier');
+        sessionStorage.removeItem('oauth_state');
 
         // Redirect to success page
         router.push(sessionData.redirectUrl);
