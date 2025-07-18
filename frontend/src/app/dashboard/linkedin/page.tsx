@@ -97,7 +97,9 @@ export default function LinkedInIntegrationPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-zinc-400 text-sm">Connections</p>
-                  <p className="text-2xl font-bold text-white">1,234</p>
+                  <p className="text-2xl font-bold text-white">
+                    {loading ? '...' : stats.connections.toLocaleString()}
+                  </p>
                 </div>
                 <Users className="w-8 h-8 text-blue-500 opacity-50" />
               </div>
@@ -109,7 +111,9 @@ export default function LinkedInIntegrationPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-zinc-400 text-sm">Messages Sent</p>
-                  <p className="text-2xl font-bold text-white">89</p>
+                  <p className="text-2xl font-bold text-white">
+                    {loading ? '...' : stats.messagesSent.toLocaleString()}
+                  </p>
                 </div>
                 <MessageSquare className="w-8 h-8 text-green-500 opacity-50" />
               </div>
@@ -121,7 +125,9 @@ export default function LinkedInIntegrationPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-zinc-400 text-sm">Profile Views</p>
-                  <p className="text-2xl font-bold text-white">456</p>
+                  <p className="text-2xl font-bold text-white">
+                    {loading ? '...' : stats.profileViews.toLocaleString()}
+                  </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-purple-500 opacity-50" />
               </div>
@@ -133,7 +139,9 @@ export default function LinkedInIntegrationPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-zinc-400 text-sm">Leads Enriched</p>
-                  <p className="text-2xl font-bold text-white">234</p>
+                  <p className="text-2xl font-bold text-white">
+                    {loading ? '...' : stats.leadsEnriched.toLocaleString()}
+                  </p>
                 </div>
                 <UserPlus className="w-8 h-8 text-orange-500 opacity-50" />
               </div>
