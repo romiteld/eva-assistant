@@ -1,15 +1,35 @@
 # EVA Platform Master TODO List
-**Version**: 6.3  
+**Version**: 6.4  
 **Last Updated**: January 18, 2025  
 **Total Tasks**: 82 (P0: ALL COMPLETE ✅🎉, P1: 22, P2: 27, P3: 23)
-**Latest Enhancement**: GitHub Actions & Deployment Fixes Complete ✅
+**Latest Enhancement**: GitHub Actions Workflows Made Resilient to Missing Secrets ✅
 **Security Hardening**: COMPLETE ✅ See [security-fixes-report.md](./security-fixes-report.md)
 **Integration Health**: 95% ✅ See [integration-fix-plan.md](./integration-fix-plan.md)
-**Build Status**: All Critical Fixes Applied ✅
+**Build Status**: All Workflows Updated for Better Reliability ✅
 
 ## 🔄 Platform Updates (January 18, 2025):
 
 ### Critical Build Fixes Complete ✅
+
+#### GitHub Actions Workflow Updates (Version 6.4):
+1. **Deprecated Actions Fixed**:
+   - actions/upload-artifact: v3 → v4
+   - codecov/codecov-action: v3 → v5
+   - actions/create-release: v1 → v1.1.4
+   - 8398a7/action-slack: v3 → v3.16.2
+
+2. **Secret Handling Improvements**:
+   - All test secrets now have fallback values
+   - Workflows can run without all secrets configured
+   - Snyk security scan made optional when token missing
+   - Test environment uses default values for missing secrets
+
+3. **Additional Import Fixes**:
+   - Fixed 8 Supabase imports in Twilio analytics route
+   - Replaced global instance with createClient() calls
+   - All functions now create their own Supabase client
+
+#### Previous Fixes (Version 6.3):
 1. **Fixed createSupabaseServerClient Import Errors**:
    - Replaced incorrect `createSupabaseServerClient` imports with `createClient`
    - Fixed 3 route files: `/api/tasks/route.ts`, `/api/tasks/[taskId]/comments/route.ts`, `/api/microsoft/calendar/conflicts/route.ts`
