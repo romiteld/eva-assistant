@@ -34,7 +34,8 @@ serve(async (req: Request) => {
     const { socket: clientSocket, response } = Deno.upgradeWebSocket(req)
     
     // Connect to Gemini WebSocket using the correct endpoint for Live API
-    const geminiUrl = `wss://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${GEMINI_API_KEY}`
+    // Use v1alpha endpoint with proper streaming format for Gemini Live
+    const geminiUrl = `wss://generativelanguage.googleapis.com/v1alpha/models/${model}:streamGenerateContent?key=${GEMINI_API_KEY}`
     const geminiSocket = new WebSocket(geminiUrl)
     
     let geminiConnected = false

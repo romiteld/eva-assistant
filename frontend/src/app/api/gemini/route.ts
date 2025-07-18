@@ -7,7 +7,8 @@ import { withAuthAndRateLimit } from '@/middleware/api-security';
 import { AuthenticatedRequest } from '@/middleware/auth';
 
 // Gemini Live API configuration
-const GEMINI_LIVE_API_URL = 'wss://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent';
+// Use the correct Gemini Live API endpoint with v1 instead of v1beta
+const GEMINI_LIVE_API_URL = 'wss://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?alt=sse';
 
 // CSRF token validation
 function validateCSRFToken(request: NextRequest): boolean {

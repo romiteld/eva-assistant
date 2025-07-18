@@ -153,7 +153,8 @@ class GeminiWebSocketProxy {
     const modelName = model.startsWith('models/') ? model.substring(7) : model;
     
     // Construct the correct Gemini Live API URL
-    const geminiUrl = `wss://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
+    // Use v1 endpoint with proper streaming format
+    const geminiUrl = `wss://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?alt=sse&key=${apiKey}`;
     
     console.log('Connecting to Gemini Live API:', geminiUrl);
     

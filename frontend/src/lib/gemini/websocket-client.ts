@@ -100,11 +100,14 @@ export class GeminiWebSocketClient {
     this.ws.send(JSON.stringify(message));
   }
 
-  sendSetup(model: string = 'models/gemini-2.0-flash-exp'): void {
+  sendSetup(model: string = 'gemini-2.0-flash-exp'): void {
+    // Ensure model name is properly formatted
+    const modelName = model.startsWith('models/') ? model : `models/${model}`;
+    
     this.send({
       type: 'setup',
       setup: {
-        model,
+        model: modelName,
       },
     });
   }

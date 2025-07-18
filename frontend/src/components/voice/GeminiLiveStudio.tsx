@@ -879,9 +879,8 @@ export function EVAVoiceInterface() {
       const wsBaseUrl = supabaseUrl.replace('https://', 'wss://');
       
       // Use documented model names
-      const modelName = useNativeAudio 
-        ? 'gemini-2.5-flash-preview-native-audio-dialog' 
-        : 'gemini-live-2.5-flash-preview';
+      // For now, use the same model for both modes until we confirm the correct native audio model
+      const modelName = 'gemini-2.0-flash-exp';
       
       const wsUrl = `${wsBaseUrl}/functions/v1/gemini-websocket?model=${encodeURIComponent(modelName)}&token=${encodeURIComponent(session.access_token)}`;
 
