@@ -36,9 +36,28 @@ export default function MicrosoftCallbackPage() {
       try {
         // Parse state and validate
         const stateData = state ? JSON.parse(atob(state)) : {};
+        
+        // Try to retrieve PKCE verifier from multiple storage locations
         let codeVerifier = sessionStorage.getItem("pkce_code_verifier");
         let savedState = sessionStorage.getItem("oauth_state");
 
+        // Fallback to localStorage
+        if (!codeVerifier) {
+          try {
+            codeVerifier = localStorage.getItem("pkce_code_verifier");
+          } catch (e) {
+            console.warn("Failed to read from localStorage:", e);
+          }
+        }
+        if (!savedState) {
+          try {
+            savedState = localStorage.getItem("oauth_state");
+          } catch (e) {
+            console.warn("Failed to read from localStorage:", e);
+          }
+        }
+
+        // Fallback to cookies
         if (!codeVerifier) {
           const match = document.cookie.match(
             /(?:^|; )pkce_code_verifier=([^;]*)/,
@@ -51,7 +70,7 @@ export default function MicrosoftCallbackPage() {
         }
 
         if (!codeVerifier) {
-          throw new Error("PKCE code verifier not found");
+          throw new Error("PKCE code verifier not found. Please ensure cookies and local storage are enabled and try again.");
         }
 
         if (state !== savedState) {
@@ -144,9 +163,17 @@ export default function MicrosoftCallbackPage() {
           throw new Error(sessionData.error);
         }
 
-        // Clear storage
+        // Clear all storage locations
         sessionStorage.removeItem("pkce_code_verifier");
         sessionStorage.removeItem("oauth_state");
+        
+        try {
+          localStorage.removeItem("pkce_code_verifier");
+          localStorage.removeItem("oauth_state");
+        } catch (e) {
+          console.warn("Failed to clear localStorage:", e);
+        }
+        
         document.cookie =
           "pkce_code_verifier=; path=/; max-age=0; SameSite=Lax";
         document.cookie = "oauth_state=; path=/; max-age=0; SameSite=Lax";

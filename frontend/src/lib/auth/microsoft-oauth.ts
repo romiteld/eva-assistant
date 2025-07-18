@@ -24,7 +24,10 @@ function generateCodeVerifier() {
 }
 
 function setCookie(name: string, value: string, maxAgeSeconds = 300) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+  // Use more permissive cookie settings for OAuth flow
+  const isSecure = window.location.protocol === 'https:';
+  const secureFlag = isSecure ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax${secureFlag}`;
 }
 
 function getCookie(name: string): string | null {
@@ -87,10 +90,20 @@ export async function signInWithMicrosoftPKCE() {
 
   const encodedState = btoa(JSON.stringify(state));
 
-  // Store in sessionStorage for client-side callback
+  // Store in multiple locations for better reliability
+  // 1. sessionStorage (primary)
   sessionStorage.setItem("pkce_code_verifier", codeVerifier);
   sessionStorage.setItem("oauth_state", encodedState);
-  // Also store as fallback cookies in case sessionStorage is cleared
+  
+  // 2. localStorage (secondary fallback)
+  try {
+    localStorage.setItem("pkce_code_verifier", codeVerifier);
+    localStorage.setItem("oauth_state", encodedState);
+  } catch (e) {
+    console.warn("Failed to store in localStorage:", e);
+  }
+  
+  // 3. Cookies (tertiary fallback)
   setCookie("pkce_code_verifier", codeVerifier);
   setCookie("oauth_state", encodedState);
 
@@ -115,10 +128,27 @@ export async function signInWithMicrosoftPKCE() {
 
 // Handle the OAuth callback
 export async function handleMicrosoftCallback(code: string, state: string) {
+  // Try to retrieve from multiple storage locations
   let codeVerifier = sessionStorage.getItem("pkce_code_verifier");
   let savedState = sessionStorage.getItem("oauth_state");
 
-  // Fallback to cookies if sessionStorage was cleared
+  // Fallback to localStorage
+  if (!codeVerifier) {
+    try {
+      codeVerifier = localStorage.getItem("pkce_code_verifier");
+    } catch (e) {
+      console.warn("Failed to read from localStorage:", e);
+    }
+  }
+  if (!savedState) {
+    try {
+      savedState = localStorage.getItem("oauth_state");
+    } catch (e) {
+      console.warn("Failed to read from localStorage:", e);
+    }
+  }
+
+  // Fallback to cookies if storage was cleared
   if (!codeVerifier) {
     codeVerifier = getCookie("pkce_code_verifier");
   }
@@ -127,7 +157,7 @@ export async function handleMicrosoftCallback(code: string, state: string) {
   }
 
   if (!codeVerifier) {
-    throw new Error("PKCE code verifier not found");
+    throw new Error("PKCE code verifier not found. Please ensure cookies and local storage are enabled and try again.");
   }
 
   if (state !== savedState) {
@@ -150,9 +180,17 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     throw new Error("Invalid OAuth state parameter");
   }
 
-  // Clean up session storage
+  // Clean up all storage locations
   sessionStorage.removeItem("pkce_code_verifier");
   sessionStorage.removeItem("oauth_state");
+  
+  try {
+    localStorage.removeItem("pkce_code_verifier");
+    localStorage.removeItem("oauth_state");
+  } catch (e) {
+    console.warn("Failed to clear localStorage:", e);
+  }
+  
   setCookie("pkce_code_verifier", "", 0);
   setCookie("oauth_state", "", 0);
 
