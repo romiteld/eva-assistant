@@ -38,22 +38,28 @@ export default function MicrosoftCallbackPage() {
         const stateData = state ? JSON.parse(atob(state)) : {};
         
         // Try to retrieve PKCE verifier from multiple storage locations
+        console.log("[OAuth Callback] Starting PKCE retrieval...");
+        console.log("[OAuth Callback] Current cookies:", document.cookie);
+        
         let codeVerifier = sessionStorage.getItem("pkce_code_verifier");
         let savedState = sessionStorage.getItem("oauth_state");
+        console.log("[OAuth Callback] SessionStorage - verifier:", !!codeVerifier, "state:", !!savedState);
 
         // Fallback to localStorage
         if (!codeVerifier) {
           try {
             codeVerifier = localStorage.getItem("pkce_code_verifier");
+            console.log("[OAuth Callback] Retrieved verifier from localStorage");
           } catch (e) {
-            console.warn("Failed to read from localStorage:", e);
+            console.warn("[OAuth Callback] Failed to read verifier from localStorage:", e);
           }
         }
         if (!savedState) {
           try {
             savedState = localStorage.getItem("oauth_state");
+            console.log("[OAuth Callback] Retrieved state from localStorage");
           } catch (e) {
-            console.warn("Failed to read from localStorage:", e);
+            console.warn("[OAuth Callback] Failed to read state from localStorage:", e);
           }
         }
 
@@ -63,13 +69,33 @@ export default function MicrosoftCallbackPage() {
             /(?:^|; )pkce_code_verifier=([^;]*)/,
           );
           codeVerifier = match ? decodeURIComponent(match[1]) : null;
+          if (codeVerifier) {
+            console.log("[OAuth Callback] Retrieved verifier from cookies");
+          }
         }
         if (!savedState) {
           const match = document.cookie.match(/(?:^|; )oauth_state=([^;]*)/);
           savedState = match ? decodeURIComponent(match[1]) : null;
+          if (savedState) {
+            console.log("[OAuth Callback] Retrieved state from cookies");
+          }
         }
 
+        // Final fallback: try to get PKCE from state parameter itself
+        if (!codeVerifier && stateData.pkce) {
+          codeVerifier = stateData.pkce;
+          console.log("[OAuth Callback] Retrieved verifier from state parameter (ultimate fallback)");
+        }
+
+        console.log("[OAuth Callback] Final retrieval status - verifier:", !!codeVerifier, "state:", !!savedState);
+
         if (!codeVerifier) {
+          // Log all available storage for debugging
+          console.error("[OAuth Callback] PKCE verifier not found in any storage!");
+          console.error("[OAuth Callback] SessionStorage keys:", Object.keys(sessionStorage));
+          console.error("[OAuth Callback] LocalStorage keys:", Object.keys(localStorage));
+          console.error("[OAuth Callback] All cookies:", document.cookie);
+          console.error("[OAuth Callback] State data:", stateData);
           throw new Error("PKCE code verifier not found. Please ensure cookies and local storage are enabled and try again.");
         }
 

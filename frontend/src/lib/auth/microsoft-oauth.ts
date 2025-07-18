@@ -23,11 +23,13 @@ function generateCodeVerifier() {
   return base64URLEncode(array.buffer);
 }
 
-function setCookie(name: string, value: string, maxAgeSeconds = 300) {
+function setCookie(name: string, value: string, maxAgeSeconds = 600) {
   // Use more permissive cookie settings for OAuth flow
   const isSecure = window.location.protocol === 'https:';
   const secureFlag = isSecure ? '; Secure' : '';
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax${secureFlag}`;
+  // Use None for SameSite in production to allow cross-site OAuth flow
+  const sameSite = isSecure ? 'None' : 'Lax';
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=${sameSite}${secureFlag}`;
 }
 
 function getCookie(name: string): string | null {
@@ -80,32 +82,50 @@ export async function signInWithMicrosoftPKCE() {
   const scope =
     "openid email profile offline_access https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Contacts.ReadWrite https://graph.microsoft.com/Files.ReadWrite.All";
 
-  // Create secure state parameter without sensitive data
+  // Create secure state parameter that includes PKCE verifier as fallback
   const state = {
     redirectTo: `${window.location.origin}/dashboard`,
     provider: "azure",
     timestamp: Date.now(),
     nonce: generateCodeVerifier(), // Add nonce for CSRF protection
+    pkce: codeVerifier, // Include PKCE verifier in state as ultimate fallback
   };
 
   const encodedState = btoa(JSON.stringify(state));
 
   // Store in multiple locations for better reliability
+  console.log("[Microsoft OAuth] Storing PKCE verifier and state...");
+  
   // 1. sessionStorage (primary)
-  sessionStorage.setItem("pkce_code_verifier", codeVerifier);
-  sessionStorage.setItem("oauth_state", encodedState);
+  try {
+    sessionStorage.setItem("pkce_code_verifier", codeVerifier);
+    sessionStorage.setItem("oauth_state", encodedState);
+    console.log("[Microsoft OAuth] Stored in sessionStorage successfully");
+  } catch (e) {
+    console.error("[Microsoft OAuth] Failed to store in sessionStorage:", e);
+  }
   
   // 2. localStorage (secondary fallback)
   try {
     localStorage.setItem("pkce_code_verifier", codeVerifier);
     localStorage.setItem("oauth_state", encodedState);
+    console.log("[Microsoft OAuth] Stored in localStorage successfully");
   } catch (e) {
-    console.warn("Failed to store in localStorage:", e);
+    console.warn("[Microsoft OAuth] Failed to store in localStorage:", e);
   }
   
   // 3. Cookies (tertiary fallback)
   setCookie("pkce_code_verifier", codeVerifier);
   setCookie("oauth_state", encodedState);
+  console.log("[Microsoft OAuth] Stored in cookies");
+  
+  // Verify storage
+  const verifyStorage = {
+    sessionStorage: sessionStorage.getItem("pkce_code_verifier") !== null,
+    localStorage: localStorage.getItem("pkce_code_verifier") !== null,
+    cookie: getCookie("pkce_code_verifier") !== null
+  };
+  console.log("[Microsoft OAuth] Storage verification:", verifyStorage);
 
   // Construct the OAuth URL with PKCE
   const params = new URLSearchParams({
