@@ -406,6 +406,7 @@ export class TokenManager {
         default:
           throw new Error(`Unsupported provider: ${token.provider}`);
       }
+      } // Close else block
 
       if (!response.ok) {
         const errorData = await response.text();
