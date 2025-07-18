@@ -12,8 +12,8 @@ export const dynamic = 'force-dynamic';
 
 // Initialize Redis for queue management
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  url: process.env.UPSTASH_REDIS_REST_URL?.trim() || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() || '',
 });
 
 const emailWebhookHandler = async (request: NextRequest, emailData: any) => {
