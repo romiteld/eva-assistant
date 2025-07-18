@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function MicrosoftCallbackPage() {
   const router = useRouter();
@@ -12,10 +12,10 @@ export default function MicrosoftCallbackPage() {
 
   useEffect(() => {
     async function handleCallback() {
-      const code = searchParams.get('code');
-      const state = searchParams.get('state');
-      const error = searchParams.get('error');
-      const errorDescription = searchParams.get('error_description');
+      const code = searchParams.get("code");
+      const state = searchParams.get("state");
+      const error = searchParams.get("error");
+      const errorDescription = searchParams.get("error_description");
 
       if (error) {
         setError(`OAuth error: ${errorDescription || error}`);
@@ -24,7 +24,7 @@ export default function MicrosoftCallbackPage() {
       }
 
       if (!code) {
-        setError('No authorization code received');
+        setError("No authorization code received");
         setLoading(false);
         return;
       }
@@ -32,28 +32,43 @@ export default function MicrosoftCallbackPage() {
       try {
         // Parse state and validate
         const stateData = state ? JSON.parse(atob(state)) : {};
-        const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-        const savedState = sessionStorage.getItem('oauth_state');
+        let codeVerifier = sessionStorage.getItem("pkce_code_verifier");
+        let savedState = sessionStorage.getItem("oauth_state");
 
         if (!codeVerifier) {
-          throw new Error('PKCE code verifier not found');
+          const match = document.cookie.match(
+            /(?:^|; )pkce_code_verifier=([^;]*)/,
+          );
+          codeVerifier = match ? decodeURIComponent(match[1]) : null;
+        }
+        if (!savedState) {
+          const match = document.cookie.match(/(?:^|; )oauth_state=([^;]*)/);
+          savedState = match ? decodeURIComponent(match[1]) : null;
+        }
+
+        if (!codeVerifier) {
+          throw new Error("PKCE code verifier not found");
         }
 
         if (state !== savedState) {
-          throw new Error('State mismatch - possible CSRF attack');
+          const match = document.cookie.match(/(?:^|; )oauth_state=([^;]*)/);
+          const cookieState = match ? decodeURIComponent(match[1]) : null;
+          if (!cookieState || state !== cookieState) {
+            throw new Error("State mismatch - possible CSRF attack");
+          }
         }
 
         // Validate state timestamp (prevent replay attacks)
-        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+        const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
         if (stateData.timestamp < fiveMinutesAgo) {
-          throw new Error('OAuth state has expired');
+          throw new Error("OAuth state has expired");
         }
 
         // Exchange code for tokens using our secure server-side endpoint
-        const tokenResponse = await fetch('/api/auth/microsoft/token', {
-          method: 'POST',
+        const tokenResponse = await fetch("/api/auth/microsoft/token", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             code,
@@ -65,14 +80,14 @@ export default function MicrosoftCallbackPage() {
         const tokenData = await tokenResponse.json();
 
         if (!tokenResponse.ok) {
-          throw new Error(tokenData.error || 'Token exchange failed');
+          throw new Error(tokenData.error || "Token exchange failed");
         }
 
         // Create session using the user data returned from token exchange
-        const sessionResponse = await fetch('/api/auth/microsoft/session', {
-          method: 'POST',
+        const sessionResponse = await fetch("/api/auth/microsoft/session", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             userData: {
@@ -80,7 +95,7 @@ export default function MicrosoftCallbackPage() {
               name: tokenData.user.name,
               microsoftId: tokenData.user.id,
             },
-            redirectTo: stateData.redirectTo || '/dashboard',
+            redirectTo: stateData.redirectTo || "/dashboard",
           }),
         });
 
@@ -91,15 +106,19 @@ export default function MicrosoftCallbackPage() {
         }
 
         // Clear storage
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem("pkce_code_verifier");
+        sessionStorage.removeItem("oauth_state");
+        document.cookie =
+          "pkce_code_verifier=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "oauth_state=; path=/; max-age=0; SameSite=Lax";
 
         // Redirect to success page
         router.push(sessionData.redirectUrl);
-        
       } catch (error) {
-        console.error('Error during OAuth callback:', error);
-        setError(error instanceof Error ? error.message : 'Authentication failed');
+        console.error("Error during OAuth callback:", error);
+        setError(
+          error instanceof Error ? error.message : "Authentication failed",
+        );
         setLoading(false);
       }
     }
@@ -112,10 +131,12 @@ export default function MicrosoftCallbackPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-8 p-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Error</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Authentication Error
+            </h2>
             <p className="text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push("/login")}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
               Back to Login
