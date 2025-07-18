@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
+// Microsoft OAuth configuration from environment
+const TENANT_ID = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID || process.env.NEXT_PUBLIC_ENTRA_TENANT_ID || '';
+const CLIENT_ID = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID || '';
+
 export default function MicrosoftCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,23 +68,58 @@ export default function MicrosoftCallbackPage() {
           throw new Error("OAuth state has expired");
         }
 
-        // Exchange code for tokens using our secure server-side endpoint
-        const tokenResponse = await fetch("/api/auth/microsoft/token", {
-          method: "POST",
+        // For SPAs, exchange token directly with Microsoft (cross-origin)
+        const tokenUrl = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
+        const tokenParams = new URLSearchParams({
+          client_id: CLIENT_ID,
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: `${window.location.origin}/auth/microsoft/callback`,
+          code_verifier: codeVerifier,
+        });
+
+        // Direct cross-origin request to Microsoft
+        const tokenResponse = await fetch(tokenUrl, {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: JSON.stringify({
-            code,
-            codeVerifier,
-            redirectUri: `${window.location.origin}/auth/microsoft/callback`,
-          }),
+          body: tokenParams.toString(),
         });
 
         const tokenData = await tokenResponse.json();
 
         if (!tokenResponse.ok) {
-          throw new Error(tokenData.error || "Token exchange failed");
+          throw new Error(tokenData.error_description || tokenData.error || "Token exchange failed");
+        }
+        
+        // Get user info
+        const userResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        });
+
+        const userData = await userResponse.json();
+
+        if (!userResponse.ok) {
+          throw new Error('Failed to get user information');
+        }
+        
+        // Store tokens server-side
+        const storeResponse = await fetch("/api/auth/microsoft/store-tokens", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...tokenData,
+            user: userData,
+          }),
+        });
+        
+        if (!storeResponse.ok) {
+          console.error('Failed to store tokens');
         }
 
         // Create session using the user data returned from token exchange
@@ -91,9 +130,9 @@ export default function MicrosoftCallbackPage() {
           },
           body: JSON.stringify({
             userData: {
-              email: tokenData.user.email,
-              name: tokenData.user.name,
-              microsoftId: tokenData.user.id,
+              email: userData.mail || userData.userPrincipalName,
+              name: userData.displayName,
+              microsoftId: userData.id,
             },
             redirectTo: stateData.redirectTo || "/dashboard",
           }),

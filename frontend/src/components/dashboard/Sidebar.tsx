@@ -81,56 +81,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     }
   }
 
-  // Flatten all navigation items for keyboard navigation
-  const allItems = sidebarGroups.flatMap(group => group.items)
-  const totalItems = allItems.length
-
-  // Keyboard navigation handler
-  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
-    if (!navRef.current) return
-
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault()
-        setFocusedItemIndex(prev => {
-          const next = prev < totalItems - 1 ? prev + 1 : 0
-          itemRefs.current[next]?.focus()
-          return next
-        })
-        break
-      case 'ArrowUp':
-        event.preventDefault()
-        setFocusedItemIndex(prev => {
-          const next = prev > 0 ? prev - 1 : totalItems - 1
-          itemRefs.current[next]?.focus()
-          return next
-        })
-        break
-      case 'Home':
-        event.preventDefault()
-        setFocusedItemIndex(0)
-        itemRefs.current[0]?.focus()
-        break
-      case 'End':
-        event.preventDefault()
-        setFocusedItemIndex(totalItems - 1)
-        itemRefs.current[totalItems - 1]?.focus()
-        break
-      case 'Escape':
-        if (!isDesktop) {
-          onClose()
-        }
-        break
-    }
-  }, [totalItems, isDesktop, onClose])
-
-  // Reset focus when sidebar closes on mobile
-  useEffect(() => {
-    if (!isOpen && !isDesktop) {
-      setFocusedItemIndex(-1)
-    }
-  }, [isOpen, isDesktop])
-
   const sidebarGroups = [
     {
       label: "Overview",
@@ -200,6 +150,56 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
       ]
     }
   ]
+
+  // Flatten all navigation items for keyboard navigation
+  const allItems = sidebarGroups.flatMap(group => group.items)
+  const totalItems = allItems.length
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
+    if (!navRef.current) return
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault()
+        setFocusedItemIndex(prev => {
+          const next = prev < totalItems - 1 ? prev + 1 : 0
+          itemRefs.current[next]?.focus()
+          return next
+        })
+        break
+      case 'ArrowUp':
+        event.preventDefault()
+        setFocusedItemIndex(prev => {
+          const next = prev > 0 ? prev - 1 : totalItems - 1
+          itemRefs.current[next]?.focus()
+          return next
+        })
+        break
+      case 'Home':
+        event.preventDefault()
+        setFocusedItemIndex(0)
+        itemRefs.current[0]?.focus()
+        break
+      case 'End':
+        event.preventDefault()
+        setFocusedItemIndex(totalItems - 1)
+        itemRefs.current[totalItems - 1]?.focus()
+        break
+      case 'Escape':
+        if (!isDesktop) {
+          onClose()
+        }
+        break
+    }
+  }, [totalItems, isDesktop, onClose])
+
+  // Reset focus when sidebar closes on mobile
+  useEffect(() => {
+    if (!isOpen && !isDesktop) {
+      setFocusedItemIndex(-1)
+    }
+  }, [isOpen, isDesktop])
 
   return (
     <>
