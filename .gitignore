@@ -71,3 +71,4 @@ docs/
 *.gif
 *.bmp
 Screenshot*.png
+.env*.local
