@@ -8,6 +8,18 @@ import { Loader2 } from "lucide-react";
 const TENANT_ID = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID || process.env.NEXT_PUBLIC_ENTRA_TENANT_ID || '';
 const CLIENT_ID = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID || '';
 
+// Helper function to get cookie value
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(
+    new RegExp(
+      "(?:^|; )" +
+        name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") +
+        "=([^;]*)",
+    ),
+  );
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default function MicrosoftCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,7 +93,48 @@ export default function MicrosoftCallbackPage() {
           }
         }
 
-        // Final fallback: try to get PKCE from state parameter itself
+        // 4. Try window object (quaternary)
+        if (!codeVerifier && typeof window !== 'undefined') {
+          try {
+            const windowStorage = (window as any).__oauthStorage;
+            if (windowStorage) {
+              codeVerifier = windowStorage.pkce_code_verifier;
+              savedState = windowStorage.oauth_state;
+              if (codeVerifier) {
+                console.log("[OAuth Callback] Retrieved from window storage");
+              }
+            }
+          } catch (e) {
+            console.warn("[OAuth Callback] Failed to read from window storage:", e);
+          }
+        }
+
+        // 5. Try timestamped keys if available
+        if (!codeVerifier) {
+          try {
+            const timestamp = sessionStorage.getItem("oauth_storage_timestamp") || 
+                             localStorage.getItem("oauth_storage_timestamp") || 
+                             getCookie("oauth_storage_timestamp");
+            
+            if (timestamp) {
+              const timestampedVerifierKey = `pkce_code_verifier_${timestamp}`;
+              const timestampedStateKey = `oauth_state_${timestamp}`;
+              
+              codeVerifier = sessionStorage.getItem(timestampedVerifierKey) || 
+                            localStorage.getItem(timestampedVerifierKey);
+              savedState = sessionStorage.getItem(timestampedStateKey) || 
+                          localStorage.getItem(timestampedStateKey);
+              
+              if (codeVerifier) {
+                console.log("[OAuth Callback] Retrieved from timestamped keys");
+              }
+            }
+          } catch (e) {
+            console.warn("[OAuth Callback] Failed to read timestamped keys:", e);
+          }
+        }
+
+        // 6. Final fallback: try to get PKCE from state parameter itself
         if (!codeVerifier && stateData.pkce) {
           codeVerifier = stateData.pkce;
           console.log("[OAuth Callback] Retrieved verifier from state parameter (ultimate fallback)");
@@ -96,6 +149,7 @@ export default function MicrosoftCallbackPage() {
           console.error("[OAuth Callback] LocalStorage keys:", Object.keys(localStorage));
           console.error("[OAuth Callback] All cookies:", document.cookie);
           console.error("[OAuth Callback] State data:", stateData);
+          console.error("[OAuth Callback] Window storage:", typeof window !== 'undefined' ? (window as any).__oauthStorage : null);
           throw new Error("PKCE code verifier not found. Please ensure cookies and local storage are enabled and try again.");
         }
 
@@ -189,20 +243,49 @@ export default function MicrosoftCallbackPage() {
           throw new Error(sessionData.error);
         }
 
-        // Clear all storage locations
+        // Clear all storage locations including enhanced storage
+        const timestamp = sessionStorage.getItem("oauth_storage_timestamp") || 
+                         localStorage.getItem("oauth_storage_timestamp") || 
+                         getCookie("oauth_storage_timestamp");
+        
+        // Clear standard keys
         sessionStorage.removeItem("pkce_code_verifier");
         sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("oauth_storage_timestamp");
+        
+        // Clear timestamped keys if available
+        if (timestamp) {
+          sessionStorage.removeItem(`pkce_code_verifier_${timestamp}`);
+          sessionStorage.removeItem(`oauth_state_${timestamp}`);
+        }
         
         try {
           localStorage.removeItem("pkce_code_verifier");
           localStorage.removeItem("oauth_state");
+          localStorage.removeItem("oauth_storage_timestamp");
+          
+          // Clear timestamped keys if available
+          if (timestamp) {
+            localStorage.removeItem(`pkce_code_verifier_${timestamp}`);
+            localStorage.removeItem(`oauth_state_${timestamp}`);
+          }
         } catch (e) {
           console.warn("Failed to clear localStorage:", e);
         }
         
-        document.cookie =
-          "pkce_code_verifier=; path=/; max-age=0; SameSite=Lax";
+        // Clear cookies
+        document.cookie = "pkce_code_verifier=; path=/; max-age=0; SameSite=Lax";
         document.cookie = "oauth_state=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "oauth_storage_timestamp=; path=/; max-age=0; SameSite=Lax";
+        
+        // Clear window storage
+        if (typeof window !== 'undefined') {
+          try {
+            delete (window as any).__oauthStorage;
+          } catch (e) {
+            console.warn("Failed to clear window storage:", e);
+          }
+        }
 
         // Redirect to success page
         router.push(sessionData.redirectUrl);

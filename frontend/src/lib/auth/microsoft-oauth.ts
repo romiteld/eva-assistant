@@ -23,13 +23,24 @@ function generateCodeVerifier() {
   return base64URLEncode(array.buffer);
 }
 
-function setCookie(name: string, value: string, maxAgeSeconds = 600) {
+function setCookie(name: string, value: string, maxAgeSeconds = 900) {
   // Use more permissive cookie settings for OAuth flow
   const isSecure = window.location.protocol === 'https:';
   const secureFlag = isSecure ? '; Secure' : '';
   // Use None for SameSite in production to allow cross-site OAuth flow
   const sameSite = isSecure ? 'None' : 'Lax';
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=${sameSite}${secureFlag}`;
+  
+  // Set cookie with domain to ensure cross-subdomain availability
+  let domain = '';
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // For production domains, set domain to allow cross-subdomain access
+    if (hostname.includes('.') && !hostname.includes('localhost')) {
+      domain = `; Domain=.${hostname.split('.').slice(-2).join('.')}`;
+    }
+  }
+  
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=${sameSite}${secureFlag}${domain}`;
 }
 
 function getCookie(name: string): string | null {
@@ -96,10 +107,19 @@ export async function signInWithMicrosoftPKCE() {
   // Store in multiple locations for better reliability
   console.log("[Microsoft OAuth] Storing PKCE verifier and state...");
   
+  // Enhanced storage with unique timestamp-based keys to prevent conflicts
+  const storageTimestamp = Date.now();
+  const timestampedVerifierKey = `pkce_code_verifier_${storageTimestamp}`;
+  const timestampedStateKey = `oauth_state_${storageTimestamp}`;
+  
   // 1. sessionStorage (primary)
   try {
     sessionStorage.setItem("pkce_code_verifier", codeVerifier);
     sessionStorage.setItem("oauth_state", encodedState);
+    // Also store with timestamped keys as backup
+    sessionStorage.setItem(timestampedVerifierKey, codeVerifier);
+    sessionStorage.setItem(timestampedStateKey, encodedState);
+    sessionStorage.setItem("oauth_storage_timestamp", storageTimestamp.toString());
     console.log("[Microsoft OAuth] Stored in sessionStorage successfully");
   } catch (e) {
     console.error("[Microsoft OAuth] Failed to store in sessionStorage:", e);
@@ -109,6 +129,10 @@ export async function signInWithMicrosoftPKCE() {
   try {
     localStorage.setItem("pkce_code_verifier", codeVerifier);
     localStorage.setItem("oauth_state", encodedState);
+    // Also store with timestamped keys as backup
+    localStorage.setItem(timestampedVerifierKey, codeVerifier);
+    localStorage.setItem(timestampedStateKey, encodedState);
+    localStorage.setItem("oauth_storage_timestamp", storageTimestamp.toString());
     console.log("[Microsoft OAuth] Stored in localStorage successfully");
   } catch (e) {
     console.warn("[Microsoft OAuth] Failed to store in localStorage:", e);
@@ -117,13 +141,28 @@ export async function signInWithMicrosoftPKCE() {
   // 3. Cookies (tertiary fallback)
   setCookie("pkce_code_verifier", codeVerifier);
   setCookie("oauth_state", encodedState);
+  setCookie("oauth_storage_timestamp", storageTimestamp.toString());
   console.log("[Microsoft OAuth] Stored in cookies");
+  
+  // 4. Enhanced in-memory fallback using window object
+  try {
+    if (typeof window !== 'undefined') {
+      (window as any).__oauthStorage = {
+        pkce_code_verifier: codeVerifier,
+        oauth_state: encodedState,
+        timestamp: storageTimestamp
+      };
+    }
+  } catch (e) {
+    console.warn("[Microsoft OAuth] Failed to store in window object:", e);
+  }
   
   // Verify storage
   const verifyStorage = {
     sessionStorage: sessionStorage.getItem("pkce_code_verifier") !== null,
     localStorage: localStorage.getItem("pkce_code_verifier") !== null,
-    cookie: getCookie("pkce_code_verifier") !== null
+    cookie: getCookie("pkce_code_verifier") !== null,
+    window: typeof window !== 'undefined' && (window as any).__oauthStorage !== undefined
   };
   console.log("[Microsoft OAuth] Storage verification:", verifyStorage);
 
@@ -148,33 +187,108 @@ export async function signInWithMicrosoftPKCE() {
 
 // Handle the OAuth callback
 export async function handleMicrosoftCallback(code: string, state: string) {
-  // Try to retrieve from multiple storage locations
-  let codeVerifier = sessionStorage.getItem("pkce_code_verifier");
-  let savedState = sessionStorage.getItem("oauth_state");
+  console.log("[Microsoft OAuth Callback] Starting enhanced PKCE retrieval...");
+  
+  // Try to retrieve from multiple storage locations with enhanced fallback
+  let codeVerifier: string | null = null;
+  let savedState: string | null = null;
+  
+  // 1. Try sessionStorage (primary)
+  try {
+    codeVerifier = sessionStorage.getItem("pkce_code_verifier");
+    savedState = sessionStorage.getItem("oauth_state");
+    if (codeVerifier) {
+      console.log("[Microsoft OAuth Callback] Retrieved from sessionStorage");
+    }
+  } catch (e) {
+    console.warn("[Microsoft OAuth Callback] Failed to read from sessionStorage:", e);
+  }
 
-  // Fallback to localStorage
+  // 2. Try localStorage (secondary)
   if (!codeVerifier) {
     try {
       codeVerifier = localStorage.getItem("pkce_code_verifier");
-    } catch (e) {
-      console.warn("Failed to read from localStorage:", e);
-    }
-  }
-  if (!savedState) {
-    try {
       savedState = localStorage.getItem("oauth_state");
+      if (codeVerifier) {
+        console.log("[Microsoft OAuth Callback] Retrieved from localStorage");
+      }
     } catch (e) {
-      console.warn("Failed to read from localStorage:", e);
+      console.warn("[Microsoft OAuth Callback] Failed to read from localStorage:", e);
     }
   }
 
-  // Fallback to cookies if storage was cleared
+  // 3. Try cookies (tertiary)
   if (!codeVerifier) {
     codeVerifier = getCookie("pkce_code_verifier");
-  }
-  if (!savedState) {
     savedState = getCookie("oauth_state");
+    if (codeVerifier) {
+      console.log("[Microsoft OAuth Callback] Retrieved from cookies");
+    }
   }
+
+  // 4. Try window object (quaternary)
+  if (!codeVerifier && typeof window !== 'undefined') {
+    try {
+      const windowStorage = (window as any).__oauthStorage;
+      if (windowStorage) {
+        codeVerifier = windowStorage.pkce_code_verifier;
+        savedState = windowStorage.oauth_state;
+        if (codeVerifier) {
+          console.log("[Microsoft OAuth Callback] Retrieved from window storage");
+        }
+      }
+    } catch (e) {
+      console.warn("[Microsoft OAuth Callback] Failed to read from window storage:", e);
+    }
+  }
+
+  // 5. Try timestamped keys if available
+  if (!codeVerifier) {
+    try {
+      const timestamp = sessionStorage.getItem("oauth_storage_timestamp") || 
+                       localStorage.getItem("oauth_storage_timestamp") || 
+                       getCookie("oauth_storage_timestamp");
+      
+      if (timestamp) {
+        const timestampedVerifierKey = `pkce_code_verifier_${timestamp}`;
+        const timestampedStateKey = `oauth_state_${timestamp}`;
+        
+        codeVerifier = sessionStorage.getItem(timestampedVerifierKey) || 
+                      localStorage.getItem(timestampedVerifierKey);
+        savedState = sessionStorage.getItem(timestampedStateKey) || 
+                    localStorage.getItem(timestampedStateKey);
+        
+        if (codeVerifier) {
+          console.log("[Microsoft OAuth Callback] Retrieved from timestamped keys");
+        }
+      }
+    } catch (e) {
+      console.warn("[Microsoft OAuth Callback] Failed to read timestamped keys:", e);
+    }
+  }
+
+  // 6. Final fallback: try to extract from state parameter
+  if (!codeVerifier) {
+    try {
+      const stateData = JSON.parse(atob(state));
+      if (stateData.pkce) {
+        codeVerifier = stateData.pkce;
+        console.log("[Microsoft OAuth Callback] Retrieved from state parameter (ultimate fallback)");
+      }
+    } catch (e) {
+      console.warn("[Microsoft OAuth Callback] Failed to parse state parameter:", e);
+    }
+  }
+
+  // Log comprehensive debugging information
+  console.log("[Microsoft OAuth Callback] Final status:", {
+    codeVerifierFound: !!codeVerifier,
+    savedStateFound: !!savedState,
+    sessionStorageKeys: Object.keys(sessionStorage),
+    localStorageKeys: Object.keys(localStorage),
+    cookies: document.cookie,
+    windowStorage: typeof window !== 'undefined' ? (window as any).__oauthStorage : null
+  });
 
   if (!codeVerifier) {
     throw new Error("PKCE code verifier not found. Please ensure cookies and local storage are enabled and try again.");
@@ -200,19 +314,49 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     throw new Error("Invalid OAuth state parameter");
   }
 
-  // Clean up all storage locations
+  // Clean up all storage locations including enhanced storage
+  const timestamp = sessionStorage.getItem("oauth_storage_timestamp") || 
+                   localStorage.getItem("oauth_storage_timestamp") || 
+                   getCookie("oauth_storage_timestamp");
+  
+  // Clear standard keys
   sessionStorage.removeItem("pkce_code_verifier");
   sessionStorage.removeItem("oauth_state");
+  sessionStorage.removeItem("oauth_storage_timestamp");
+  
+  // Clear timestamped keys if available
+  if (timestamp) {
+    sessionStorage.removeItem(`pkce_code_verifier_${timestamp}`);
+    sessionStorage.removeItem(`oauth_state_${timestamp}`);
+  }
   
   try {
     localStorage.removeItem("pkce_code_verifier");
     localStorage.removeItem("oauth_state");
+    localStorage.removeItem("oauth_storage_timestamp");
+    
+    // Clear timestamped keys if available
+    if (timestamp) {
+      localStorage.removeItem(`pkce_code_verifier_${timestamp}`);
+      localStorage.removeItem(`oauth_state_${timestamp}`);
+    }
   } catch (e) {
     console.warn("Failed to clear localStorage:", e);
   }
   
+  // Clear cookies
   setCookie("pkce_code_verifier", "", 0);
   setCookie("oauth_state", "", 0);
+  setCookie("oauth_storage_timestamp", "", 0);
+  
+  // Clear window storage
+  if (typeof window !== 'undefined') {
+    try {
+      delete (window as any).__oauthStorage;
+    } catch (e) {
+      console.warn("Failed to clear window storage:", e);
+    }
+  }
 
   // Exchange code for tokens using our secure server-side endpoint
   const tokenResponse = await fetch("/api/auth/microsoft/token", {
