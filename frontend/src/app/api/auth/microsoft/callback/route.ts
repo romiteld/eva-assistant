@@ -49,7 +49,7 @@ export const GET = withRateLimit(async (request: NextRequest) => {
     
     // For public clients (SPAs), don't include client_secret
     const tokenParams = new URLSearchParams({
-      client_id: MICROSOFT_CLIENT_ID,
+      client_id: MICROSOFT_CLIENT_ID!,
       grant_type: 'authorization_code',
       code: code,
       redirect_uri: `${request.nextUrl.origin}/api/auth/microsoft/callback`,

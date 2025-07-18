@@ -62,7 +62,7 @@ export class IntegrationHealthTester {
       try {
         const client = new ZohoCRMIntegration(process.env.ZOHO_ACCESS_TOKEN!, process.env.ZOHO_REFRESH_TOKEN!);
         const leadTest = await this.timeOperation(async () => {
-          return await client.createLead({
+          return await client.createLead('test-user-id', {
             firstName: 'Integration',
             lastName: `Test_${Date.now()}`,
             email: `test_${Date.now()}@example.com`,
@@ -128,7 +128,7 @@ export class IntegrationHealthTester {
             const start = Date.now();
             // Note: searchLeads method not implemented in ZohoCRMIntegration
             // Using getLeads instead
-            await client.getLeads({ page: 1, limit: 1 });
+            await client.getLeads('page=1&per_page=1');
             results.push(Date.now() - start);
           }
           return { avgResponseTime: results.reduce((a, b) => a + b, 0) / results.length };
@@ -493,6 +493,33 @@ export class IntegrationHealthTester {
               clientId: process.env.LINKEDIN_CLIENT_ID!,
               clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
             },
+            microsoft: {
+              tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+              clientId: process.env.MICROSOFT_CLIENT_ID || '',
+              clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
+              tenantId: process.env.MICROSOFT_TENANT_ID || 'common'
+            },
+            google: {
+              tokenUrl: 'https://oauth2.googleapis.com/token',
+              clientId: process.env.GOOGLE_CLIENT_ID || '',
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
+            },
+            zoom: {
+              tokenUrl: 'https://zoom.us/oauth/token',
+              clientId: process.env.ZOOM_CLIENT_ID || '',
+              clientSecret: process.env.ZOOM_CLIENT_SECRET || '',
+              accountId: process.env.ZOOM_ACCOUNT_ID || ''
+            },
+            salesforce: {
+              tokenUrl: 'https://login.salesforce.com/services/oauth2/token',
+              clientId: process.env.SALESFORCE_CLIENT_ID || '',
+              clientSecret: process.env.SALESFORCE_CLIENT_SECRET || ''
+            },
+            zoho: {
+              tokenUrl: 'https://accounts.zoho.com/oauth/v2/token',
+              clientId: process.env.ZOHO_CLIENT_ID || '',
+              clientSecret: process.env.ZOHO_CLIENT_SECRET || ''
+            }
           }
         );
         
@@ -629,8 +656,8 @@ export class IntegrationHealthTester {
           // Using alternative method or mock
           const results = await firecrawl.scrapeUrl('https://example.com');
           return {
-            hasResults: results.length > 0,
-            resultCount: results.length,
+            hasResults: results.success && !!results.data,
+            resultCount: results.success ? 1 : 0,
           };
         });
         

@@ -168,7 +168,7 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
     // Field metadata rarely changes, use 1 hour cache
     return this.cache.getWithRevalidation(
       cacheKey,
-      () => super.getFields(module)
+      () => this.baseClient.getFields ? this.baseClient.getFields(module) : Promise.resolve({})
     );
   }
   
@@ -222,7 +222,7 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
    * Warm up cache with common data
    */
   async warmUpCache(modules: string[] = ['Leads', 'Contacts', 'Deals']) {
-    await this.cache.warmUp(this.userId, modules);
+    await this.cache.warmUp(this.baseClient.userId || 'default-user', modules);
   }
   
   /**

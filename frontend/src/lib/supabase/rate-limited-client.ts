@@ -78,7 +78,7 @@ class RateLimitedSupabaseClient {
         if (!canProceed) {
           throw new Error('Rate limit exceeded for database queries. Please wait.');
         }
-        return target.apply(thisArg, args);
+        return target.apply(thisArg, args as any);
       }
     });
   }

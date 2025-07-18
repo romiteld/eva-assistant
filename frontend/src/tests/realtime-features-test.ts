@@ -47,8 +47,8 @@ async function measurePerformance<T>(name: string, fn: () => Promise<T>): Promis
     return result;
   } catch (error) {
     const duration = performance.now() - start;
-    testResults.push({ name, status: 'failed', duration, error: error.message });
-    logTest(name, 'failed', { error: error.message, duration: `${duration.toFixed(2)}ms` });
+    testResults.push({ name, status: 'failed', duration, error: error instanceof Error ? error.message : 'Unknown error' });
+    logTest(name, 'failed', { error: error instanceof Error ? error.message : 'Unknown error', duration: `${duration.toFixed(2)}ms` });
     throw error;
   }
 }

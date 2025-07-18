@@ -43,7 +43,7 @@ class SupabaseTokenProvider implements TokenCredential {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.supabaseAccessToken}`,
+        'Authorization': `Bearer ${this.tokenProvider.supabaseAccessToken}`,
       },
       body: JSON.stringify({
         provider: 'microsoft',
