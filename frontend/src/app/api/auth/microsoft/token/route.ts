@@ -48,9 +48,12 @@ export async function POST(request: NextRequest) {
       code_verifier: codeVerifier,
     });
 
-    // Since we have a client secret, we're a confidential client (Web app)
-    // Always include client_secret for confidential clients
-    if (clientSecret) {
+    // Check if we're using PKCE (public client) or confidential client flow
+    // Azure AD app configured as SPA = public client, Web = confidential client
+    // If codeVerifier is present, we're using PKCE flow (public client)
+    // AADSTS700025 error means the app is configured as public/SPA
+    if (clientSecret && !codeVerifier) {
+      // Only add client_secret for confidential clients without PKCE
       tokenParams.append('client_secret', clientSecret);
     }
 
