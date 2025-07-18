@@ -51,17 +51,33 @@ export function RecruiterDashboard() {
       const response = await fetch(`/api/recruiters?${params}`, {
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to fetch recruiters');
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API Error ${response.status}: ${errorText}`);
+        throw new Error(`Failed to fetch recruiters: ${response.status} ${response.statusText}`);
+      }
       
       const { data } = await response.json();
       setRecruiters(data || []);
     } catch (error) {
       console.error('Error fetching recruiters:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load recruiters',
-        variant: 'destructive',
-      });
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.error('Network error - is your API server running?');
+        toast({
+          title: 'Network Error',
+          description: 'Unable to connect to API server. Please check if the server is running.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to load recruiters',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -266,7 +282,7 @@ export function RecruiterDashboard() {
                     </p>
                   </div>
                   <Link href="/recruiters/at-risk">
-                    <Button size="sm" variant="outline" className="text-xs">
+                    <Button size="sm" variant="outline" className="text-xs bg-white text-red-900 border-red-300 hover:bg-red-100 hover:text-red-900">
                       Review
                     </Button>
                   </Link>
@@ -283,7 +299,7 @@ export function RecruiterDashboard() {
                     $2.5M potential revenue
                   </p>
                 </div>
-                <Button size="sm" variant="outline" className="text-xs">
+                <Button size="sm" variant="outline" className="text-xs bg-white text-blue-900 border-blue-300 hover:bg-blue-100 hover:text-blue-900">
                   Assign
                 </Button>
               </div>

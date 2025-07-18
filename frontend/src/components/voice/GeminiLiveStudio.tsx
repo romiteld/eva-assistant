@@ -20,7 +20,7 @@ const loadThreeJS = async () => {
     import('three/examples/jsm/postprocessing/UnrealBloomPass.js')
   ]);
   
-  return { THREE: THREE.default || THREE, EffectComposer: EffectComposer.EffectComposer, RenderPass: RenderPass.RenderPass, UnrealBloomPass: UnrealBloomPass.UnrealBloomPass };
+  return { THREE: THREE.default || THREE, EffectComposer, RenderPass, UnrealBloomPass };
 };
 
 // Audio Analyser class
@@ -136,7 +136,7 @@ export function EVAVoiceInterface() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const composerRef = useRef<EffectComposer | null>(null);
   const sphereRef = useRef<THREE.Mesh | null>(null);
-  const rotationRef = useRef(new THREE.Vector3(0, 0, 0));
+  const rotationRef = useRef<{ x: number; y: number; z: number }>({ x: 0, y: 0, z: 0 });
   const sceneObjectsRef = useRef<any>(null);
   
   const inputContextRef = useRef<AudioContext | null>(null);
@@ -205,7 +205,7 @@ export function EVAVoiceInterface() {
         time: { value: 0 },
         audioLevel: { value: 0 },
         audioFrequency: { value: 0 },
-        resolution: { value: new THREE.Vector2(width, height) },
+        resolution: { value: { x: width, y: height } },
         color1: { value: new THREE.Color(0x4f46e5) },
         color2: { value: new THREE.Color(0x7c3aed) },
         color3: { value: new THREE.Color(0x06b6d4) },
@@ -584,7 +584,7 @@ export function EVAVoiceInterface() {
     composer.addPass(renderPass);
 
     const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(width, height),
+      { x: width, y: height },
       2.5,
       0.8,
       0.1
@@ -797,7 +797,7 @@ export function EVAVoiceInterface() {
         const y = Math.sin(t * 0.0002) * 0.8 + speechMotion * 1.2;
 
         camera.position.set(x, y, z);
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        camera.lookAt(0, 0, 0);
 
         // Animate energy rings
         if (sceneObjectsRef.current.rings) {
@@ -1417,12 +1417,12 @@ export function EVAVoiceInterface() {
       </div>
       
       {/* 3D Visualization */}
-      <div ref={mountRef} className="absolute inset-0 z-0" style={{ width: '100%', height: '100%' }} />
+      <div ref={mountRef} className="absolute inset-0 z-0" style={{ width: '100%', height: '100%', top: '150px' }} />
       
       {/* Transcript Display */}
-      <div className="absolute top-20 left-4 right-4 max-h-[40vh] overflow-y-auto z-20">
+      <div className="absolute top-20 left-4 right-4 max-h-[50vh] z-20">
         <div className="flex gap-4">
-          <Card className="flex-1 bg-gray-900/80 backdrop-blur-xl border-gray-700 p-4 shadow-2xl">
+          <Card className="flex-1 bg-gray-900/30 backdrop-blur-md border-gray-700/50 p-4 shadow-2xl">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-gray-300 text-sm font-medium">Conversation with EVA</h3>
               <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -1431,15 +1431,15 @@ export function EVAVoiceInterface() {
                 <span>Transcription: {enableTranscription ? 'ON' : 'OFF'}</span>
               </div>
             </div>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm max-h-[45vh] overflow-y-auto">
               {transcript.map((entry, index) => (
                 <div
                   key={index}
                   className={cn(
                     "p-2 rounded",
                     entry.speaker === 'user' 
-                      ? "bg-blue-600/20 text-blue-300 ml-12 border border-blue-600/30" 
-                      : "bg-purple-600/20 text-purple-300 mr-12 border border-purple-600/30"
+                      ? "bg-blue-600/10 text-blue-300 ml-12 border border-blue-600/20" 
+                      : "bg-purple-600/10 text-purple-300 mr-12 border border-purple-600/20"
                   )}
                 >
                   <span className="font-medium">
@@ -1449,13 +1449,13 @@ export function EVAVoiceInterface() {
                 </div>
               ))}
               {currentUserText && (
-                <div className="p-2 rounded bg-blue-600/20 text-blue-300 ml-12 opacity-70 border border-blue-600/30">
+                <div className="p-2 rounded bg-blue-600/10 text-blue-300 ml-12 opacity-70 border border-blue-600/20">
                   <span className="font-medium">You: </span>
                   {currentUserText}
                 </div>
               )}
               {currentAssistantText && (
-                <div className="p-2 rounded bg-purple-600/20 text-purple-300 mr-12 opacity-70 border border-purple-600/30">
+                <div className="p-2 rounded bg-purple-600/10 text-purple-300 mr-12 opacity-70 border border-purple-600/20">
                   <span className="font-medium">EVA: </span>
                   {currentAssistantText}
                 </div>
@@ -1464,7 +1464,7 @@ export function EVAVoiceInterface() {
           </Card>
 
           {/* VAD Configuration Panel */}
-          <Card className="w-80 bg-gray-900/80 backdrop-blur-xl border-gray-700 p-4 shadow-2xl">
+          <Card className="w-80 bg-gray-900/30 backdrop-blur-md border-gray-700/50 p-4 shadow-2xl">
             <h3 className="text-gray-300 text-sm font-medium mb-3">Voice Activity Detection</h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
