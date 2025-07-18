@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
       code_verifier: codeVerifier,
     });
 
-    // Only add client_secret if it exists AND we're not using PKCE
-    // For PKCE flow with public clients, client_secret should NOT be sent
-    if (clientSecret && !codeVerifier) {
+    // Since we have a client secret, we're a confidential client (Web app)
+    // Always include client_secret for confidential clients
+    if (clientSecret) {
       tokenParams.append('client_secret', clientSecret);
     }
 
