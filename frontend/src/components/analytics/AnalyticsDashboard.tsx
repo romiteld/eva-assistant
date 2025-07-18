@@ -3,11 +3,11 @@ import {
   TrendingUp, Users, Mail, Briefcase, 
   CheckCircle, Clock, Zap, BarChart3,
   RefreshCw, Download, Filter
-} from 'lucide-react';
+} from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MetricsCard from './MetricsCard';
-import ChartCard from './ChartCard';
+import ChartCard from './ChartCard.optimized';
 import DateRangePicker from './DateRangePicker';
 import { useSupabase } from '@/app/providers';
 import { 

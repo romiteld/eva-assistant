@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { 
   TrendingUp, TrendingDown, Minus, 
   Users, Mail, Briefcase, CheckCircle, 
   Clock, Zap, BarChart3, Globe 
-} from 'lucide-react';
+} from '@/lib/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { MetricData } from '@/types/analytics';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,7 @@ interface MetricsCardProps {
   className?: string;
 }
 
-export default function MetricsCard({ metric, className }: MetricsCardProps) {
+const MetricsCard = memo(function MetricsCard({ metric, className }: MetricsCardProps) {
   const Icon = metric.icon ? iconMap[metric.icon] : BarChart3;
   
   const getTrendIcon = () => {
@@ -90,4 +90,8 @@ export default function MetricsCard({ metric, className }: MetricsCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+MetricsCard.displayName = 'MetricsCard';
+
+export default MetricsCard;

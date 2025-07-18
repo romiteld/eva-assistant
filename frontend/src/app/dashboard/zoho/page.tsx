@@ -1,15 +1,15 @@
 'use client';
 
 import { QueueDashboard } from '@/components/zoho/QueueDashboard';
-import { motion } from 'framer-motion';
+import { motion, useMotionVariants } from '@/lib/motion';
 
 export default function ZohoDashboardPage() {
+  const variants = useMotionVariants();
+  
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        {...variants.fadeInUp}
         className="space-y-6"
       >
         <div>

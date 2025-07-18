@@ -1,14 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase/browser';
+
+// Dynamic imports for Three.js to reduce initial bundle size
+const loadThreeJS = async () => {
+  const [
+    THREE,
+    { EffectComposer },
+    { RenderPass },
+    { UnrealBloomPass }
+  ] = await Promise.all([
+    import('three'),
+    import('three/examples/jsm/postprocessing/EffectComposer.js'),
+    import('three/examples/jsm/postprocessing/RenderPass.js'),
+    import('three/examples/jsm/postprocessing/UnrealBloomPass.js')
+  ]);
+  
+  return { THREE: THREE.default || THREE, EffectComposer: EffectComposer.EffectComposer, RenderPass: RenderPass.RenderPass, UnrealBloomPass: UnrealBloomPass.UnrealBloomPass };
+};
 
 // Audio Analyser class
 class AudioAnalyser {
@@ -142,29 +155,39 @@ export function EVAVoiceInterface() {
   
   const { user } = useAuth();
 
-  // Initialize 3D scene
+  // Initialize 3D scene with dynamic loading
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Get container dimensions
-    const container = mountRef.current;
-    const rect = container.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+    let cleanup: (() => void) | null = null;
+    
+    const initializeScene = async () => {
+      try {
+        // Load Three.js dynamically
+        const { THREE, EffectComposer, RenderPass, UnrealBloomPass } = await loadThreeJS();
+        
+        // Get container dimensions
+        const container = mountRef.current;
+        if (!container) return;
+        
+        const rect = container.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
 
-    // Scene setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x100c14);
-    sceneRef.current = scene;
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x100c14);
+        sceneRef.current = scene;
 
-    // Camera
+    // Camera - positioned to center the waveform
     const camera = new THREE.PerspectiveCamera(
       75,
       width / height,
       0.1,
       1000
     );
-    camera.position.set(0, 0, 5);
+    camera.position.set(0, 0, 4);
+    camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     // Renderer
@@ -173,55 +196,366 @@ export function EVAVoiceInterface() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Create audio waveform visualization inspired by the reference image
-    const waveformSegments = 128;
-    const waveformGeometry = new THREE.BufferGeometry();
-    const waveformPositions = new Float32Array(waveformSegments * 2 * 3); // Line segments
-    const waveformColors = new Float32Array(waveformSegments * 2 * 3);
+    // Create incredible audio-reactive 3D visualization
     
-    // Initialize waveform as horizontal line
-    for (let i = 0; i < waveformSegments; i++) {
-      const x = (i / (waveformSegments - 1)) * 8 - 4; // Spread across 8 units
-      const idx = i * 6; // 2 vertices * 3 coordinates
-      
-      // Bottom vertex
-      waveformPositions[idx] = x;
-      waveformPositions[idx + 1] = 0;
-      waveformPositions[idx + 2] = 0;
-      
-      // Top vertex (will be animated)
-      waveformPositions[idx + 3] = x;
-      waveformPositions[idx + 4] = 0;
-      waveformPositions[idx + 5] = 0;
-      
-      // Colors - purple to blue gradient like the reference
-      const t = i / (waveformSegments - 1);
-      const r = 0.6 - t * 0.3; // Purple to blue
-      const g = 0.3 + t * 0.4;
-      const b = 0.9 + t * 0.1;
-      
-      // Set colors for both vertices
-      waveformColors[idx] = r;
-      waveformColors[idx + 1] = g;
-      waveformColors[idx + 2] = b;
-      waveformColors[idx + 3] = r;
-      waveformColors[idx + 4] = g;
-      waveformColors[idx + 5] = b;
-    }
-    
-    waveformGeometry.setAttribute('position', new THREE.BufferAttribute(waveformPositions, 3));
-    waveformGeometry.setAttribute('color', new THREE.BufferAttribute(waveformColors, 3));
-    
-    const waveformMaterial = new THREE.LineBasicMaterial({
-      vertexColors: true,
+    // 1. Main Central Orb - Audio-reactive energy core
+    const orbGeometry = new THREE.SphereGeometry(0.8, 64, 64);
+    const orbMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        audioLevel: { value: 0 },
+        audioFrequency: { value: 0 },
+        resolution: { value: new THREE.Vector2(width, height) },
+        color1: { value: new THREE.Color(0x4f46e5) },
+        color2: { value: new THREE.Color(0x7c3aed) },
+        color3: { value: new THREE.Color(0x06b6d4) },
+      },
+      vertexShader: `
+        uniform float time;
+        uniform float audioLevel;
+        uniform float audioFrequency;
+        
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        
+        // Noise function for organic movement
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+        
+        float snoise(vec3 v) {
+          const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+          const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+          
+          vec3 i = floor(v + dot(v, C.yyy));
+          vec3 x0 = v - i + dot(i, C.xxx);
+          
+          vec3 g = step(x0.yzx, x0.xyz);
+          vec3 l = 1.0 - g;
+          vec3 i1 = min(g.xyz, l.zxy);
+          vec3 i2 = max(g.xyz, l.zxy);
+          
+          vec3 x1 = x0 - i1 + C.xxx;
+          vec3 x2 = x0 - i2 + C.yyy;
+          vec3 x3 = x0 - D.yyy;
+          
+          i = mod289(i);
+          vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+          
+          float n_ = 0.142857142857;
+          vec3 ns = n_ * D.wyz - D.xzx;
+          
+          vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+          
+          vec4 x_ = floor(j * ns.z);
+          vec4 y_ = floor(j - 7.0 * x_);
+          
+          vec4 x = x_ *ns.x + ns.yyyy;
+          vec4 y = y_ *ns.x + ns.yyyy;
+          vec4 h = 1.0 - abs(x) - abs(y);
+          
+          vec4 b0 = vec4(x.xy, y.xy);
+          vec4 b1 = vec4(x.zw, y.zw);
+          
+          vec4 s0 = floor(b0) * 2.0 + 1.0;
+          vec4 s1 = floor(b1) * 2.0 + 1.0;
+          vec4 sh = -step(h, vec4(0.0));
+          
+          vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+          vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+          
+          vec3 p0 = vec3(a0.xy, h.x);
+          vec3 p1 = vec3(a0.zw, h.y);
+          vec3 p2 = vec3(a1.xy, h.z);
+          vec3 p3 = vec3(a1.zw, h.w);
+          
+          vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+          p0 *= norm.x;
+          p1 *= norm.y;
+          p2 *= norm.z;
+          p3 *= norm.w;
+          
+          vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+          m = m * m;
+          return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+        }
+        
+        void main() {
+          vUv = uv;
+          vPosition = position;
+          vNormal = normal;
+          
+          // Create dynamic surface displacement based on audio
+          float noise1 = snoise(position * 2.0 + time * 0.5);
+          float noise2 = snoise(position * 4.0 + time * 1.0);
+          float noise3 = snoise(position * 8.0 + time * 2.0);
+          
+          // Combine different noise scales for organic movement
+          float displacement = noise1 * 0.5 + noise2 * 0.3 + noise3 * 0.2;
+          
+          // Audio-reactive displacement
+          displacement *= (0.3 + audioLevel * 2.0);
+          
+          // Add frequency-based spikes
+          float frequencySpikes = sin(audioFrequency * 0.01 + time * 3.0) * audioLevel;
+          displacement += frequencySpikes * 0.5;
+          
+          // Apply displacement along vertex normal
+          vec3 newPosition = position + normal * displacement;
+          
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform float audioLevel;
+        uniform vec3 color1;
+        uniform vec3 color2;
+        uniform vec3 color3;
+        uniform vec2 resolution;
+        
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        
+        void main() {
+          vec3 viewDirection = normalize(cameraPosition - vPosition);
+          
+          // Fresnel effect for energy glow
+          float fresnel = 1.0 - max(0.0, dot(viewDirection, vNormal));
+          fresnel = pow(fresnel, 2.0);
+          
+          // Dynamic color mixing based on audio and position
+          vec3 color = mix(color1, color2, sin(time * 0.5 + vPosition.y * 2.0) * 0.5 + 0.5);
+          color = mix(color, color3, audioLevel * 0.7);
+          
+          // Energy field effect
+          float energy = fresnel * (1.0 + audioLevel * 2.0);
+          
+          // Pulsing inner glow
+          float pulse = 0.7 + 0.3 * sin(time * 4.0 + audioLevel * 10.0);
+          energy *= pulse;
+          
+          // Add sparkle effect
+          float sparkle = sin(vPosition.x * 50.0 + time * 10.0) * 
+                         sin(vPosition.y * 50.0 + time * 8.0) * 
+                         sin(vPosition.z * 50.0 + time * 12.0);
+          sparkle = max(0.0, sparkle);
+          sparkle *= audioLevel * 0.5;
+          
+          color += vec3(sparkle) * 0.8;
+          
+          gl_FragColor = vec4(color * energy, 0.8 + fresnel * 0.2);
+        }
+      `,
       transparent: true,
-      opacity: 0.8,
-      linewidth: 3,
+      blending: THREE.AdditiveBlending,
     });
     
-    const waveform = new THREE.LineSegments(waveformGeometry, waveformMaterial);
-    scene.add(waveform);
-    sphereRef.current = waveform;
+    const orb = new THREE.Mesh(orbGeometry, orbMaterial);
+    orb.position.set(0, 0, 0);
+    scene.add(orb);
+    sphereRef.current = orb;
+    
+    // 2. Advanced Particle System - DNA-like helical structures
+    const particleCount = 2000;
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleVelocities = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+    const particleSizes = new Float32Array(particleCount);
+    const particlePhases = new Float32Array(particleCount);
+    
+    // Create helical DNA-like particle arrangements
+    for (let i = 0; i < particleCount; i++) {
+      const t = i / particleCount;
+      const angle = t * Math.PI * 20; // Multiple spirals
+      const radius = 3 + Math.sin(t * Math.PI * 4) * 1.5;
+      const height = (t - 0.5) * 10;
+      
+      // Primary helix
+      particlePositions[i * 3] = radius * Math.cos(angle);
+      particlePositions[i * 3 + 1] = height;
+      particlePositions[i * 3 + 2] = radius * Math.sin(angle);
+      
+      // Random velocity for organic motion
+      particleVelocities[i * 3] = (Math.random() - 0.5) * 0.02;
+      particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;
+      particleVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
+      
+      // Color gradients
+      const hue = (t * 0.3 + 0.7) % 1.0;
+      particleColors[i * 3] = 0.2 + t * 0.8;
+      particleColors[i * 3 + 1] = 0.4 + Math.sin(t * Math.PI * 2) * 0.3;
+      particleColors[i * 3 + 2] = 0.9 - t * 0.3;
+      
+      // Size and phase variation
+      particleSizes[i] = 0.5 + Math.random() * 1.5;
+      particlePhases[i] = Math.random() * Math.PI * 2;
+    }
+    
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(particleVelocities, 3));
+    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+    particlesGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+    particlesGeometry.setAttribute('phase', new THREE.BufferAttribute(particlePhases, 1));
+    
+    // Advanced particle material with audio reactivity
+    const particlesMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        audioLevel: { value: 0 },
+        audioFrequency: { value: 0 },
+        pixelRatio: { value: window.devicePixelRatio },
+      },
+      vertexShader: `
+        uniform float time;
+        uniform float audioLevel;
+        uniform float audioFrequency;
+        uniform float pixelRatio;
+        
+        attribute float size;
+        attribute float phase;
+        attribute vec3 velocity;
+        
+        varying vec3 vColor;
+        varying float vAudioLevel;
+        
+        void main() {
+          vColor = color;
+          vAudioLevel = audioLevel;
+          
+          // Organic movement with audio influence
+          vec3 pos = position;
+          
+          // Flowing motion
+          pos.x += sin(time * 0.5 + phase) * 0.3;
+          pos.y += cos(time * 0.3 + phase) * 0.2;
+          pos.z += sin(time * 0.7 + phase) * 0.25;
+          
+          // Audio-reactive expansion
+          float audioInfluence = 1.0 + audioLevel * 3.0;
+          pos *= audioInfluence;
+          
+          // Pulsing with frequency
+          float pulse = 1.0 + sin(audioFrequency * 0.01 + time * 2.0 + phase) * audioLevel * 0.5;
+          
+          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+          
+          // Dynamic size based on audio and distance
+          float finalSize = size * pulse * (1.0 + audioLevel * 2.0);
+          finalSize *= (300.0 / -mvPosition.z); // Size attenuation
+          
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = finalSize * pixelRatio;
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        
+        varying vec3 vColor;
+        varying float vAudioLevel;
+        
+        void main() {
+          // Create soft circular particles
+          vec2 coord = gl_PointCoord - vec2(0.5);
+          float distance = length(coord);
+          
+          if (distance > 0.5) discard;
+          
+          // Soft falloff
+          float alpha = 1.0 - smoothstep(0.0, 0.5, distance);
+          alpha *= alpha; // Quadratic falloff
+          
+          // Energy glow effect
+          float energy = 1.0 + vAudioLevel * 2.0;
+          vec3 color = vColor * energy;
+          
+          // Sparkle effect
+          float sparkle = sin(time * 10.0 + distance * 20.0) * 0.5 + 0.5;
+          color += vec3(sparkle * vAudioLevel * 0.3);
+          
+          gl_FragColor = vec4(color, alpha * (0.6 + vAudioLevel * 0.4));
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    
+    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particles);
+    
+    // 3. Energy Field - Surrounding electromagnetic field
+    const fieldGeometry = new THREE.SphereGeometry(2.5, 32, 32);
+    const fieldMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        audioLevel: { value: 0 },
+        audioFrequency: { value: 0 },
+      },
+      vertexShader: `
+        uniform float time;
+        uniform float audioLevel;
+        
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        
+        void main() {
+          vUv = uv;
+          vPosition = position;
+          vNormal = normal;
+          
+          // Subtle breathing motion
+          vec3 pos = position * (1.0 + sin(time * 0.8) * 0.05 + audioLevel * 0.2);
+          
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform float audioLevel;
+        uniform float audioFrequency;
+        
+        varying vec3 vPosition;
+        varying vec3 vNormal;
+        varying vec2 vUv;
+        
+        void main() {
+          vec3 viewDirection = normalize(cameraPosition - vPosition);
+          
+          // Fresnel for energy field effect
+          float fresnel = 1.0 - max(0.0, dot(viewDirection, vNormal));
+          fresnel = pow(fresnel, 3.0);
+          
+          // Dynamic field lines
+          float lines = sin(vPosition.x * 20.0 + time * 2.0) * 
+                       sin(vPosition.y * 20.0 + time * 1.5) * 
+                       sin(vPosition.z * 20.0 + time * 1.8);
+          lines = max(0.0, lines);
+          
+          // Audio-reactive intensity
+          float intensity = fresnel * (0.3 + audioLevel * 1.5);
+          intensity += lines * audioLevel * 0.3;
+          
+          // Color shifting with audio frequency
+          vec3 color = vec3(0.3, 0.6, 1.0);
+          color.r += sin(audioFrequency * 0.01 + time) * 0.3;
+          color.g += cos(audioFrequency * 0.01 + time * 0.7) * 0.2;
+          
+          gl_FragColor = vec4(color * intensity, intensity * 0.4);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+    });
+    
+    const energyField = new THREE.Mesh(fieldGeometry, fieldMaterial);
+    scene.add(energyField);
 
     // Enhanced Lighting Setup
     const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
@@ -280,30 +614,30 @@ export function EVAVoiceInterface() {
     }
     
     // Add flowing particles - fewer and more elegant
-    const particleCount = 100;
-    const particlesGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleColors = new Float32Array(particleCount * 3);
+    const floorParticleCount = 100;
+    const floorParticlesGeometry = new THREE.BufferGeometry();
+    const floorParticlePositions = new Float32Array(floorParticleCount * 3);
+    const floorParticleColors = new Float32Array(floorParticleCount * 3);
     
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < floorParticleCount; i++) {
       // Create subtle spiral pattern
-      const angle = (i / particleCount) * Math.PI * 4;
+      const angle = (i / floorParticleCount) * Math.PI * 4;
       const radius = 4 + Math.sin(angle) * 0.5;
       const height = Math.sin(angle * 0.5) * 2;
       
-      particlePositions[i * 3] = radius * Math.cos(angle);
-      particlePositions[i * 3 + 1] = height;
-      particlePositions[i * 3 + 2] = radius * Math.sin(angle);
+      floorParticlePositions[i * 3] = radius * Math.cos(angle);
+      floorParticlePositions[i * 3 + 1] = height;
+      floorParticlePositions[i * 3 + 2] = radius * Math.sin(angle);
       
       // Subtle gradient colors
-      const t = i / particleCount;
-      particleColors[i * 3] = 0.3 + t * 0.4;     // Red
-      particleColors[i * 3 + 1] = 0.5 + t * 0.3; // Green
-      particleColors[i * 3 + 2] = 0.9;           // Blue
+      const t = i / floorParticleCount;
+      floorParticleColors[i * 3] = 0.3 + t * 0.4;     // Red
+      floorParticleColors[i * 3 + 1] = 0.5 + t * 0.3; // Green
+      floorParticleColors[i * 3 + 2] = 0.9;           // Blue
     }
     
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+    floorParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(floorParticlePositions, 3));
+    floorParticlesGeometry.setAttribute('color', new THREE.BufferAttribute(floorParticleColors, 3));
     
     // Create soft dot texture
     const canvas = document.createElement('canvas');
@@ -322,7 +656,7 @@ export function EVAVoiceInterface() {
     
     const particleTexture = new THREE.CanvasTexture(canvas);
     
-    const particlesMaterial = new THREE.PointsMaterial({
+    const floorParticlesMaterial = new THREE.PointsMaterial({
       size: 0.1,
       vertexColors: true,
       transparent: true,
@@ -333,16 +667,22 @@ export function EVAVoiceInterface() {
       depthWrite: false,
     });
     
-    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-    scene.add(particles);
+    const floorParticles = new THREE.Points(floorParticlesGeometry, floorParticlesMaterial);
+    scene.add(floorParticles);
 
     // Store references for animation
     const sceneObjects = {
+      orb,
+      orbMaterial,
       particles,
+      particlesMaterial,
+      floorParticles,
+      floorParticlesMaterial,
+      energyField,
+      fieldMaterial,
+      floorParticlesGeometry,
       rings,
-      waveform,
-      waveformSegments,
-      particleCount,
+      floorParticleCount,
       pointLight1,
       pointLight2,
       pointLight3,
@@ -374,129 +714,139 @@ export function EVAVoiceInterface() {
       const dt = (t - prevTime) / (1000 / 60);
       prevTime = t;
 
-      if (sceneObjectsRef.current?.waveform) {
+      if (sceneObjectsRef.current?.orb) {
         const outputData = outputAnalyserRef.current?.data || new Uint8Array(128);
         const inputData = inputAnalyserRef.current?.data || new Uint8Array(128);
 
-        // Get audio data for waveform animation
+        // Advanced audio analysis
         const avgOutput = outputData.reduce((a, b) => a + b, 0) / outputData.length;
         const avgInput = inputData.reduce((a, b) => a + b, 0) / inputData.length;
+        const totalAudioLevel = (avgOutput + avgInput) / 510;
         
-        // Animate waveform based on audio input
-        const waveformPositions = sceneObjectsRef.current.waveform.geometry.attributes.position.array;
-        const waveformColors = sceneObjectsRef.current.waveform.geometry.attributes.color.array;
-        
-        for (let i = 0; i < sceneObjectsRef.current.waveformSegments; i++) {
-          const idx = i * 6; // 2 vertices * 3 coordinates
-          
-          // Use audio data to create waveform heights
-          const audioIndex = Math.floor((i / sceneObjectsRef.current.waveformSegments) * Math.min(outputData.length, inputData.length));
-          const outputLevel = (outputData[audioIndex] || 0) / 255;
-          const inputLevel = (inputData[audioIndex] || 0) / 255;
-          
-          // Create complex waveform pattern
-          const baseHeight = Math.sin((i / sceneObjectsRef.current.waveformSegments) * Math.PI * 4 + t * 0.001) * 0.2;
-          const audioHeight = (outputLevel + inputLevel) * 2;
-          const totalHeight = baseHeight + audioHeight;
-          
-          // Update top vertex height
-          waveformPositions[idx + 4] = totalHeight;
-          
-          // Update bottom vertex for symmetry
-          waveformPositions[idx + 1] = -totalHeight * 0.3;
-          
-          // Dynamic color based on audio intensity
-          const intensity = (outputLevel + inputLevel) * 0.5 + 0.5;
-          const t_norm = i / (sceneObjectsRef.current.waveformSegments - 1);
-          
-          // Enhanced color gradient
-          const r = 0.6 - t_norm * 0.3 + intensity * 0.2;
-          const g = 0.3 + t_norm * 0.4 + intensity * 0.3;
-          const b = 0.9 + t_norm * 0.1 + intensity * 0.1;
-          
-          // Update colors for both vertices
-          waveformColors[idx] = r;
-          waveformColors[idx + 1] = g;
-          waveformColors[idx + 2] = b;
-          waveformColors[idx + 3] = r;
-          waveformColors[idx + 4] = g;
-          waveformColors[idx + 5] = b;
+        // Find dominant frequency
+        let maxAmplitude = 0;
+        let dominantFrequency = 0;
+        for (let i = 0; i < outputData.length; i++) {
+          if (outputData[i] > maxAmplitude) {
+            maxAmplitude = outputData[i];
+            dominantFrequency = i;
+          }
         }
         
-        sceneObjectsRef.current.waveform.geometry.attributes.position.needsUpdate = true;
-        sceneObjectsRef.current.waveform.geometry.attributes.color.needsUpdate = true;
-
-        // Enhanced camera movement with speech responsiveness
-        const speechMotion = (avgOutput + avgInput) / 510;
-        const radius = 8 + Math.sin(t * 0.001) * 1 + speechMotion * 0.5;
-        const x = radius * Math.cos(t * 0.0005);
-        const z = radius * Math.sin(t * 0.0005);
-        const y = Math.sin(t * 0.0003) * 2 + speechMotion * 1;
+        // Smooth audio level for better visual flow
+        const smoothedAudioLevel = totalAudioLevel * 0.7 + (sceneObjectsRef.current.lastAudioLevel || 0) * 0.3;
+        sceneObjectsRef.current.lastAudioLevel = smoothedAudioLevel;
+        
+        // Update shader uniforms for the orb
+        if (sceneObjectsRef.current.orbMaterial) {
+          sceneObjectsRef.current.orbMaterial.uniforms.time.value = t * 0.001;
+          sceneObjectsRef.current.orbMaterial.uniforms.audioLevel.value = smoothedAudioLevel;
+          sceneObjectsRef.current.orbMaterial.uniforms.audioFrequency.value = dominantFrequency;
+        }
+        
+        // Animate the orb with organic rotation
+        const orb = sceneObjectsRef.current.orb;
+        orb.rotation.x += dt * 0.0003 * (1 + smoothedAudioLevel);
+        orb.rotation.y += dt * 0.0005 * (1 + smoothedAudioLevel * 0.5);
+        orb.rotation.z += dt * 0.0002 * (1 + smoothedAudioLevel * 0.8);
+        
+        // Update particle system
+        if (sceneObjectsRef.current.particlesMaterial) {
+          sceneObjectsRef.current.particlesMaterial.uniforms.time.value = t * 0.001;
+          sceneObjectsRef.current.particlesMaterial.uniforms.audioLevel.value = smoothedAudioLevel;
+          sceneObjectsRef.current.particlesMaterial.uniforms.audioFrequency.value = dominantFrequency;
+        }
+        
+        // Animate particle positions for organic flow
+        const positions = sceneObjectsRef.current.floorParticlesGeometry.attributes.position.array;
+        const particleCount = sceneObjectsRef.current.floorParticleCount;
+        
+        for (let i = 0; i < particleCount; i++) {
+          const i3 = i * 3;
+          const t_norm = i / particleCount;
+          const time = t * 0.001;
+          
+          // Original helical position
+          const angle = t_norm * Math.PI * 20 + time * 0.3;
+          const radius = 3 + Math.sin(t_norm * Math.PI * 4) * 1.5;
+          const height = (t_norm - 0.5) * 10;
+          
+          // Add organic flow and audio reactivity
+          const flowOffset = Math.sin(time * 0.5 + t_norm * Math.PI * 4) * 0.5;
+          const audioInfluence = 1 + smoothedAudioLevel * 2;
+          
+          positions[i3] = (radius + flowOffset) * Math.cos(angle) * audioInfluence;
+          positions[i3 + 1] = height + Math.sin(time * 0.3 + t_norm * Math.PI * 2) * 0.3;
+          positions[i3 + 2] = (radius + flowOffset) * Math.sin(angle) * audioInfluence;
+        }
+        
+        sceneObjectsRef.current.floorParticlesGeometry.attributes.position.needsUpdate = true;
+        
+        // Update energy field
+        if (sceneObjectsRef.current.fieldMaterial) {
+          sceneObjectsRef.current.fieldMaterial.uniforms.time.value = t * 0.001;
+          sceneObjectsRef.current.fieldMaterial.uniforms.audioLevel.value = smoothedAudioLevel;
+          sceneObjectsRef.current.fieldMaterial.uniforms.audioFrequency.value = dominantFrequency;
+        }
+        
+        // Dynamic camera movement
+        const speechMotion = smoothedAudioLevel;
+        const radius = 8 + Math.sin(t * 0.0008) * 0.5 + speechMotion * 1.5;
+        const x = radius * Math.cos(t * 0.0003);
+        const z = radius * Math.sin(t * 0.0003);
+        const y = Math.sin(t * 0.0002) * 0.8 + speechMotion * 1.2;
 
         camera.position.set(x, y, z);
         camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-        // Animate energy rings based on speech
-        const avgAudio = (avgInput + avgOutput) / 510;
-        sceneObjectsRef.current.rings.forEach((ring, index) => {
-          const intensity = avgAudio * 0.5 + 0.1;
-          ring.material.opacity = intensity * (0.2 - index * 0.05);
-          ring.scale.setScalar(1 + intensity * 0.1);
-          ring.rotation.z += dt * 0.0001 * (index + 1);
-        });
-        
-        // Animate particles - gentle spiral motion
-        const positions = sceneObjectsRef.current.particles.geometry.attributes.position.array;
-        const colors = sceneObjectsRef.current.particles.geometry.attributes.color.array;
-        
-        for (let i = 0; i < sceneObjectsRef.current.particleCount; i++) {
-          const i3 = i * 3;
-          const time = t * 0.001;
-          const audioIntensity = (inputData[i % inputData.length] + outputData[i % outputData.length]) / 510;
-          
-          // Gentle spiral movement
-          const baseAngle = (i / sceneObjectsRef.current.particleCount) * Math.PI * 4;
-          const spiralOffset = time * 0.2;
-          const angle = baseAngle + spiralOffset;
-          const radius = 4 + Math.sin(angle) * 0.5 + audioIntensity * 0.3;
-          const height = Math.sin(angle * 0.5) * 2 + audioIntensity * 0.5;
-          
-          positions[i3] = radius * Math.cos(angle);
-          positions[i3 + 1] = height;
-          positions[i3 + 2] = radius * Math.sin(angle);
-          
-          // Subtle color changes
-          const t_norm = i / sceneObjectsRef.current.particleCount;
-          const intensity = audioIntensity * 0.3 + 0.3;
-          colors[i3] = 0.3 + t_norm * 0.4 + intensity * 0.2;
-          colors[i3 + 1] = 0.5 + t_norm * 0.3 + intensity * 0.2;
-          colors[i3 + 2] = 0.9;
+        // Animate energy rings
+        if (sceneObjectsRef.current.rings) {
+          sceneObjectsRef.current.rings.forEach((ring: any, index: number) => {
+            const intensity = smoothedAudioLevel * 0.8 + 0.2;
+            ring.material.opacity = intensity * (0.3 - index * 0.08);
+            ring.scale.setScalar(1 + intensity * 0.3);
+            ring.rotation.z += dt * 0.0002 * (index + 1) * (1 + smoothedAudioLevel);
+          });
         }
         
-        sceneObjectsRef.current.particles.geometry.attributes.position.needsUpdate = true;
-        sceneObjectsRef.current.particles.geometry.attributes.color.needsUpdate = true;
+        // Animate lights with more dramatic response
+        sceneObjectsRef.current.pointLight1.intensity = 2 + smoothedAudioLevel * 4;
+        sceneObjectsRef.current.pointLight2.intensity = 1.5 + smoothedAudioLevel * 3;
+        sceneObjectsRef.current.pointLight3.intensity = 1 + smoothedAudioLevel * 5;
         
-        // Animate lights based on speech
-        sceneObjectsRef.current.pointLight1.intensity = 2 + (avgOutput / 255) * 2;
-        sceneObjectsRef.current.pointLight2.intensity = 1.5 + (avgInput / 255) * 1.5;
-        sceneObjectsRef.current.pointLight3.intensity = 1 + ((avgOutput + avgInput) / 510) * 2;
+        // Color shifting based on dominant frequency
+        const hue = (dominantFrequency / 128) * 0.3 + 0.7;
+        sceneObjectsRef.current.pointLight1.color.setHSL(hue, 0.8, 0.6);
+        sceneObjectsRef.current.pointLight2.color.setHSL((hue + 0.3) % 1, 0.7, 0.5);
+        sceneObjectsRef.current.pointLight3.color.setHSL((hue + 0.6) % 1, 0.9, 0.7);
       }
 
       composer.render();
     };
     animate();
 
+        // Cleanup function
+        cleanup = () => {
+          window.removeEventListener('resize', handleResize);
+          if (container && renderer.domElement && container.contains(renderer.domElement)) {
+            container.removeChild(renderer.domElement);
+          }
+          renderer.dispose();
+        };
+      } catch (error) {
+        console.error('Failed to initialize 3D scene:', error);
+      }
+    };
+    
+    initializeScene();
+    
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
-      if (container && renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
+      if (cleanup) cleanup();
     };
   }, []);
 
-  // Initialize audio contexts
+  // Initialize audio contexts and WebSocket connection
   useEffect(() => {
     inputContextRef.current = new AudioContext({ sampleRate: 16000 });
     outputContextRef.current = new AudioContext({ sampleRate: 24000 });
@@ -509,6 +859,12 @@ export function EVAVoiceInterface() {
     outputAnalyserRef.current = new AudioAnalyser(outputNodeRef.current);
     
     nextStartTimeRef.current = outputContextRef.current.currentTime;
+    
+    // Initialize WebSocket connection
+    connectWebSocket().catch(err => {
+      console.error('Failed to connect WebSocket:', err);
+      setError('Connection failed');
+    });
   }, []);
 
   // Connect to WebSocket
@@ -707,7 +1063,7 @@ export function EVAVoiceInterface() {
         setIsLive(false);
       };
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Connection error:', err);
     }
   };
@@ -718,12 +1074,19 @@ export function EVAVoiceInterface() {
 
     try {
       setStatus('Requesting microphone access...');
+      setError(''); // Clear any previous errors
       
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         await connectWebSocket();
       }
 
-      inputContextRef.current?.resume();
+      // Resume audio context (required for user interaction)
+      if (inputContextRef.current?.state === 'suspended') {
+        await inputContextRef.current.resume();
+      }
+      if (outputContextRef.current?.state === 'suspended') {
+        await outputContextRef.current.resume();
+      }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -790,7 +1153,7 @@ export function EVAVoiceInterface() {
       setStatus('🔴 Recording...');
     } catch (err) {
       console.error('Error starting recording:', err);
-      setStatus(`Error: ${err.message}`);
+      setStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       stopRecording();
     }
   };
@@ -1043,7 +1406,10 @@ export function EVAVoiceInterface() {
               </div>
             )}
             {!isLive && !error && (
-              <div className="px-3 py-1 bg-gray-500/20 border border-gray-500/30 rounded-full">
+              <div 
+                className="px-3 py-1 bg-gray-500/20 border border-gray-500/30 rounded-full cursor-pointer hover:bg-gray-500/30 transition-colors"
+                onClick={startRecording}
+              >
                 <span className="text-sm text-gray-400">{status}</span>
               </div>
             )}

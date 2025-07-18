@@ -33,7 +33,7 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   },
   ai: {
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 10, // 10 AI requests per minute
+    max: 1000, // 1000 AI requests per minute (increased for screen share)
     message: 'AI request limit exceeded, please try again later',
   },
 };

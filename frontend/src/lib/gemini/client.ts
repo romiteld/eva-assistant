@@ -196,7 +196,7 @@ export class GeminiLiveClient {
       }, 'image/jpeg', 0.8)
 
       if (this.mediaStream.active) {
-        setTimeout(captureFrame, 100) // 10 fps
+        setTimeout(captureFrame, 2000) // 0.5 fps (reduced from 10 fps to prevent rate limits)
       }
     }
 
