@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { ZohoCRMClient } from '@/lib/integrations/zoho-crm';
-import { ZohoCRMQueuedClient } from '@/lib/integrations/zoho-crm-queued';
+import { createServerClient } from '@/lib/supabase/server';
+import { ZohoCRMIntegration } from '@/lib/integrations/zoho-crm';
+import { QueuedZohoCRMIntegration } from '@/lib/integrations/zoho-crm-queued';
 import { Microsoft365Client } from '@/lib/integrations/microsoft365';
 import { TwilioService } from '@/lib/services/twilio';
 import { LinkedInService } from '@/lib/services/linkedin';
-import { FirecrawlService } from '@/lib/integrations/firecrawl';
+import { FirecrawlClient } from '@/lib/integrations/firecrawl';
 
 interface IntegrationTestResult {
   integration: string;
@@ -37,7 +37,7 @@ export class IntegrationHealthTester {
     
     // Test 1: Authentication
     try {
-      const client = new ZohoCRMClient();
+      const client = new ZohoCRMIntegration();
       const authTest = await this.timeOperation(async () => {
         const token = process.env.ZOHO_ACCESS_TOKEN;
         if (!token) throw new Error('No Zoho access token configured');
@@ -60,7 +60,7 @@ export class IntegrationHealthTester {
     // Test 2: Lead Creation
     if (this.config.testMode !== 'basic') {
       try {
-        const client = new ZohoCRMClient();
+        const client = new ZohoCRMIntegration();
         const leadTest = await this.timeOperation(async () => {
           return await client.createLead({
             firstName: 'Integration',
@@ -97,7 +97,7 @@ export class IntegrationHealthTester {
 
     // Test 3: Queue System
     try {
-      const queueClient = new ZohoCRMQueuedClient();
+      const queueClient = new QueuedZohoCRMIntegration();
       const queueTest = await this.timeOperation(async () => {
         const queueStatus = await queueClient.getQueueStatus();
         return queueStatus;
@@ -120,7 +120,7 @@ export class IntegrationHealthTester {
     // Test 4: Rate Limiting
     if (this.config.testMode === 'stress') {
       try {
-        const client = new ZohoCRMClient();
+        const client = new ZohoCRMIntegration();
         const rateLimitTest = await this.timeOperation(async () => {
           const results = [];
           for (let i = 0; i < 5; i++) {
@@ -167,7 +167,7 @@ export class IntegrationHealthTester {
     // Test 1: OAuth Token Status
     try {
       const tokenTest = await this.timeOperation(async () => {
-        const supabase = await createClient();
+        const supabase = await createServerClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No authenticated user');
         
@@ -441,7 +441,7 @@ export class IntegrationHealthTester {
     // Test 1: OAuth Token Status
     try {
       const tokenTest = await this.timeOperation(async () => {
-        const supabase = await createClient();
+        const supabase = await createServerClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No authenticated user');
         
@@ -477,7 +477,7 @@ export class IntegrationHealthTester {
     // Test 2: Profile Access
     if (this.config.testMode !== 'basic') {
       try {
-        const supabase = await createClient();
+        const supabase = await createServerClient();
         const { data: { user } } = await supabase.auth.getUser();
         
         // Import token manager for LinkedIn
@@ -591,7 +591,7 @@ export class IntegrationHealthTester {
     // Test 2: Web Scraping
     if (this.config.testMode !== 'basic') {
       try {
-        const firecrawl = new FirecrawlService();
+        const firecrawl = new FirecrawlClient();
         const scrapeTest = await this.timeOperation(async () => {
           const result = await firecrawl.scrapeUrl('https://example.com');
           return {
@@ -619,7 +619,7 @@ export class IntegrationHealthTester {
     // Test 3: Search Functionality
     if (this.config.testMode === 'comprehensive') {
       try {
-        const firecrawl = new FirecrawlService();
+        const firecrawl = new FirecrawlClient();
         const searchTest = await this.timeOperation(async () => {
           const results = await firecrawl.search('financial advisor', { limit: 5 });
           return {
