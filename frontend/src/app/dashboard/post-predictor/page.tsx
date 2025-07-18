@@ -7,9 +7,11 @@ import { PredictionResults } from '@/components/post-predictor/PredictionResults
 import { OptimalTimingChart } from '@/components/post-predictor/OptimalTimingChart';
 import { ContentOptimizer } from '@/components/post-predictor/ContentOptimizer';
 import { PlatformInsights } from '@/components/post-predictor/PlatformInsights';
+import { PostPredictorDashboard } from '@/components/post-predictor/PostPredictorDashboard';
 import { PostPredictorService } from '@/lib/services/post-predictor';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase/browser';
 import { 
   Sparkles,
   BarChart3,
@@ -27,8 +29,20 @@ export default function PostPredictorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [predictionData, setPredictionData] = useState<PostPredictorResponse | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'timing' | 'optimizer' | 'insights'>('results');
+  const [currentView, setCurrentView] = useState<'predict' | 'dashboard'>('predict');
+  const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const postPredictorService = new PostPredictorService();
+
+  React.useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUserId();
+  }, []);
 
   const handlePredict = async (request: PostPredictorRequest) => {
     setIsLoading(true);
@@ -86,8 +100,15 @@ export default function PostPredictorPage() {
               Post Predictor
             </h1>
             <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                <History className="w-5 h-5 text-gray-400" />
+              <button 
+                onClick={() => setCurrentView(currentView === 'predict' ? 'dashboard' : 'predict')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  currentView === 'dashboard' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                }`}
+              >
+                {currentView === 'predict' ? 'View Analytics' : 'Create Prediction'}
               </button>
               <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                 <Download className="w-5 h-5 text-gray-400" />
@@ -102,126 +123,142 @@ export default function PostPredictorPage() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Form */}
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
-          >
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-400" />
-                Create Your Post
-              </h2>
-              <PostPredictorForm onSubmit={handlePredict} isLoading={isLoading} />
-            </div>
-          </motion.div>
-
-          {/* Right Column - Results */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2"
-          >
-            {predictionData ? (
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl">
-                {/* Tabs */}
-                <div className="border-b border-white/10 p-4">
-                  <div className="flex gap-2">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`
-                          flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-                          ${activeTab === tab.id 
-                            ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30' 
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                          }
-                        `}
-                      >
-                        <tab.icon className="w-4 h-4" />
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tab Content */}
-                <div className="p-6">
-                  <AnimatePresence mode="wait">
-                    {activeTab === 'results' && (
-                      <motion.div
-                        key="results"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                      >
-                        <PredictionResults prediction={predictionData.prediction} />
-                      </motion.div>
-                    )}
-
-                    {activeTab === 'timing' && (
-                      <motion.div
-                        key="timing"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                      >
-                        <OptimalTimingChart prediction={predictionData.prediction} />
-                      </motion.div>
-                    )}
-
-                    {activeTab === 'optimizer' && (
-                      <motion.div
-                        key="optimizer"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                      >
-                        <ContentOptimizer 
-                          optimization={predictionData.optimization}
-                          suggestions={predictionData.prediction.suggestions}
-                          onApplyOptimization={handleApplyOptimization}
-                        />
-                      </motion.div>
-                    )}
-
-                    {activeTab === 'insights' && (
-                      <motion.div
-                        key="insights"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                      >
-                        <PlatformInsights 
-                          platform={predictionData.prediction.platform}
-                          insights={predictionData.prediction.platform_insights}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+        {currentView === 'predict' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Form */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-1"
+            >
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-400" />
+                  Create Your Post
+                </h2>
+                <PostPredictorForm onSubmit={handlePredict} isLoading={isLoading} />
               </div>
-            ) : (
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-12">
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-12 h-12 text-purple-400" />
+            </motion.div>
+
+            {/* Right Column - Results */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-2"
+            >
+              {predictionData ? (
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl">
+                  {/* Tabs */}
+                  <div className="border-b border-white/10 p-4">
+                    <div className="flex gap-2">
+                      {tabs.map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`
+                            flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                            ${activeTab === tab.id 
+                              ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            }
+                          `}
+                        >
+                          <tab.icon className="w-4 h-4" />
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Start Predicting Engagement
-                  </h3>
-                  <p className="text-gray-400 max-w-md mx-auto">
-                    Enter your social media post content and let our AI analyze its potential engagement, 
-                    suggest improvements, and find the optimal posting time.
-                  </p>
+
+                  {/* Tab Content */}
+                  <div className="p-6">
+                    <AnimatePresence mode="wait">
+                      {activeTab === 'results' && (
+                        <motion.div
+                          key="results"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                        >
+                          <PredictionResults prediction={predictionData.prediction} />
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'timing' && (
+                        <motion.div
+                          key="timing"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                        >
+                          <OptimalTimingChart prediction={predictionData.prediction} />
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'optimizer' && (
+                        <motion.div
+                          key="optimizer"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                        >
+                          <ContentOptimizer 
+                            optimization={predictionData.optimization}
+                            suggestions={predictionData.prediction.suggestions}
+                            onApplyOptimization={handleApplyOptimization}
+                          />
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'insights' && (
+                        <motion.div
+                          key="insights"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                        >
+                          <PlatformInsights 
+                            platform={predictionData.prediction.platform}
+                            insights={predictionData.prediction.platform_insights}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
+              ) : (
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-12">
+                  <div className="text-center">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-full flex items-center justify-center">
+                      <TrendingUp className="w-12 h-12 text-purple-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      Start Predicting Engagement
+                    </h3>
+                    <p className="text-gray-400 max-w-md mx-auto">
+                      Enter your social media post content and let our AI analyze its potential engagement, 
+                      suggest improvements, and find the optimal posting time.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            {userId ? (
+              <PostPredictorDashboard userId={userId} />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-400">Loading user data...</p>
               </div>
             )}
           </motion.div>
-        </div>
+        )}
 
         {/* Feature Highlights */}
         <motion.div 

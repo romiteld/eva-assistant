@@ -4,6 +4,8 @@ import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import { GlobalErrorBoundary } from '@/components/error/GlobalErrorBoundary'
+import { ErrorNotificationSystem } from '@/components/error/ErrorNotificationSystem'
 import { defaultMetadata } from '@/lib/seo/config'
 import { JsonLd, organizationSchema, websiteSchema, softwareApplicationSchema } from '@/components/seo/JsonLd'
 import { recruitmentServiceSchema, faqSchema } from '@/components/seo/schemas'
@@ -30,21 +32,24 @@ export default function RootLayout({
         <JsonLd data={faqSchema} id="faq-schema" />
       </head>
       <body className={`${inter.className} bg-gray-950 text-gray-100`}>
-        <ErrorBoundary>
-          <Providers>
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                style: {
-                  background: 'rgb(17 24 39)',
-                  color: 'rgb(243 244 246)',
-                  border: '1px solid rgb(55 65 81)',
-                },
+        <GlobalErrorBoundary>
+          <ErrorBoundary>
+            <Providers>
+              <Toaster 
+                position="top-right"
+                toastOptions={{
+                  style: {
+                    background: 'rgb(17 24 39)',
+                    color: 'rgb(243 244 246)',
+                    border: '1px solid rgb(55 65 81)',
+                  },
               }}
             />
-            {children}
-          </Providers>
-        </ErrorBoundary>
+              {children}
+              <ErrorNotificationSystem />
+            </Providers>
+          </ErrorBoundary>
+        </GlobalErrorBoundary>
       </body>
     </html>
   )

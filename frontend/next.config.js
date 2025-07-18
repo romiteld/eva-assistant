@@ -147,6 +147,82 @@ const nextConfig = {
       };
     }
     
+    // Optimize bundle splitting for production
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Separate vendor chunks for better caching
+            vendor: {
+              name: 'vendors',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 10,
+              enforce: true,
+            },
+            // Separate chunk for large libraries
+            'framer-motion': {
+              name: 'framer-motion',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
+              priority: 30,
+              enforce: true,
+            },
+            'lucide-react': {
+              name: 'lucide-icons',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+              priority: 30,
+              enforce: true,
+            },
+            // Microsoft Graph and AI libraries
+            'microsoft-graph': {
+              name: 'microsoft-graph',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]@microsoft[\\/]/,
+              priority: 30,
+              enforce: true,
+            },
+            'ai-libraries': {
+              name: 'ai-libraries',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](@google|@ai-sdk|@langchain)[\\/]/,
+              priority: 30,
+              enforce: true,
+            },
+            // Common UI libraries
+            'ui-libraries': {
+              name: 'ui-libraries',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](@radix-ui|@tanstack|recharts)[\\/]/,
+              priority: 25,
+              enforce: true,
+            },
+            // Supabase
+            'supabase': {
+              name: 'supabase',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]@supabase[\\/]/,
+              priority: 25,
+              enforce: true,
+            },
+            // Common utilities
+            'utils': {
+              name: 'utils',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](date-fns|uuid|clsx|class-variance-authority|tailwind-merge)[\\/]/,
+              priority: 20,
+              enforce: true,
+            },
+          },
+        },
+      };
+    }
+    
     // Suppress chunk loading errors in development
     if (dev && !isServer) {
       config.optimization = {
@@ -160,6 +236,18 @@ const nextConfig = {
           },
         },
       };
+    }
+    
+    // Bundle analyzer in development
+    if (dev && process.env.ANALYZE === 'true') {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'server',
+          openAnalyzer: true,
+          analyzerPort: 8888,
+        })
+      );
     }
     
     return config;

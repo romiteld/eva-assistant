@@ -255,3 +255,13 @@ export function AILoadingState({ stage, stages, currentStage = 0 }: AILoadingSta
     </div>
   );
 }
+
+// Legacy export for backward compatibility
+export const LoadingStates = {
+  LoadingState,
+  PageLoading,
+  ContentLoading,
+  ButtonLoading,
+  CardLoading,
+  AILoadingState
+}

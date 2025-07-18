@@ -548,7 +548,7 @@ export class FileUploadService {
       'ai-generated': { maxSize: 10 * 1024 * 1024, allowedTypes: [...FILE_TYPE_CONFIGS.images.types, ...FILE_TYPE_CONFIGS.documents.types] }
     }
 
-    const config = bucketConfigs[bucket]
+    const config = bucketConfigs[bucket as keyof typeof bucketConfigs]
     if (!config) {
       return { valid: false, error: `Unknown bucket: ${bucket}` }
     }

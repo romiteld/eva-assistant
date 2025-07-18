@@ -9,11 +9,15 @@
   "scripts": {
     "dev": "node server.js",
     "dev:next": "next dev",
+    "dev:analyze": "ANALYZE=true next dev",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "NODE_ENV=production node server.js",
     "start:next": "next start",
     "lint": "next lint",
     "type-check": "npx --yes typescript@^5.5.2 tsc --noEmit",
+    "bundle:analyze": "npm run build:analyze",
+    "bundle:report": "tsx src/utils/bundle-report.ts",
     "db:init": "node ../scripts/init-db.js",
     "db:test": "next dev -p 3001 & sleep 5 && open http://localhost:3001/test",
     "test": "jest",
@@ -128,6 +132,7 @@
     "ts-jest": "^29.1.1",
     "tsx": "^4.20.3",
     "typescript": "^5.5.2",
-    "undici": "^7.11.0"
+    "undici": "^7.11.0",
+    "webpack-bundle-analyzer": "^4.10.2"
   }
 }

@@ -228,7 +228,7 @@ export class TwilioService extends LegacyTwilioClient {
         limit: params?.limit || 50,
       })
 
-      return calls.map(call => ({
+      return calls.map((call: any) => ({
         sid: call.sid,
         status: call.status,
         direction: call.direction,
@@ -320,7 +320,7 @@ export class TwilioService extends LegacyTwilioClient {
       const mediaUrls: string[] = []
       if (message.numMedia > 0) {
         const media = await this.client.messages(messageSid).media.list()
-        mediaUrls.push(...media.map(m => m.uri))
+        mediaUrls.push(...media.map((m: any) => m.uri))
       }
 
       return {
@@ -351,7 +351,7 @@ export class TwilioService extends LegacyTwilioClient {
     try {
       const numbers = await this.client.incomingPhoneNumbers.list()
       
-      return numbers.map(number => ({
+      return numbers.map((number: any) => ({
         sid: number.sid,
         phoneNumber: number.phoneNumber,
         friendlyName: number.friendlyName,

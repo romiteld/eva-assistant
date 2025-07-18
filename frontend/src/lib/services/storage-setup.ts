@@ -43,7 +43,7 @@ export class StorageSetupService {
       return data
     } catch (error) {
       console.error('Storage setup error:', error)
-      throw new Error(`Failed to setup storage: ${error.message}`)
+      throw new Error(`Failed to setup storage: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -65,7 +65,7 @@ export class StorageSetupService {
       return data
     } catch (error) {
       console.error('Storage status error:', error)
-      throw new Error(`Failed to get storage status: ${error.message}`)
+      throw new Error(`Failed to get storage status: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -190,7 +190,7 @@ export class StorageSetupService {
       }
     }
 
-    return configs[bucket] || null
+    return configs[bucket as keyof typeof configs] || null
   }
 
   /**

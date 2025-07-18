@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
+  Activity,
   BarChart3, 
   Users, 
   TrendingUp, 
@@ -180,7 +181,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
       label: "Analytics & Data",
       items: [
         { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
-        { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" }
+        { icon: Target, label: "Competitor Analysis", href: "/dashboard/competitor-analysis" },
+        { icon: Zap, label: "Performance", href: "/dashboard/performance" }
       ]
     },
     {
@@ -193,6 +195,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     {
       label: "System",
       items: [
+        { icon: Activity, label: "Monitoring", href: "/dashboard/monitoring" },
         { icon: Settings, label: "Settings", href: "/dashboard/settings" }
       ]
     }

@@ -95,6 +95,22 @@ export function CompetitorCard({
     loadMetrics();
   }, [competitor.id]);
 
+  // Extract intelligence data from competitor findings (from Firecrawl scraping)
+  const getIntelligenceData = () => {
+    if (!competitor.description) return null;
+    
+    try {
+      // Try to parse if it's JSON (from our scraping)
+      const parsed = JSON.parse(competitor.description);
+      return parsed;
+    } catch {
+      // If not JSON, return as text
+      return { description: competitor.description };
+    }
+  };
+
+  const intelligenceData = getIntelligenceData();
+
   const handleAnalyze = async () => {
     setLoading(true);
     try {
@@ -359,6 +375,72 @@ export function CompetitorCard({
                 </div>
               </div>
             </>
+          )}
+
+          {/* Intelligence Data from Firecrawl */}
+          {intelligenceData && (
+            <div className="space-y-3 pt-2 border-t">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Intelligence Data
+              </p>
+              
+              {intelligenceData.keyServices && intelligenceData.keyServices.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Key Services:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {intelligenceData.keyServices.map((service: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {service}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {intelligenceData.technologies && intelligenceData.technologies.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Technologies:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {intelligenceData.technologies.map((tech: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tech}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {intelligenceData.pricingMentions && intelligenceData.pricingMentions.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Pricing Mentions:</span>
+                  <div className="text-xs text-muted-foreground">
+                    {intelligenceData.pricingMentions.slice(0, 2).join(', ')}
+                  </div>
+                </div>
+              )}
+
+              {intelligenceData.socialLinks && intelligenceData.socialLinks.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Social Presence:</span>
+                  <div className="flex gap-1">
+                    {intelligenceData.socialLinks.slice(0, 3).map((link: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {link.includes('linkedin') ? 'LinkedIn' : 
+                         link.includes('twitter') ? 'Twitter' : 
+                         link.includes('facebook') ? 'Facebook' : 'Social'}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {intelligenceData.scrapedAt && (
+                <div className="text-xs text-muted-foreground">
+                  Last analyzed: {new Date(intelligenceData.scrapedAt).toLocaleString()}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Action Buttons */}

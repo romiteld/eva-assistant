@@ -1,10 +1,21 @@
 import { supabase } from '@/lib/supabase/browser';
+import { FirecrawlService } from './firecrawl';
 import { 
   Competitor, 
   CompetitorAlert,
   MarketTrend,
   CompetitorDiscovery
 } from '@/types/competitor-analysis';
+
+// Initialize Firecrawl client
+const getFirecrawlService = () => {
+  const apiKey = process.env.NEXT_PUBLIC_FIRECRAWL_API_KEY;
+  if (!apiKey) {
+    console.warn('Firecrawl API key not found. Using mock data.');
+    return null;
+  }
+  return new FirecrawlService({ apiKey });
+};
 
 // Adapter to work with existing database schema
 export class CompetitorAnalysisAdapter {
@@ -77,7 +88,7 @@ export class CompetitorAnalysisAdapter {
     return this.dbToCompetitor(data);
   }
 
-  // Update competitor analysis
+  // Update competitor analysis with Firecrawl integration
   async analyzeCompetitor(competitorId: string): Promise<void> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user?.id) throw new Error('User not authenticated');
@@ -92,13 +103,36 @@ export class CompetitorAnalysisAdapter {
 
     if (fetchError) throw fetchError;
 
-    // Update with new analysis timestamp
+    let analysisFindings = existing.findings || {};
+
+    // Try to scrape competitor website with Firecrawl
+    const firecrawlService = getFirecrawlService();
+    if (firecrawlService && existing.competitor_url) {
+      try {
+        const scrapeResult = await firecrawlService.scrapeUrl(existing.competitor_url);
+
+        if (scrapeResult?.data) {
+          // Extract competitor intelligence from scraped content
+          const intelligence = this.extractCompetitorIntelligence(scrapeResult.data);
+          analysisFindings = {
+            ...analysisFindings,
+            ...intelligence,
+            scrapedAt: new Date().toISOString()
+          };
+        }
+      } catch (error) {
+        console.error('Firecrawl scraping failed:', error);
+        // Continue with basic analysis even if scraping fails
+      }
+    }
+
+    // Update with new analysis timestamp and findings
     const { error } = await supabase
       .from('competitor_analyses')
       .update({
         last_analyzed_at: new Date().toISOString(),
         findings: {
-          ...existing.findings,
+          ...analysisFindings,
           lastAnalysis: {
             timestamp: new Date().toISOString(),
             status: 'completed'
@@ -108,6 +142,67 @@ export class CompetitorAnalysisAdapter {
       .eq('id', competitorId);
 
     if (error) throw error;
+  }
+
+  // Extract competitor intelligence from scraped content
+  private extractCompetitorIntelligence(content: string): any {
+    const intelligence: any = {
+      keyServices: [],
+      pricingMentions: [],
+      contactInfo: {},
+      socialLinks: [],
+      technologies: [],
+      marketingMessages: []
+    };
+
+    // Extract key services (simple keyword matching)
+    const serviceKeywords = [
+      'recruitment', 'hiring', 'talent', 'advisor', 'financial', 'consultant',
+      'placement', 'search', 'executive', 'headhunting', 'staffing'
+    ];
+    
+    serviceKeywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      const matches = content.match(regex);
+      if (matches && matches.length > 2) {
+        intelligence.keyServices.push(keyword);
+      }
+    });
+
+    // Extract pricing mentions
+    const pricingRegex = /\$[\d,]+|\d+%\s*(?:fee|commission|rate)/gi;
+    const pricingMatches = content.match(pricingRegex);
+    if (pricingMatches) {
+      intelligence.pricingMentions = pricingMatches.slice(0, 5);
+    }
+
+    // Extract contact information
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+    const phoneRegex = /\+?[\d\s\-\(\)]{10,}/g;
+    
+    const emails = content.match(emailRegex);
+    const phones = content.match(phoneRegex);
+    
+    if (emails) intelligence.contactInfo.emails = emails.slice(0, 3);
+    if (phones) intelligence.contactInfo.phones = phones.slice(0, 3);
+
+    // Extract social media links
+    const socialRegex = /(linkedin|twitter|facebook|instagram)\.com\/[\w\-\.]+/gi;
+    const socialMatches = content.match(socialRegex);
+    if (socialMatches) {
+      intelligence.socialLinks = socialMatches.slice(0, 5);
+    }
+
+    // Extract technology mentions
+    const techKeywords = ['AI', 'machine learning', 'automation', 'CRM', 'API', 'cloud', 'SaaS'];
+    techKeywords.forEach(tech => {
+      const regex = new RegExp(`\\b${tech}\\b`, 'gi');
+      if (content.match(regex)) {
+        intelligence.technologies.push(tech);
+      }
+    });
+
+    return intelligence;
   }
 
   // Remove competitor
@@ -143,13 +238,78 @@ export class CompetitorAnalysisAdapter {
     ];
   }
 
-  // Discover competitors (simplified version)
+  // Discover competitors using Firecrawl search
   async discoverCompetitors(
     industry: string,
     keywords: string[],
     currentDomain?: string
   ): Promise<CompetitorDiscovery> {
-    // Mock discovery results
+    const firecrawlService = getFirecrawlService();
+    
+    if (!firecrawlService) {
+      // Fallback to mock data if Firecrawl is not available
+      return this.getMockCompetitorDiscovery(industry, keywords, currentDomain);
+    }
+
+    const suggestedCompetitors = [];
+    
+    try {
+      // Search for competitors using industry + keywords
+      const searchQuery = `${industry} ${keywords.join(' ')} companies`;
+      const searchResults = await firecrawlService.search(searchQuery);
+
+      if (searchResults?.data) {
+        for (const result of searchResults.data) {
+          // Skip if it's the current domain
+          if (currentDomain && result.url?.includes(currentDomain)) {
+            continue;
+          }
+
+          // Extract domain from URL
+          const domain = this.extractDomainFromUrl(result.url);
+          if (!domain) continue;
+
+          // Calculate similarity score based on content
+          const similarityScore = this.calculateSimilarityScore(
+            result.content || result.description || '',
+            keywords
+          );
+
+          // Only include if similarity score is reasonable
+          if (similarityScore > 30) {
+            const sharedKeywords = this.extractSharedKeywords(
+              result.content || result.description || '',
+              keywords
+            );
+
+            suggestedCompetitors.push({
+              name: result.title || domain,
+              domain: domain,
+              reason: this.generateCompetitorReason(result, industry),
+              similarityScore,
+              sharedKeywords,
+              overlappingMarkets: [industry]
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Firecrawl search failed:', error);
+      // Fallback to mock data
+      return this.getMockCompetitorDiscovery(industry, keywords, currentDomain);
+    }
+
+    return {
+      suggestedCompetitors: suggestedCompetitors.slice(0, 10)
+    };
+  }
+
+  // Helper methods for competitor discovery
+  private getMockCompetitorDiscovery(
+    industry: string,
+    keywords: string[],
+    currentDomain?: string
+  ): CompetitorDiscovery {
     const mockCompetitors = [
       {
         name: 'RecruitTech Solutions',
@@ -184,13 +344,74 @@ export class CompetitorAnalysisAdapter {
     };
   }
 
+  private extractDomainFromUrl(url: string): string | null {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.replace('www.', '');
+    } catch {
+      return null;
+    }
+  }
+
+  private calculateSimilarityScore(content: string, keywords: string[]): number {
+    if (!content) return 0;
+
+    const contentLower = content.toLowerCase();
+    let score = 0;
+
+    keywords.forEach(keyword => {
+      const keywordLower = keyword.toLowerCase();
+      const matches = (contentLower.match(new RegExp(`\\b${keywordLower}\\b`, 'g')) || []).length;
+      score += matches * 10; // Each keyword match adds 10 points
+    });
+
+    // Bonus for recruitment/hiring related terms
+    const recruitmentTerms = ['recruitment', 'hiring', 'talent', 'staffing', 'placement', 'executive search'];
+    recruitmentTerms.forEach(term => {
+      if (contentLower.includes(term)) {
+        score += 15;
+      }
+    });
+
+    return Math.min(score, 100); // Cap at 100
+  }
+
+  private extractSharedKeywords(content: string, keywords: string[]): string[] {
+    if (!content) return [];
+
+    const contentLower = content.toLowerCase();
+    const shared = [];
+
+    keywords.forEach(keyword => {
+      const keywordLower = keyword.toLowerCase();
+      if (contentLower.includes(keywordLower)) {
+        shared.push(keyword);
+      }
+    });
+
+    return shared;
+  }
+
+  private generateCompetitorReason(result: any, industry: string): string {
+    const shared: any[] = [];
+    const reasons = [
+      `Active in ${industry} industry`,
+      'Similar target market and services',
+      'Competitive offering in the same space',
+      'Overlapping customer base',
+      'Similar business model and approach'
+    ];
+
+    return reasons[Math.floor(Math.random() * reasons.length)];
+  }
+
   // Get market trends (mock data)
   async getMarketTrends(industry: string): Promise<MarketTrend[]> {
     return [
       {
         id: '1',
         trend: 'AI-Powered Recruitment Tools',
-        category: 'Technology',
+        category: 'technology' as const,
         impact: 'positive',
         relevance: 95,
         recommendations: [
@@ -202,7 +423,7 @@ export class CompetitorAnalysisAdapter {
       {
         id: '2',
         trend: 'Remote Hiring Surge',
-        category: 'Market',
+        category: 'economic' as const,
         impact: 'positive',
         relevance: 88,
         recommendations: [

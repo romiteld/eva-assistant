@@ -322,21 +322,26 @@ export class PostPredictorService {
   }
 
   private async generateSuggestions(request: PostPredictorRequest, analysis: any, predictions: any) {
-    const suggestions = [];
+    const suggestions: Array<{
+      type: 'content' | 'timing' | 'hashtag' | 'format' | 'length';
+      priority: 'high' | 'medium' | 'low';
+      description: string;
+      impact: number;
+    }> = [];
     const config = this.platformConfigs[request.platform];
 
     // Content length suggestion
     if (request.content.length < config.optimal_length.min) {
       suggestions.push({
-        type: 'length',
-        priority: 'high',
+        type: 'length' as const,
+        priority: 'high' as const,
         description: `Your post is too short. Add ${config.optimal_length.min - request.content.length} more characters for better engagement.`,
         impact: 30
       });
     } else if (request.content.length > config.optimal_length.max) {
       suggestions.push({
-        type: 'length',
-        priority: 'medium',
+        type: 'length' as const,
+        priority: 'medium' as const,
         description: `Consider shortening your post by ${request.content.length - config.optimal_length.max} characters.`,
         impact: 20
       });
@@ -345,8 +350,8 @@ export class PostPredictorService {
     // Hashtag suggestions
     if (analysis.hashtags.length === 0 && config.features.hashtags) {
       suggestions.push({
-        type: 'hashtag',
-        priority: 'high',
+        type: 'hashtag' as const,
+        priority: 'high' as const,
         description: 'Add 2-3 relevant hashtags to increase discoverability.',
         impact: 25
       });
@@ -355,8 +360,8 @@ export class PostPredictorService {
     // Engagement suggestions based on sentiment
     if (analysis.sentiment === 'neutral') {
       suggestions.push({
-        type: 'content',
-        priority: 'medium',
+        type: 'content' as const,
+        priority: 'medium' as const,
         description: 'Add more emotional appeal or a clear call-to-action to boost engagement.',
         impact: 15
       });
@@ -364,8 +369,8 @@ export class PostPredictorService {
 
     // Timing suggestion
     suggestions.push({
-      type: 'timing',
-      priority: 'high',
+      type: 'timing' as const,
+      priority: 'high' as const,
       description: `Post during peak hours for 40% more engagement.`,
       impact: 40
     });
@@ -473,6 +478,160 @@ export class PostPredictorService {
       console.error('Error fetching prediction history:', error);
       return [];
     }
+  }
+
+  async getAnalytics(userId: string, days = 30) {
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const { data, error } = await this.supabase
+        .from('post_predictions')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Calculate analytics
+      const analytics = {
+        totalPredictions: data.length,
+        averageEngagementRate: 0,
+        platformBreakdown: {} as Record<string, number>,
+        sentimentBreakdown: {} as Record<string, number>,
+        topKeywords: [] as string[],
+        engagementTrends: [] as Array<{ date: string; engagement: number }>,
+        bestPerformingPlatform: '',
+        improvementSuggestions: [] as string[]
+      };
+
+      if (data.length === 0) return analytics;
+
+      // Calculate averages and breakdowns
+      let totalEngagement = 0;
+      const keywordCounts = new Map<string, number>();
+      const dailyEngagement = new Map<string, number[]>();
+
+      data.forEach(prediction => {
+        const engagement = prediction.predictions.engagement_rate;
+        totalEngagement += engagement;
+        
+        // Platform breakdown
+        analytics.platformBreakdown[prediction.platform] = 
+          (analytics.platformBreakdown[prediction.platform] || 0) + 1;
+        
+        // Sentiment breakdown
+        const sentiment = prediction.content_analysis.sentiment;
+        analytics.sentimentBreakdown[sentiment] = 
+          (analytics.sentimentBreakdown[sentiment] || 0) + 1;
+        
+        // Keywords
+        prediction.content_analysis.keywords.forEach((keyword: string) => {
+          keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
+        });
+        
+        // Daily engagement
+        const date = new Date(prediction.created_at).toISOString().split('T')[0];
+        if (!dailyEngagement.has(date)) {
+          dailyEngagement.set(date, []);
+        }
+        dailyEngagement.get(date)!.push(engagement);
+      });
+
+      analytics.averageEngagementRate = totalEngagement / data.length;
+
+      // Top keywords
+      const sortedKeywords = Array.from(keywordCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      analytics.topKeywords = sortedKeywords.map(([keyword]) => keyword);
+
+      // Engagement trends
+      analytics.engagementTrends = Array.from(dailyEngagement.entries())
+        .map(([date, engagements]) => ({
+          date,
+          engagement: engagements.reduce((sum, e) => sum + e, 0) / engagements.length
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      // Best performing platform
+      const platformEngagement = {} as Record<string, number[]>;
+      data.forEach(prediction => {
+        if (!platformEngagement[prediction.platform]) {
+          platformEngagement[prediction.platform] = [];
+        }
+        platformEngagement[prediction.platform].push(prediction.predictions.engagement_rate);
+      });
+
+      let bestPlatform = '';
+      let bestAverage = 0;
+      Object.entries(platformEngagement).forEach(([platform, engagements]) => {
+        const average = engagements.reduce((sum, e) => sum + e, 0) / engagements.length;
+        if (average > bestAverage) {
+          bestAverage = average;
+          bestPlatform = platform;
+        }
+      });
+      analytics.bestPerformingPlatform = bestPlatform;
+
+      // Improvement suggestions
+      const suggestions = [];
+      if (analytics.averageEngagementRate < 2) {
+        suggestions.push('Consider using more emotional language in your posts');
+      }
+      if (analytics.sentimentBreakdown.negative > (analytics.sentimentBreakdown.positive || 0)) {
+        suggestions.push('Try to maintain a more positive tone in your content');
+      }
+      if (analytics.platformBreakdown.linkedin && analytics.platformBreakdown.linkedin > 5) {
+        suggestions.push('LinkedIn posts perform well - consider posting more frequently');
+      }
+      analytics.improvementSuggestions = suggestions;
+
+      return analytics;
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      return {
+        totalPredictions: 0,
+        averageEngagementRate: 0,
+        platformBreakdown: {},
+        sentimentBreakdown: {},
+        topKeywords: [],
+        engagementTrends: [],
+        bestPerformingPlatform: '',
+        improvementSuggestions: []
+      };
+    }
+  }
+
+  async getBenchmarks(platform: SocialPlatform, industry?: string) {
+    // Industry benchmarks for engagement rates
+    const benchmarks = {
+      linkedin: {
+        technology: { likes: 0.025, shares: 0.008, comments: 0.005 },
+        finance: { likes: 0.018, shares: 0.006, comments: 0.004 },
+        healthcare: { likes: 0.022, shares: 0.007, comments: 0.005 },
+        general: { likes: 0.020, shares: 0.007, comments: 0.004 }
+      },
+      twitter: {
+        technology: { likes: 0.020, shares: 0.012, comments: 0.003 },
+        finance: { likes: 0.015, shares: 0.009, comments: 0.002 },
+        healthcare: { likes: 0.018, shares: 0.010, comments: 0.003 },
+        general: { likes: 0.015, shares: 0.010, comments: 0.002 }
+      },
+      facebook: {
+        technology: { likes: 0.035, shares: 0.010, comments: 0.006 },
+        finance: { likes: 0.025, shares: 0.008, comments: 0.004 },
+        healthcare: { likes: 0.030, shares: 0.009, comments: 0.005 },
+        general: { likes: 0.030, shares: 0.008, comments: 0.004 }
+      }
+    };
+
+    const industryKey = industry?.toLowerCase() || 'general';
+    const platformBenchmarks = benchmarks[platform];
+    
+    return platformBenchmarks[industryKey as keyof typeof platformBenchmarks] || 
+           platformBenchmarks.general;
   }
 
   // Helper methods

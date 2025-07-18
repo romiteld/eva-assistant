@@ -240,7 +240,7 @@ export const useFocus = () => {
   };
 
   const handleKeyNavigation = (event: KeyboardEvent) => {
-    const items = itemRefs.current.filter(Boolean);
+    const items = itemRefs.current.filter((item): item is HTMLElement => item !== null);
     keyboardUtils.handleArrowKeys(event, items, focusedIndex, setFocusedIndex);
   };
 

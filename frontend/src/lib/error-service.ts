@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/browser'
+import { metricsCollector } from '@/lib/monitoring/metrics'
 
 export enum ErrorSeverity {
   LOW = 'low',
@@ -21,6 +22,7 @@ export enum ErrorCategory {
 }
 
 export interface ErrorDetails {
+  id?: string
   message: string
   category: ErrorCategory
   severity: ErrorSeverity
@@ -31,6 +33,17 @@ export interface ErrorDetails {
   sessionId?: string
   userAgent?: string
   url?: string
+}
+
+export interface ErrorStats {
+  total: number
+  bySeverity: Record<ErrorSeverity, number>
+  byCategory: Record<ErrorCategory, number>
+  recent: ErrorDetails[]
+  trends: {
+    hourly: number[]
+    daily: number[]
+  }
 }
 
 class ErrorService {
@@ -53,6 +66,7 @@ class ErrorService {
 
   async logError(error: Error | unknown, category: ErrorCategory = ErrorCategory.UNKNOWN, severity: ErrorSeverity = ErrorSeverity.MEDIUM, context?: Record<string, any>) {
     const errorDetails: ErrorDetails = {
+      id: crypto.randomUUID(),
       message: error instanceof Error ? error.message : String(error),
       category,
       severity,
@@ -81,10 +95,29 @@ class ErrorService {
       await this.sendToMonitoring(errorDetails)
     }
 
-    // Persist critical errors to database
-    if (severity === ErrorSeverity.CRITICAL && this.supabase) {
+    // Persist to database (all errors, not just critical)
+    if (this.supabase) {
       await this.persistError(errorDetails)
     }
+
+    // Collect metrics for performance tracking
+    metricsCollector.collectMetric({
+      name: 'error_count',
+      value: 1,
+      unit: 'count',
+      tags: {
+        category: errorDetails.category,
+        severity: errorDetails.severity,
+        userId: errorDetails.userId || 'anonymous'
+      }
+    })
+
+    // Trigger alerts for high severity errors
+    if (severity === ErrorSeverity.HIGH || severity === ErrorSeverity.CRITICAL) {
+      await this.triggerAlert(errorDetails)
+    }
+
+    return errorDetails.id
   }
 
   private async sendToMonitoring(errorDetails: ErrorDetails) {
@@ -105,9 +138,10 @@ class ErrorService {
 
   private async persistError(errorDetails: ErrorDetails) {
     try {
-      await this.supabase
+      const { error } = await this.supabase
         .from('error_logs')
         .insert({
+          id: errorDetails.id,
           message: errorDetails.message,
           category: errorDetails.category,
           severity: errorDetails.severity,
@@ -117,10 +151,58 @@ class ErrorService {
           session_id: errorDetails.sessionId,
           user_agent: errorDetails.userAgent,
           url: errorDetails.url,
-          created_at: errorDetails.timestamp
+          created_at: errorDetails.timestamp.toISOString()
         })
+      
+      if (error) {
+        console.error('Supabase error when persisting error:', error)
+      }
     } catch (err) {
       console.error('Failed to persist error:', err)
+    }
+  }
+
+  private async triggerAlert(errorDetails: ErrorDetails) {
+    try {
+      // Check if we should trigger an alert based on error frequency
+      const recentErrors = this.errors.filter(e => 
+        e.category === errorDetails.category &&
+        e.severity === errorDetails.severity &&
+        Date.now() - e.timestamp.getTime() < 300000 // Last 5 minutes
+      )
+
+      if (recentErrors.length >= 3) {
+        // Send alert notification
+        await this.sendAlert(errorDetails, recentErrors.length)
+      }
+    } catch (err) {
+      console.error('Failed to trigger alert:', err)
+    }
+  }
+
+  private async sendAlert(errorDetails: ErrorDetails, errorCount: number) {
+    try {
+      // In production, this would integrate with notification services
+      // For now, we'll just log the alert
+      console.warn(`🚨 ALERT: ${errorCount} ${errorDetails.severity} ${errorDetails.category} errors in the last 5 minutes`)
+      
+      // Store alert in database
+      await this.supabase
+        .from('alert_history')
+        .insert({
+          alert_data: {
+            error_category: errorDetails.category,
+            error_severity: errorDetails.severity,
+            error_count: errorCount,
+            error_message: errorDetails.message,
+            user_id: errorDetails.userId,
+            session_id: errorDetails.sessionId
+          },
+          triggered_at: new Date().toISOString(),
+          notification_sent: true
+        })
+    } catch (err) {
+      console.error('Failed to send alert:', err)
     }
   }
 
@@ -155,6 +237,111 @@ class ErrorService {
       return this.errors.filter(e => e.category === category)
     }
     return this.errors
+  }
+
+  async getErrorStats(timeWindow: number = 3600000): Promise<ErrorStats> {
+    const now = Date.now()
+    const recentErrors = this.errors.filter(e => 
+      now - e.timestamp.getTime() < timeWindow
+    )
+
+    const stats: ErrorStats = {
+      total: recentErrors.length,
+      bySeverity: {
+        [ErrorSeverity.LOW]: 0,
+        [ErrorSeverity.MEDIUM]: 0,
+        [ErrorSeverity.HIGH]: 0,
+        [ErrorSeverity.CRITICAL]: 0
+      },
+      byCategory: {
+        [ErrorCategory.AUTH]: 0,
+        [ErrorCategory.API]: 0,
+        [ErrorCategory.DATABASE]: 0,
+        [ErrorCategory.UI]: 0,
+        [ErrorCategory.NETWORK]: 0,
+        [ErrorCategory.VALIDATION]: 0,
+        [ErrorCategory.UNKNOWN]: 0
+      },
+      recent: recentErrors.slice(0, 20),
+      trends: {
+        hourly: [],
+        daily: []
+      }
+    }
+
+    // Count by severity and category
+    recentErrors.forEach(error => {
+      stats.bySeverity[error.severity]++
+      stats.byCategory[error.category]++
+    })
+
+    // Generate hourly trends (last 24 hours)
+    for (let i = 0; i < 24; i++) {
+      const hourStart = now - (i * 3600000)
+      const hourEnd = hourStart + 3600000
+      const hourErrors = this.errors.filter(e => 
+        e.timestamp.getTime() >= hourStart && e.timestamp.getTime() < hourEnd
+      )
+      stats.trends.hourly.unshift(hourErrors.length)
+    }
+
+    // Generate daily trends (last 7 days)
+    for (let i = 0; i < 7; i++) {
+      const dayStart = now - (i * 86400000)
+      const dayEnd = dayStart + 86400000
+      const dayErrors = this.errors.filter(e => 
+        e.timestamp.getTime() >= dayStart && e.timestamp.getTime() < dayEnd
+      )
+      stats.trends.daily.unshift(dayErrors.length)
+    }
+
+    return stats
+  }
+
+  async getErrorsFromDatabase(
+    limit: number = 100,
+    category?: ErrorCategory,
+    severity?: ErrorSeverity
+  ): Promise<ErrorDetails[]> {
+    try {
+      let query = this.supabase
+        .from('error_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (category) {
+        query = query.eq('category', category)
+      }
+
+      if (severity) {
+        query = query.eq('severity', severity)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching from database:', error)
+        return []
+      }
+
+      return data?.map(row => ({
+        id: row.id,
+        message: row.message,
+        category: row.category as ErrorCategory,
+        severity: row.severity as ErrorSeverity,
+        context: row.context,
+        stack: row.stack,
+        timestamp: new Date(row.created_at),
+        userId: row.user_id,
+        sessionId: row.session_id,
+        userAgent: row.user_agent,
+        url: row.url
+      })) || []
+    } catch (err) {
+      console.error('Failed to fetch errors from database:', err)
+      return []
+    }
   }
 
   clearErrors() {

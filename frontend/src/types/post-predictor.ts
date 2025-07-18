@@ -124,3 +124,33 @@ export interface PostingSchedule {
     engagement_score: number;
   }>;
 }
+
+export interface AnalyticsData {
+  totalPredictions: number;
+  averageEngagementRate: number;
+  platformBreakdown: Record<string, number>;
+  sentimentBreakdown: Record<string, number>;
+  topKeywords: string[];
+  engagementTrends: Array<{
+    date: string;
+    engagement: number;
+  }>;
+  bestPerformingPlatform: string;
+  improvementSuggestions: string[];
+}
+
+export interface PlatformBenchmark {
+  likes: number;
+  shares: number;
+  comments: number;
+}
+
+export interface ViralPotential {
+  score: number;
+  factors: Array<{
+    factor: string;
+    impact: number;
+    description: string;
+  }>;
+  probability: number;
+}

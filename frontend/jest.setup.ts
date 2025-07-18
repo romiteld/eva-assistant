@@ -40,7 +40,8 @@ jest.mock('@supabase/ssr', () => ({
 }))
 
 jest.mock('./src/lib/supabase/browser', () => ({
-  supabase: mockSupabaseClient
+  supabase: mockSupabaseClient,
+  createClient: jest.fn(() => mockSupabaseClient)
 }))
 
 // Mock next/navigation

@@ -57,7 +57,7 @@ export class PerformanceCollector {
     
     // Inject performance monitoring
     await this.page.addInitScript(() => {
-      window.__performanceMetrics = {
+      (window as any).__performanceMetrics = {
         marks: {},
         measures: {}
       }
@@ -65,7 +65,7 @@ export class PerformanceCollector {
       // Override performance.mark
       const originalMark = window.performance.mark.bind(window.performance)
       window.performance.mark = function(name) {
-        window.__performanceMetrics.marks[name] = performance.now()
+        (window as any).__performanceMetrics.marks[name] = performance.now()
         return originalMark(name)
       }
       
@@ -73,11 +73,11 @@ export class PerformanceCollector {
       const originalMeasure = window.performance.measure.bind(window.performance)
       window.performance.measure = function(name, start, end) {
         const result = originalMeasure(name, start, end)
-        window.__performanceMetrics.measures[name] = {
-          start: window.__performanceMetrics.marks[start] || 0,
-          end: window.__performanceMetrics.marks[end] || performance.now(),
-          duration: (window.__performanceMetrics.marks[end] || performance.now()) - 
-                   (window.__performanceMetrics.marks[start] || 0)
+        (window as any).__performanceMetrics.measures[name] = {
+          start: (window as any).__performanceMetrics.marks[start] || 0,
+          end: (window as any).__performanceMetrics.marks[end] || performance.now(),
+          duration: ((window as any).__performanceMetrics.marks[end] || performance.now()) - 
+                   ((window as any).__performanceMetrics.marks[start] || 0)
         }
         return result
       }

@@ -286,10 +286,12 @@ test.describe('Resource Optimization', () => {
     let usedBytes = 0
     
     for (const entry of jsCoverage) {
-      totalBytes += entry.text.length
+      totalBytes += entry.source?.length || 0
       
-      for (const range of entry.ranges) {
-        usedBytes += range.end - range.start
+      for (const func of entry.functions) {
+        for (const range of func.ranges) {
+          usedBytes += range.endOffset - range.startOffset
+        }
       }
     }
     
