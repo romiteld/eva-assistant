@@ -32,7 +32,11 @@ export async function signInWithLinkedInPKCE() {
   const codeChallenge = await generateCodeChallenge(codeVerifier);
   
   // LinkedIn OAuth configuration
-  const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!;
+  const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID?.trim();
+  if (!clientId || clientId === 'your-linkedin-client-id') {
+    throw new Error('LinkedIn Client ID is not configured. Please set NEXT_PUBLIC_LINKEDIN_CLIENT_ID in your environment variables.');
+  }
+  
   const redirectUri = `${window.location.origin}/auth/linkedin/callback`;
   const scope = 'r_liteprofile r_emailaddress w_member_social r_organization_social';
   
