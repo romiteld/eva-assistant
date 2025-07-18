@@ -1,11 +1,27 @@
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 
-// Initialize Redis
-const redis = Redis.fromEnv();
+// Initialize Redis with explicit configuration
+const redisUrl = process.env.KV_REST_API_URL?.trim();
+const redisToken = process.env.KV_REST_API_TOKEN?.trim();
+
+const redis = redisUrl && redisToken 
+  ? new Redis({
+      url: redisUrl,
+      token: redisToken,
+    })
+  : null;
 
 export async function POST(request: Request) {
   try {
+    // Check if Redis is available
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'Redis not configured' },
+        { status: 503 }
+      );
+    }
+
     // Parse the request body
     const body = await request.json();
     const { key, value, action } = body;
@@ -91,6 +107,15 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    // Check if Redis is available
+    if (!redis) {
+      return NextResponse.json({
+        status: 'unhealthy',
+        redis: 'not configured',
+        error: 'Redis credentials not found'
+      });
+    }
+
     // Simple health check endpoint
     const result = await redis.ping();
     

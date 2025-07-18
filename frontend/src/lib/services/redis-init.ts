@@ -12,8 +12,8 @@ export async function initializeRedis(): Promise<{
   try {
     // Check if Redis credentials are configured
     const hasCredentials = 
-      process.env.UPSTASH_REDIS_REST_URL && 
-      process.env.UPSTASH_REDIS_REST_TOKEN;
+      process.env.KV_REST_API_URL && 
+      process.env.KV_REST_API_TOKEN;
     
     if (!hasCredentials) {
       console.warn('Redis credentials not configured. Using in-memory fallback.');
@@ -120,8 +120,8 @@ To enable the Zoho API Queue System, you need to set up Redis:
 3. Copy your credentials and add to your .env.local:
 
 \`\`\`
-UPSTASH_REDIS_REST_URL=your-redis-url
-UPSTASH_REDIS_REST_TOKEN=your-redis-token
+KV_REST_API_URL=your-redis-url
+KV_REST_API_TOKEN=your-redis-token
 \`\`\`
 
 ## Option 2: Local Redis (Development Only)
