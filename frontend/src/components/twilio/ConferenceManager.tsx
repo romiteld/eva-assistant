@@ -28,6 +28,7 @@ import {
   Settings
 } from 'lucide-react'
 import type { ConferenceCall } from '@/hooks/useTwilio'
+import { toast } from 'sonner'
 
 interface ConferenceManagerProps {
   conferences: ConferenceCall[]
@@ -69,7 +70,7 @@ export function ConferenceManager({
 
   const handleAddParticipant = () => {
     if (!newParticipant.phone || !newParticipant.name) {
-      alert('Please enter both phone number and name')
+      toast.error('Please enter both phone number and name')
       return
     }
 
@@ -78,6 +79,7 @@ export function ConferenceManager({
       participants: [...prev.participants, newParticipant]
     }))
 
+    toast.success('Participant added')
     setNewParticipant({ phone: '', name: '', role: 'candidate' })
     setShowAddParticipant(false)
   }
@@ -91,7 +93,7 @@ export function ConferenceManager({
 
   const handleCreateConference = async () => {
     if (!newConference.name || newConference.participants.length === 0) {
-      alert('Please provide a conference name and at least one participant')
+      toast.error('Please provide a conference name and at least one participant')
       return
     }
 
@@ -102,6 +104,7 @@ export function ConferenceManager({
         record: newConference.record
       })
       
+      toast.success('Conference created successfully')
       setNewConference({
         name: '',
         participants: [],
@@ -109,6 +112,7 @@ export function ConferenceManager({
       })
     } catch (error) {
       console.error('Error creating conference:', error)
+      toast.error('Failed to create conference')
     }
   }
 

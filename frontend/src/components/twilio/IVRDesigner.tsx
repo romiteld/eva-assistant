@@ -27,6 +27,7 @@ import {
   X
 } from 'lucide-react'
 import type { IVRFlow, IVRStep } from '@/hooks/useTwilio'
+import { toast } from 'sonner'
 
 interface IVRDesignerProps {
   flows: IVRFlow[]
@@ -73,15 +74,17 @@ export function IVRDesigner({
 
   const handleCreateFlow = async () => {
     if (!newFlow.name || newFlow.steps.length === 0) {
-      alert('Please provide a flow name and at least one step')
+      toast.error('Please provide a flow name and at least one step')
       return
     }
 
     try {
       await onCreateFlow(newFlow)
+      toast.success('IVR flow created successfully')
       setNewFlow({ name: '', steps: [], isActive: false })
     } catch (error) {
       console.error('Error creating flow:', error)
+      toast.error('Failed to create IVR flow')
     }
   }
 
@@ -90,15 +93,17 @@ export function IVRDesigner({
 
     try {
       await onUpdateFlow(editingFlow.id, editingFlow)
+      toast.success('IVR flow updated successfully')
       setEditingFlow(null)
     } catch (error) {
       console.error('Error updating flow:', error)
+      toast.error('Failed to update IVR flow')
     }
   }
 
   const handleAddStep = useCallback(() => {
     if (!newStep.type || !newStep.message) {
-      alert('Please provide step type and message')
+      toast.error('Please provide step type and message')
       return
     }
 

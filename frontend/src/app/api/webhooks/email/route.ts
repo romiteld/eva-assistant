@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { EmailAutomationRules } from '@/lib/automation/email-rules';
 import { EmailDealParser } from '@/lib/email/deal-parser';
 import { ZohoCRMClient } from '@/lib/integrations/zoho';
 import { Redis } from '@upstash/redis';
-import crypto from 'crypto';
 import { withRateLimit } from '@/middleware/rate-limit';
+import { withWebhookValidation } from '@/middleware/webhook-validation';
 
 // Force dynamic to prevent static rendering issues
 export const dynamic = 'force-dynamic';
@@ -17,52 +16,10 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-// Webhook signature verification
-function verifyWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
-}
-
-export const POST = withRateLimit(async (request: NextRequest) => {
+const emailWebhookHandler = async (request: NextRequest, emailData: any) => {
   const startTime = Date.now();
   
   try {
-    // Get webhook signature
-    const signature = headers().get('x-webhook-signature');
-    const webhookSecret = process.env.EMAIL_WEBHOOK_SECRET;
-    
-    if (!webhookSecret) {
-      console.error('EMAIL_WEBHOOK_SECRET not configured');
-      return NextResponse.json(
-        { error: 'Webhook secret not configured' },
-        { status: 500 }
-      );
-    }
-    
-    // Get request body
-    const body = await request.text();
-    
-    // Verify signature if provided
-    if (signature && !verifyWebhookSignature(body, signature, webhookSecret)) {
-      return NextResponse.json(
-        { error: 'Invalid webhook signature' },
-        { status: 401 }
-      );
-    }
-    
-    // Parse the email data
-    const emailData = JSON.parse(body);
     
     // Validate required fields
     if (!emailData.id || !emailData.from || !emailData.subject) {
@@ -176,7 +133,12 @@ export const POST = withRateLimit(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, 'webhook');
+};
+
+export const POST = withRateLimit(
+  withWebhookValidation(emailWebhookHandler, 'email'),
+  'webhook'
+);
 
 // Calculate email priority based on content and sender
 function calculateEmailPriority(email: any): number {

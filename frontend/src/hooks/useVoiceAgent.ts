@@ -68,6 +68,13 @@ interface UseVoiceAgentReturn {
   // Permissions
   hasPermission: boolean;
   requestPermission: () => Promise<boolean>;
+  
+  // Enhanced WebRTC features
+  enhancedMetrics: any;
+  setInputGain: (gain: number) => void;
+  setOutputGain: (gain: number) => void;
+  calibrateNoise: (duration?: number) => Promise<void>;
+  getWebRTCManager: () => any;
 }
 
 export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgentReturn {
@@ -96,6 +103,7 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
   const [hasPermission, setHasPermission] = useState(false);
   const [frequencyData, setFrequencyData] = useState<Uint8Array | null>(null);
   const [waveformData, setWaveformData] = useState<Uint8Array | null>(null);
+  const [enhancedMetrics, setEnhancedMetrics] = useState<any>(null);
 
   // Store showToast in a ref to avoid closure issues
   const showToastRef = useRef(showToast);
@@ -151,7 +159,7 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
     if (options.enableVisual) {
       voiceServiceRef.current = new VoiceWithVisualService(options);
     } else {
-      voiceServiceRef.current = new VoiceService(options);
+      voiceServiceRef.current = new VoiceService(options, true); // Enable WebRTC
     }
     const voiceService = voiceServiceRef.current;
 
@@ -285,6 +293,12 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
           setFrequencyData(voiceServiceRef.current.getFrequencyData());
           setWaveformData(voiceServiceRef.current.getWaveformData());
           setMetrics(voiceServiceRef.current.getMetrics());
+          
+          // Update enhanced metrics from WebRTC
+          const enhanced = voiceServiceRef.current.getEnhancedMetrics();
+          if (enhanced) {
+            setEnhancedMetrics(enhanced);
+          }
         }
         animationFrameRef.current = requestAnimationFrame(updateVisualization);
       };
@@ -483,6 +497,32 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
     }
   }, []);
 
+  // Enhanced WebRTC methods
+  const setInputGain = useCallback((gain: number) => {
+    if (voiceServiceRef.current) {
+      voiceServiceRef.current.setInputGain(gain);
+    }
+  }, []);
+
+  const setOutputGain = useCallback((gain: number) => {
+    if (voiceServiceRef.current) {
+      voiceServiceRef.current.setOutputGain(gain);
+    }
+  }, []);
+
+  const calibrateNoise = useCallback(async (duration = 2000): Promise<void> => {
+    if (voiceServiceRef.current) {
+      await voiceServiceRef.current.calibrateNoiseLevel(duration);
+    }
+  }, []);
+
+  const getWebRTCManager = useCallback(() => {
+    if (voiceServiceRef.current) {
+      return voiceServiceRef.current.getWebRTCManager();
+    }
+    return null;
+  }, []);
+
   // Computed states
   const isConnected = state !== VoiceAgentState.IDLE && state !== VoiceAgentState.ERROR;
   const isListening = state === VoiceAgentState.LISTENING;
@@ -524,5 +564,12 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
     // Permissions
     hasPermission,
     requestPermission,
+    
+    // Enhanced WebRTC features
+    enhancedMetrics,
+    setInputGain,
+    setOutputGain,
+    calibrateNoise,
+    getWebRTCManager,
   };
 }

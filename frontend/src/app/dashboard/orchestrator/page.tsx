@@ -31,6 +31,8 @@ export default function OrchestratorPage() {
   const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [executions, setExecutions] = useState<AgentExecution[]>([]);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
@@ -38,16 +40,28 @@ export default function OrchestratorPage() {
   // Load agents and execution history
   const loadData = useCallback(async () => {
     try {
-      const [agentList, executionHistory] = await Promise.all([
+      const [agentList, executionHistory, logs, metrics] = await Promise.all([
         agentOrchestrator.listAgents(),
-        agentOrchestrator.getExecutionHistory(20)
+        agentOrchestrator.getExecutionHistory(20),
+        agentOrchestrator.getActivityLogs(50),
+        agentOrchestrator.getPerformanceMetrics()
       ]);
       setAgents(agentList);
       setExecutions(executionHistory);
+      setActivityLogs(logs);
+      setPerformanceMetrics(metrics);
     } catch (error) {
+      console.error('Agent Orchestrator Error:', error);
+      
+      // Check if it's a network/edge function error
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
+      const isEdgeFunctionError = errorMessage.includes('404') || errorMessage.includes('Agent orchestrator error');
+      
       toast({
-        title: 'Error loading data',
-        description: error instanceof Error ? error.message : 'Failed to load data',
+        title: isEdgeFunctionError ? 'Edge Function Not Deployed' : 'Error loading data',
+        description: isEdgeFunctionError 
+          ? 'The Agent Orchestrator Edge Function needs to be deployed. Run: supabase functions deploy agent-orchestrator'
+          : errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -321,6 +335,7 @@ export default function OrchestratorPage() {
             <TabsTrigger value="agents">Active Agents</TabsTrigger>
             <TabsTrigger value="history">Execution History</TabsTrigger>
             <TabsTrigger value="logs">Activity Logs</TabsTrigger>
+            <TabsTrigger value="metrics">Performance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="agents" className="space-y-4">
@@ -401,6 +416,22 @@ export default function OrchestratorPage() {
                       <Progress value={agent.progress} className="h-2" />
                     </div>
                   )}
+                  {agent.description && (
+                    <p className="text-sm text-gray-400 mt-2">{agent.description}</p>
+                  )}
+                  {agent.capabilities && agent.capabilities.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {agent.capabilities.map((capability, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="outline" 
+                          className="text-xs bg-blue-500/10 text-blue-300 border-blue-500/20"
+                        >
+                          {capability}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   {agent.lastActivity && (
                     <p className="text-xs text-gray-500 mt-2">
                       Last activity: {format(new Date(agent.lastActivity), 'MMM d, h:mm a')}
@@ -462,10 +493,135 @@ export default function OrchestratorPage() {
 
           <TabsContent value="logs">
             <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-              <CardContent className="p-6">
-                <p className="text-gray-400 text-center">
-                  Real-time activity logs coming soon...
-                </p>
+              <CardHeader>
+                <CardTitle className="text-lg">Activity Logs</CardTitle>
+                <CardDescription>Real-time agent activity and system events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-2">
+                    {activityLogs.map((log) => (
+                      <div 
+                        key={log.id} 
+                        className="p-3 rounded-lg bg-white/5 border border-white/10"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant="secondary" 
+                              className={
+                                log.log_level === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/20' :
+                                log.log_level === 'warn' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/20' :
+                                log.log_level === 'info' ? 'bg-blue-500/20 text-blue-400 border-blue-500/20' :
+                                'bg-gray-500/20 text-gray-400 border-gray-500/20'
+                              }
+                            >
+                              {log.log_level.toUpperCase()}
+                            </Badge>
+                            <span className="font-medium text-white">
+                              {log.agent_registry?.name || log.agent_id}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {format(new Date(log.timestamp), 'MMM d, h:mm:ss a')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-300 mb-1">{log.message}</p>
+                        {log.details && Object.keys(log.details).length > 0 && (
+                          <details className="text-xs text-gray-500">
+                            <summary className="cursor-pointer hover:text-gray-400">
+                              View details
+                            </summary>
+                            <pre className="mt-1 bg-black/20 p-2 rounded text-xs overflow-auto">
+                              {JSON.stringify(log.details, null, 2)}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    ))}
+                    {activityLogs.length === 0 && (
+                      <div className="text-center text-gray-400 py-8">
+                        No activity logs yet. Execute an agent to see logs appear here.
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="metrics">
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+              <CardHeader>
+                <CardTitle className="text-lg">Performance Metrics</CardTitle>
+                <CardDescription>Agent execution performance and success rates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-4">
+                    {performanceMetrics.map((metric) => (
+                      <div 
+                        key={metric.id} 
+                        className="p-4 rounded-lg bg-white/5 border border-white/10"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-green-400" />
+                            <span className="font-medium text-white">
+                              {metric.agent_registry?.name || metric.agent_id}
+                            </span>
+                            <Badge variant={metric.success ? 'default' : 'destructive'}>
+                              {metric.success ? 'Success' : 'Failed'}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {format(new Date(metric.start_time), 'MMM d, h:mm a')}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-400">Duration</span>
+                            <div className="font-medium text-white">
+                              {metric.duration_ms ? `${(metric.duration_ms / 1000).toFixed(1)}s` : 'N/A'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Tasks</span>
+                            <div className="font-medium text-white">
+                              {metric.tasks_completed || 0}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Accuracy</span>
+                            <div className="font-medium text-white">
+                              {metric.accuracy_score ? `${(metric.accuracy_score * 100).toFixed(1)}%` : 'N/A'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Confidence</span>
+                            <div className="font-medium text-white">
+                              {metric.confidence_score ? `${(metric.confidence_score * 100).toFixed(1)}%` : 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {metric.api_calls_count > 0 && (
+                          <div className="mt-3 pt-3 border-t border-white/10">
+                            <span className="text-xs text-gray-400">
+                              API Calls: {metric.api_calls_count}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {performanceMetrics.length === 0 && (
+                      <div className="text-center text-gray-400 py-8">
+                        No performance metrics yet. Execute an agent to see metrics appear here.
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>

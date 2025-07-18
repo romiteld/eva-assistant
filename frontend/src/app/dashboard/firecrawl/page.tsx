@@ -638,13 +638,26 @@ export default function RecruiterIntelligenceHub() {
 
   useEffect(() => {
     // Simulate loading data
-    setTimeout(() => {
-      setRecentResearch(mockRecentResearch)
-      setInsights(mockInsights)
-      setSavedSearches(mockSavedSearches)
-      setFolders(mockFolders)
-      setIsLoading(false)
-    }, 1000)
+    const loadData = async () => {
+      try {
+        // In a real app, this would be API calls
+        await new Promise(resolve => setTimeout(resolve, 800))
+        setRecentResearch(mockRecentResearch)
+        setInsights(mockInsights)
+        setSavedSearches(mockSavedSearches)
+        setFolders(mockFolders)
+      } catch (error) {
+        toast({
+          title: 'Error loading data',
+          description: 'Failed to load research data. Please try again.',
+          variant: 'destructive'
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadData()
   }, [])
 
   const filteredTemplates = researchTemplates
@@ -813,6 +826,76 @@ export default function RecruiterIntelligenceHub() {
     return researchTemplates.find(t => t.id === id)
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-950 p-6">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header Skeleton */}
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 bg-gray-800 rounded-xl animate-pulse" />
+                  <div>
+                    <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
+                    <div className="h-4 w-64 bg-gray-800 rounded animate-pulse mt-2" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-32 bg-gray-800 rounded animate-pulse" />
+                <div className="h-9 w-32 bg-gray-800 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[...Array(5)].map((_, i) => (
+              <Card key={i} className="bg-gray-900/50 border-gray-800">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 bg-gray-800 rounded animate-pulse" />
+                      <div className="h-7 w-16 bg-gray-800 rounded animate-pulse" />
+                      <div className="h-3 w-20 bg-gray-800 rounded animate-pulse" />
+                    </div>
+                    <div className="w-12 h-12 bg-gray-800 rounded-lg animate-pulse" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Content Skeleton */}
+          <div className="space-y-6">
+            <div className="h-10 w-96 bg-gray-800 rounded animate-pulse" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="bg-gray-900/50 border-gray-800">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 bg-gray-800 rounded-lg animate-pulse" />
+                      <div className="w-16 h-6 bg-gray-800 rounded animate-pulse" />
+                    </div>
+                    <div className="h-5 w-3/4 bg-gray-800 rounded animate-pulse" />
+                    <div className="h-4 w-full bg-gray-800 rounded animate-pulse mt-2" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="h-3 w-full bg-gray-800 rounded animate-pulse" />
+                      <div className="h-3 w-2/3 bg-gray-800 rounded animate-pulse" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gray-950 p-6">
@@ -831,7 +914,7 @@ export default function RecruiterIntelligenceHub() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-gray-100">
-                      Intelligence Hub
+                      Firecrawl
                     </h1>
                     <p className="text-gray-400 mt-1">
                       AI-powered research for smarter recruiting decisions
@@ -1397,7 +1480,7 @@ export default function RecruiterIntelligenceHub() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-purple-300">
                   <Sparkles className="h-5 w-5" />
-                  New to Intelligence Hub?
+                  New to Firecrawl?
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">

@@ -69,9 +69,9 @@ export class ZohoCRMIntegration {
       encryptionKey,
       {
         zoho: {
-          tokenUrl: 'https://accounts.zoho.com/oauth/v2/token',
-          clientId: process.env.ZOHO_CLIENT_ID!,
-          clientSecret: process.env.ZOHO_CLIENT_SECRET!
+          tokenUrl: '/api/oauth/refresh',
+          clientId: process.env.ZOHO_CLIENT_ID || '',
+          clientSecret: '' // Empty - handled server-side
         }
       }
     );

@@ -13,6 +13,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { EmailTemplatePreview } from './EmailTemplatePreview';
 import { EmailTemplateSender } from './EmailTemplateSender';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface EmailTemplateListProps {
   onEdit: (template: EmailTemplate) => void;
@@ -41,6 +42,11 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSender, setShowSender] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean;
+    templateId: string | null;
+    templateName: string;
+  }>({ open: false, templateId: null, templateName: '' });
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -64,8 +70,13 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
     loadTemplates();
   }, [selectedCategory, refresh]);
 
-  const handleDelete = async (templateId: string) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+  const handleDelete = async (templateId: string, templateName: string) => {
+    setDeleteConfirmation({ open: true, templateId, templateName });
+  };
+
+  const confirmDelete = async () => {
+    const { templateId } = deleteConfirmation;
+    if (!templateId) return;
 
     try {
       await emailTemplateService.deleteTemplate(templateId);
@@ -81,6 +92,8 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
         description: 'Failed to delete template',
         variant: 'destructive',
       });
+    } finally {
+      setDeleteConfirmation({ open: false, templateId: null, templateName: '' });
     }
   };
 
@@ -283,7 +296,7 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
                     <Copy className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(template.id)}
+                    onClick={() => handleDelete(template.id, template.name)}
                     className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
                     title="Delete"
                   >
@@ -320,6 +333,17 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
           }}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) => !open && setDeleteConfirmation({ open: false, templateId: null, templateName: '' })}
+        title="Delete Template"
+        description={`Are you sure you want to delete "${deleteConfirmation.templateName}"? This action cannot be undone.`}
+        actionLabel="Delete"
+        onConfirm={confirmDelete}
+        variant="destructive"
+      />
     </>
   );
 }

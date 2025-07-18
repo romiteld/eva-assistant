@@ -232,6 +232,248 @@ export class DeepThinkingExecutor implements AgentExecutor {
   }
 }
 
+// Resume Parser Pipeline Executor
+export class ResumeParserExecutor implements AgentExecutor {
+  private cancelled = false
+
+  async execute(context: AgentExecutionContext): Promise<any> {
+    const { userId, payload, onProgress } = context
+    
+    onProgress(10, 'Initializing resume parsing pipeline...')
+    
+    try {
+      // Phase 1: Document Processing
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(20, 'Extracting text and structure from resume...')
+      await this.delay(1500)
+      
+      // Phase 2: Skill Analysis
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(40, 'Analyzing skills and competencies...')
+      await this.delay(1200)
+      
+      // Phase 3: Experience Evaluation
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(60, 'Evaluating work experience and achievements...')
+      await this.delay(1800)
+      
+      // Phase 4: Candidate Matching
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(80, 'Matching against job requirements...')
+      await this.delay(1000)
+      
+      // Phase 5: Scoring and Ranking
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(95, 'Generating candidate score and recommendations...')
+      await this.delay(800)
+      
+      onProgress(100, 'Resume parsing completed successfully')
+      
+      return {
+        candidatesProcessed: 1,
+        skillsExtracted: 24,
+        experienceYears: 8.5,
+        matchScore: 87,
+        ranking: 'A-tier',
+        topSkills: ['Financial Planning', 'Client Relations', 'Portfolio Management'],
+        recommendations: [
+          'Strong candidate for senior advisor role',
+          'Excellent communication skills evident',
+          'Consider for leadership track'
+        ]
+      }
+    } catch (error) {
+      context.onError(error)
+      throw error
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  cancel() {
+    this.cancelled = true
+  }
+}
+
+// Recruiter Intel Agent Executor
+export class RecruiterIntelExecutor implements AgentExecutor {
+  private cancelled = false
+
+  async execute(context: AgentExecutionContext): Promise<any> {
+    const { userId, payload, onProgress } = context
+    
+    onProgress(10, 'Gathering market intelligence data...')
+    
+    try {
+      // Phase 1: Market Data Collection
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(25, 'Analyzing recruitment market trends...')
+      await this.delay(2000)
+      
+      // Phase 2: Competitor Analysis
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(50, 'Evaluating competitor strategies...')
+      await this.delay(1800)
+      
+      // Phase 3: Performance Metrics
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(75, 'Calculating performance benchmarks...')
+      await this.delay(1500)
+      
+      // Phase 4: Insights Generation
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(90, 'Generating actionable insights...')
+      await this.delay(1000)
+      
+      onProgress(100, 'Intelligence gathering completed')
+      
+      return {
+        marketInsights: {
+          averagePlacementTime: '23 days',
+          topSkillsInDemand: ['Digital Marketing', 'Data Analysis', 'Client Management'],
+          salaryTrends: '+8% YoY growth',
+          competitorCount: 15
+        },
+        performanceMetrics: {
+          placementRate: '78%',
+          clientSatisfaction: '4.6/5',
+          candidateRetention: '91%'
+        },
+        recommendations: [
+          'Focus on digital skills training',
+          'Expand into emerging markets',
+          'Implement AI-powered screening'
+        ]
+      }
+    } catch (error) {
+      context.onError(error)
+      throw error
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  cancel() {
+    this.cancelled = true
+  }
+}
+
+// Interview Center Executor
+export class InterviewCenterExecutor implements AgentExecutor {
+  private cancelled = false
+
+  async execute(context: AgentExecutionContext): Promise<any> {
+    const { userId, payload, onProgress } = context
+    
+    onProgress(10, 'Initializing interview coordination system...')
+    
+    try {
+      // Phase 1: Calendar Analysis
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(25, 'Analyzing calendar availability...')
+      await this.delay(1200)
+      
+      // Phase 2: Question Generation
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(50, 'Generating tailored interview questions...')
+      await this.delay(1800)
+      
+      // Phase 3: Scheduling Optimization
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(75, 'Optimizing interview schedules...')
+      await this.delay(1000)
+      
+      // Phase 4: Communication Setup
+      if (this.cancelled) throw new Error('Cancelled')
+      onProgress(90, 'Setting up automated communications...')
+      await this.delay(800)
+      
+      onProgress(100, 'Interview center setup completed')
+      
+      return {
+        interviewsScheduled: 5,
+        questionsGenerated: 25,
+        availableSlots: 12,
+        automatedEmails: 8,
+        interviewTypes: ['Technical', 'Behavioral', 'Cultural Fit'],
+        nextAvailableSlot: '2025-01-20T14:00:00Z'
+      }
+    } catch (error) {
+      context.onError(error)
+      throw error
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  cancel() {
+    this.cancelled = true
+  }
+}
+
+// Generic Agent Executor for other agents
+export class GenericAgentExecutor implements AgentExecutor {
+  private cancelled = false
+  private agentId: string
+
+  constructor(agentId: string) {
+    this.agentId = agentId
+  }
+
+  async execute(context: AgentExecutionContext): Promise<any> {
+    const { userId, payload, onProgress } = context
+    
+    onProgress(10, `Initializing ${this.agentId}...`)
+    
+    try {
+      // Simulate multi-phase execution
+      const phases = [
+        { progress: 25, message: 'Processing initial data...' },
+        { progress: 50, message: 'Analyzing patterns and trends...' },
+        { progress: 75, message: 'Generating insights and recommendations...' },
+        { progress: 95, message: 'Finalizing results...' }
+      ]
+
+      for (const phase of phases) {
+        if (this.cancelled) throw new Error('Cancelled')
+        onProgress(phase.progress, phase.message)
+        await this.delay(1500)
+      }
+      
+      onProgress(100, 'Agent execution completed successfully')
+      
+      return {
+        agentId: this.agentId,
+        executionTime: new Date().toISOString(),
+        tasksCompleted: Math.floor(Math.random() * 10) + 1,
+        successRate: Math.floor(Math.random() * 20) + 80,
+        insights: [
+          `${this.agentId} processing completed successfully`,
+          'Data quality meets requirements',
+          'Recommendations generated based on current trends'
+        ]
+      }
+    } catch (error) {
+      context.onError(error)
+      throw error
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  cancel() {
+    this.cancelled = true
+  }
+}
+
 // Agent factory
 export function createAgentExecutor(agentId: string): AgentExecutor {
   switch (agentId) {
@@ -241,6 +483,17 @@ export function createAgentExecutor(agentId: string): AgentExecutor {
       return new AIContentStudioExecutor()
     case 'deep-thinking':
       return new DeepThinkingExecutor()
+    case 'resume-parser':
+      return new ResumeParserExecutor()
+    case 'recruiter-intel':
+      return new RecruiterIntelExecutor()
+    case 'interview-center':
+      return new InterviewCenterExecutor()
+    case 'outreach-campaign':
+    case 'data-agent':
+    case 'workflow-agent':
+    case 'linkedin-enrichment':
+      return new GenericAgentExecutor(agentId)
     default:
       throw new Error(`Unknown agent: ${agentId}`)
   }

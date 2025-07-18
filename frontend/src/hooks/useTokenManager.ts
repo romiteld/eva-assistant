@@ -20,41 +20,42 @@ export function useTokenManager() {
   const [tokenStatuses, setTokenStatuses] = useState<Record<string, TokenStatus>>({});
   const [loading, setLoading] = useState(false);
 
-  // Initialize token manager
+  // Initialize token manager with secure server-side refresh endpoints
+  // Client secrets are NEVER exposed in client-side code
   const tokenManager = getTokenManager(
-    process.env.ENCRYPTION_KEY || 'default-encryption-key',
+    process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-encryption-key',
     {
       microsoft: {
-        tokenUrl: 'https://login.microsoftonline.com',
-        clientId: process.env.ENTRA_CLIENT_ID!,
-        clientSecret: process.env.ENTRA_CLIENT_SECRET!,
-        tenantId: process.env.ENTRA_TENANT_ID!
+        tokenUrl: '/api/oauth/refresh',
+        clientId: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
+        clientSecret: '', // Empty - handled server-side
+        tenantId: process.env.MICROSOFT_TENANT_ID || 'common'
       },
       google: {
-        tokenUrl: 'https://oauth2.googleapis.com/token',
-        clientId: process.env.GOOGLE_CLIENT_ID || '',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
+        tokenUrl: '/api/oauth/refresh',
+        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+        clientSecret: '' // Empty - handled server-side
       },
       linkedin: {
-        tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
-        clientId: process.env.LINKEDIN_CLIENT_ID!,
-        clientSecret: process.env.LINKEDIN_CLIENT_SECRET!
+        tokenUrl: '/api/oauth/refresh',
+        clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID || '',
+        clientSecret: '' // Empty - handled server-side
       },
       zoom: {
-        tokenUrl: 'https://zoom.us/oauth/token',
-        clientId: process.env.ZOOM_CLIENT_ID!,
-        clientSecret: process.env.ZOOM_CLIENT_SECRET!,
-        accountId: process.env.ZOOM_ACCOUNT_ID!
+        tokenUrl: '/api/oauth/refresh',
+        clientId: process.env.ZOOM_CLIENT_ID || '',
+        clientSecret: '', // Empty - handled server-side
+        accountId: process.env.ZOOM_ACCOUNT_ID || ''
       },
       salesforce: {
-        tokenUrl: process.env.SALESFORCE_INSTANCE_URL || '',
+        tokenUrl: '/api/oauth/refresh',
         clientId: process.env.SALESFORCE_CLIENT_ID || '',
-        clientSecret: process.env.SALESFORCE_CLIENT_SECRET || ''
+        clientSecret: '' // Empty - handled server-side
       },
       zoho: {
-        tokenUrl: 'https://accounts.zoho.com/oauth/v2/token',
-        clientId: process.env.ZOHO_CLIENT_ID!,
-        clientSecret: process.env.ZOHO_CLIENT_SECRET!
+        tokenUrl: '/api/oauth/refresh',
+        clientId: process.env.ZOHO_CLIENT_ID || '',
+        clientSecret: '' // Empty - handled server-side
       }
     }
   );

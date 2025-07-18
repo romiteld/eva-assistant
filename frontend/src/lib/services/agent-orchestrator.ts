@@ -12,6 +12,8 @@ export interface Agent {
   lastActivity?: string
   error?: string
   metadata?: Record<string, any>
+  description?: string
+  capabilities?: string[]
 }
 
 export interface OrchestratorRequest {
@@ -45,7 +47,13 @@ export class AgentOrchestratorService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/agent-orchestrator'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error('NEXT_PUBLIC_SUPABASE_URL is not configured');
+    }
+    // Remove trailing slash if present
+    this.baseUrl = supabaseUrl.replace(/\/$/, '') + '/functions/v1/agent-orchestrator';
+    console.log('Agent Orchestrator URL:', this.baseUrl);
   }
 
   private async makeRequest(request: Partial<OrchestratorRequest>): Promise<OrchestratorResponse> {
@@ -55,25 +63,45 @@ export class AgentOrchestratorService {
     const { data: session } = await supabase.auth.getSession()
     if (!session?.session) throw new Error('No active session')
 
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!anonKey) {
+      throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured');
+    }
+
+    console.log('Making request to Agent Orchestrator:', {
+      action: request.action,
+      agentId: request.agentId,
+      userId: user.id
+    });
+
     const response = await fetch(this.baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.session.access_token}`,
-        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        'apikey': anonKey
       },
       body: JSON.stringify({
         ...request,
         userId: user.id
       })
-    })
+    });
 
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Agent orchestrator error: ${error}`)
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        errorMessage += ` - ${errorText}`;
+      } catch (e) {
+        // Ignore parsing error
+      }
+      console.error('Agent orchestrator error:', errorMessage);
+      throw new Error(errorMessage);
     }
 
-    return response.json()
+    const data = await response.json();
+    console.log('Agent orchestrator response:', data);
+    return data;
   }
 
   async listAgents(): Promise<Agent[]> {
@@ -151,6 +179,48 @@ export class AgentOrchestratorService {
       .eq('agent_id', agentId)
       .order('started_at', { ascending: false })
       .limit(limit)
+
+    if (error) throw error
+    return data || []
+  }
+
+  // Get activity logs for monitoring
+  async getActivityLogs(limit = 50, agentId?: string): Promise<any[]> {
+    let query = supabase
+      .from('agent_activity_logs')
+      .select(`
+        *,
+        agent_registry!inner(name)
+      `)
+      .order('timestamp', { ascending: false })
+      .limit(limit)
+
+    if (agentId) {
+      query = query.eq('agent_id', agentId)
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data || []
+  }
+
+  // Get performance metrics
+  async getPerformanceMetrics(agentId?: string, limit = 20): Promise<any[]> {
+    let query = supabase
+      .from('agent_performance_metrics')
+      .select(`
+        *,
+        agent_registry!inner(name)
+      `)
+      .order('start_time', { ascending: false })
+      .limit(limit)
+
+    if (agentId) {
+      query = query.eq('agent_id', agentId)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data || []

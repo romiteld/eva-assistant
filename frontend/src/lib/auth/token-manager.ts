@@ -1,6 +1,8 @@
 import { Database } from '@/types/supabase';
-import crypto from 'crypto';
 import { supabase } from '@/lib/supabase/browser';
+
+// Use Web Crypto API for browser compatibility
+const crypto = typeof window !== 'undefined' ? window.crypto : require('crypto');
 
 interface OAuthToken {
   id: string;
@@ -72,36 +74,123 @@ export class TokenManager {
   }
 
   // Encrypt sensitive token data
-  private encrypt(text: string): string {
-    const algorithm = 'aes-256-gcm';
-    const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    const authTag = cipher.getAuthTag();
-    
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+  private async encrypt(text: string): Promise<string> {
+    if (typeof window !== 'undefined') {
+      // Browser environment - use Web Crypto API
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      
+      // Derive key from encryption key
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(this.encryptionKey),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits', 'deriveKey']
+      );
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: encoder.encode('salt'),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+      
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encryptedData = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        data
+      );
+      
+      // Convert to hex string
+      const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+      const encryptedHex = Array.from(new Uint8Array(encryptedData))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      return `${ivHex}:${encryptedHex}`;
+    } else {
+      // Node.js environment
+      const nodeCrypto = require('crypto');
+      const algorithm = 'aes-256-gcm';
+      const key = nodeCrypto.scryptSync(this.encryptionKey, 'salt', 32);
+      const iv = nodeCrypto.randomBytes(16);
+      const cipher = nodeCrypto.createCipheriv(algorithm, key, iv);
+      
+      let encrypted = cipher.update(text, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      
+      const authTag = cipher.getAuthTag();
+      
+      return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+    }
   }
 
   // Decrypt sensitive token data
-  private decrypt(encryptedData: string): string {
-    const algorithm = 'aes-256-gcm';
-    const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
-    const parts = encryptedData.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
-    
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return decrypted;
+  private async decrypt(encryptedData: string): Promise<string> {
+    if (typeof window !== 'undefined') {
+      // Browser environment - use Web Crypto API
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+      const parts = encryptedData.split(':');
+      
+      // Derive key from encryption key
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(this.encryptionKey),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits', 'deriveKey']
+      );
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: encoder.encode('salt'),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+      
+      // Convert hex strings back to arrays
+      const iv = new Uint8Array(parts[0].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+      const encrypted = new Uint8Array(parts[1].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+      
+      const decryptedData = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        encrypted
+      );
+      
+      return decoder.decode(decryptedData);
+    } else {
+      // Node.js environment
+      const nodeCrypto = require('crypto');
+      const algorithm = 'aes-256-gcm';
+      const key = nodeCrypto.scryptSync(this.encryptionKey, 'salt', 32);
+      const parts = encryptedData.split(':');
+      const iv = Buffer.from(parts[0], 'hex');
+      const authTag = Buffer.from(parts[1], 'hex');
+      const encrypted = parts[2];
+      
+      const decipher = nodeCrypto.createDecipheriv(algorithm, key, iv);
+      decipher.setAuthTag(authTag);
+      
+      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      
+      return decrypted;
+    }
   }
 
   // Get a valid token, refreshing if necessary
@@ -186,27 +275,53 @@ export class TokenManager {
 
     try {
       let response: Response;
-      let body: URLSearchParams;
+      let body: URLSearchParams | string;
 
-      switch (token.provider) {
-        case 'microsoft':
-          body = new URLSearchParams({
-            client_id: config.clientId,
-            client_secret: config.clientSecret,
-            refresh_token: token.refreshToken,
-            grant_type: 'refresh_token',
-            scope: token.scopes.join(' ')
-          });
-          
-          response = await fetch(
-            `https://login.microsoftonline.com/${(config as any).tenantId}/oauth2/v2.0/token`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body
-            }
-          );
-          break;
+      // Check if using server-side refresh endpoint (secure mode)
+      if (config.tokenUrl === '/api/oauth/refresh') {
+        // Use secure server-side refresh endpoint
+        const { data: session } = await this.supabase.auth.getSession();
+        
+        response = await fetch('/api/oauth/refresh', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(session?.session ? {
+              'Authorization': `Bearer ${session.session.access_token}`
+            } : {})
+          },
+          body: JSON.stringify({
+            provider: token.provider,
+            refreshToken: token.refreshToken
+          })
+        });
+      } else {
+        // Legacy direct refresh (should only be used server-side)
+        // WARNING: This path uses client secrets and should NEVER be used in client-side code
+        if (typeof window !== 'undefined') {
+          console.error(`SECURITY WARNING: Direct OAuth refresh for ${token.provider} detected in client-side code!`);
+          throw new Error('Direct OAuth refresh not allowed in client-side code. Use server-side refresh endpoint.');
+        }
+        
+        switch (token.provider) {
+          case 'microsoft':
+            body = new URLSearchParams({
+              client_id: config.clientId,
+              client_secret: config.clientSecret,
+              refresh_token: token.refreshToken,
+              grant_type: 'refresh_token',
+              scope: token.scopes.join(' ')
+            });
+            
+            response = await fetch(
+              `https://login.microsoftonline.com/${(config as any).tenantId}/oauth2/v2.0/token`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+              }
+            );
+            break;
 
         case 'google':
           body = new URLSearchParams({

@@ -77,11 +77,12 @@ export default function UnifiedVoicePage() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-8rem)] gap-4">
-        {/* Left History Panel */}
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] gap-4">
+        {/* Left History Panel - Full width on mobile when shown */}
         <div className={cn(
           "transition-all duration-300",
-          showHistory ? "w-80" : "w-0 overflow-hidden"
+          showHistory ? "w-full lg:w-80" : "w-0 overflow-hidden",
+          showHistory && "lg:block"
         )}>
           <Card className="h-full bg-white/5 border-white/10">
             <CardHeader className="pb-4">
@@ -126,8 +127,8 @@ export default function UnifiedVoicePage() {
           {/* Header with Mode Selector */}
           <Card className="bg-white/5 border-white/10">
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   {!showHistory && (
                     <Button
                       variant="ghost"
@@ -139,13 +140,13 @@ export default function UnifiedVoicePage() {
                     </Button>
                   )}
                   <div>
-                    <h1 className="text-2xl font-bold text-white">Communication Hub</h1>
-                    <p className="text-sm text-gray-400">
-                      Chat, stream, or talk with AI assistance
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Communication Hub</h1>
+                    <p className="text-xs sm:text-sm text-gray-400">
+                      Chat, stream, or talk with AI
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                   <ModeSelector
                     currentMode={mode}
                     onModeChange={handleModeChange}
@@ -160,7 +161,7 @@ export default function UnifiedVoicePage() {
           </Card>
 
           {/* Communication Canvas */}
-          <Card className="flex-1 bg-white/5 border-white/10 overflow-hidden">
+          <Card className="flex-1 bg-white/5 border-white/10 overflow-hidden min-h-[400px]">
             <CardContent className="p-0 h-full">
               {mode === 'chat' && (
                 <ChatMode 

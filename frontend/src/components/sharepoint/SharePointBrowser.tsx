@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation'
 import SharePointUploader from './SharePointUploader'
 import FilePermissions from './FilePermissions'
 import { formatBytes, formatDate } from '@/lib/utils'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 interface SharePointBrowserProps {
   mode: 'sharepoint' | 'onedrive'
@@ -47,6 +48,10 @@ export default function SharePointBrowser({ mode, onFileSelect }: SharePointBrow
   const [showPermissions, setShowPermissions] = useState(false)
   const [selectedItemForPermissions, setSelectedItemForPermissions] = useState<SharePointFile | SharePointFolder | null>(null)
   const [sharePointService, setSharePointService] = useState<SharePointService | null>(null)
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    open: false,
+    itemCount: 0
+  })
   
   const router = useRouter()
   const supabase = createClient()
@@ -62,13 +67,14 @@ export default function SharePointBrowser({ mode, onFileSelect }: SharePointBrow
         }
 
         // Get encryption key and refresh configs from environment
+        // Use secure server-side refresh endpoint - no client secrets exposed
         const encryptionKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'default-encryption-key'
         const refreshConfigs = {
           microsoft: {
-            clientId: process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID,
-            clientSecret: process.env.ENTRA_CLIENT_SECRET,
-            tenantId: process.env.NEXT_PUBLIC_ENTRA_TENANT_ID,
-            redirectUri: `${window.location.origin}/api/auth/callback/microsoft`
+            tokenUrl: '/api/oauth/refresh',
+            clientId: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
+            clientSecret: '', // Empty - handled server-side
+            tenantId: process.env.MICROSOFT_TENANT_ID || 'common'
           }
         }
 
@@ -229,8 +235,14 @@ export default function SharePointBrowser({ mode, onFileSelect }: SharePointBrow
   const handleDelete = async () => {
     if (!sharePointService || !currentDrive || selectedItems.size === 0) return
     
-    const confirmed = confirm(`Are you sure you want to delete ${selectedItems.size} item(s)?`)
-    if (!confirmed) return
+    setDeleteConfirmation({
+      open: true,
+      itemCount: selectedItems.size
+    })
+  }
+
+  const confirmDelete = async () => {
+    if (!sharePointService || !currentDrive || selectedItems.size === 0) return
     
     try {
       setLoading(true)
@@ -246,6 +258,7 @@ export default function SharePointBrowser({ mode, onFileSelect }: SharePointBrow
       setError('Failed to delete items')
     } finally {
       setLoading(false)
+      setDeleteConfirmation({ open: false, itemCount: 0 })
     }
   }
 
@@ -689,6 +702,17 @@ export default function SharePointBrowser({ mode, onFileSelect }: SharePointBrow
           }}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) => !open && setDeleteConfirmation({ open: false, itemCount: 0 })}
+        title="Delete Items"
+        description={`Are you sure you want to delete ${deleteConfirmation.itemCount} item(s)? This action cannot be undone.`}
+        actionLabel="Delete"
+        onConfirm={confirmDelete}
+        variant="destructive"
+      />
     </div>
   )
 }

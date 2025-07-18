@@ -113,9 +113,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
 
         {/* Main content */}
-        <div className={`flex-1 ${sidebarOpen ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72') : ''} transition-all duration-300`}>
+        <div className={`flex-1 min-h-screen flex flex-col ${sidebarOpen ? (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72') : ''} transition-all duration-300`}>
           {/* Header */}
-          <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 px-8 py-4">
+          <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 safe-area-inset">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <motion.button
@@ -127,21 +127,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       setSidebarOpen(!sidebarOpen)
                     }
                   }}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors touch-target"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  aria-label="Toggle sidebar"
                 >
                   <Menu className="w-5 h-5 text-white" />
                 </motion.button>
                 
                 <motion.div 
-                  className={`relative ${searchFocused ? 'w-96' : 'w-64'} transition-all duration-300`}
+                  className={`relative hidden sm:block ${searchFocused ? 'w-64 md:w-80 lg:w-96' : 'w-48 md:w-56 lg:w-64'} transition-all duration-300`}
                   initial={false}
                 >
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search anything..."
+                    placeholder="Search..."
                     className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
@@ -149,11 +150,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </motion.div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <motion.button
-                  className="relative p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="relative p-2 hover:bg-white/10 rounded-lg transition-colors touch-target"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  aria-label="Notifications"
                 >
                   <Bell className="w-5 h-5 text-white" />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
@@ -161,18 +163,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 
                 <div className="relative" ref={profileRef}>
                   <motion.button 
-                    className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors touch-target"
                     whileHover={{ scale: 1.02 }}
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    aria-label="User menu"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <User className="w-4 h-4 text-white" />
                     </div>
-                    <div className="text-left">
-                      <p className="text-white text-sm font-medium">
+                    <div className="text-left hidden sm:block">
+                      <p className="text-white text-sm font-medium truncate max-w-[120px] md:max-w-[150px]">
                         {user?.profile?.full_name || user?.email?.split('@')[0] || 'User'}
                       </p>
-                      <p className="text-gray-400 text-xs">{user?.email || 'Loading...'}</p>
+                      <p className="text-gray-400 text-xs truncate max-w-[120px] md:max-w-[150px]">{user?.email || 'Loading...'}</p>
                     </div>
                   </motion.button>
                   
@@ -199,7 +202,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
 
           {/* Page content */}
-          <main className="p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-20 overflow-y-auto safe-area-inset" id="main-content">
             {children}
           </main>
         </div>

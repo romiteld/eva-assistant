@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   BarChart3, 
@@ -59,6 +59,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
   const pathname = usePathname()
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [focusedItemIndex, setFocusedItemIndex] = useState(-1)
+  const navRef = useRef<HTMLElement>(null)
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024)
@@ -77,6 +80,56 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     }
   }
 
+  // Flatten all navigation items for keyboard navigation
+  const allItems = sidebarGroups.flatMap(group => group.items)
+  const totalItems = allItems.length
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
+    if (!navRef.current) return
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault()
+        setFocusedItemIndex(prev => {
+          const next = prev < totalItems - 1 ? prev + 1 : 0
+          itemRefs.current[next]?.focus()
+          return next
+        })
+        break
+      case 'ArrowUp':
+        event.preventDefault()
+        setFocusedItemIndex(prev => {
+          const next = prev > 0 ? prev - 1 : totalItems - 1
+          itemRefs.current[next]?.focus()
+          return next
+        })
+        break
+      case 'Home':
+        event.preventDefault()
+        setFocusedItemIndex(0)
+        itemRefs.current[0]?.focus()
+        break
+      case 'End':
+        event.preventDefault()
+        setFocusedItemIndex(totalItems - 1)
+        itemRefs.current[totalItems - 1]?.focus()
+        break
+      case 'Escape':
+        if (!isDesktop) {
+          onClose()
+        }
+        break
+    }
+  }, [totalItems, isDesktop, onClose])
+
+  // Reset focus when sidebar closes on mobile
+  useEffect(() => {
+    if (!isOpen && !isDesktop) {
+      setFocusedItemIndex(-1)
+    }
+  }, [isOpen, isDesktop])
+
   const sidebarGroups = [
     {
       label: "Overview",
@@ -90,7 +143,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
         { icon: Mic, label: "Voice Agent", href: "/dashboard/voice" },
         { icon: BrainCircuit, label: "Agent Orchestrator", href: "/dashboard/orchestrator" },
         { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
-        { icon: Brain, label: "Intelligence Hub", href: "/dashboard/firecrawl" },
+        { icon: Brain, label: "Firecrawl", href: "/dashboard/firecrawl" },
         { icon: Brain, label: "Recruiter Intel", href: "/dashboard/recruiter-intel" },
         { icon: TrendingUpIcon, label: "Post Predictor", href: "/dashboard/post-predictor" }
       ]
@@ -119,7 +172,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
         { icon: Phone, label: "Twilio", href: "/dashboard/twilio" },
         { icon: Video, label: "Zoom", href: "/dashboard/zoom" },
         { icon: Linkedin, label: "LinkedIn", href: "/dashboard/linkedin" },
-        { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" }
+        { icon: Cloud, label: "SharePoint", href: "/dashboard/sharepoint" },
+        { icon: Users, label: "Microsoft Teams", href: "/dashboard/teams" }
       ]
     },
     {
@@ -165,9 +219,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
         initial={{ x: -280 }}
         animate={{ x: isOpen || isDesktop ? 0 : -280 }}
         transition={{ type: "spring", damping: 25 }}
-        className={`fixed left-0 top-0 ${isCollapsed ? 'w-20' : 'w-72'} h-screen bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col transition-all duration-300`}
-        role="complementary"
-        aria-label="Sidebar navigation"
+        className={`fixed left-0 top-0 ${isCollapsed ? 'w-20' : 'w-full sm:w-72'} h-full bg-gradient-to-b from-zinc-900 to-black backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl flex flex-col transition-all duration-300 safe-area-inset`}
+        role="navigation"
+        aria-label="Main navigation"
       >
             {/* Header - Fixed */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -192,6 +246,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
                   onClick={() => setIsCollapsed(!isCollapsed)}
                   className="hidden lg:block p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
                   aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  aria-expanded={!isCollapsed}
+                  aria-controls="sidebar-nav"
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-5 h-5 text-white" />
@@ -212,50 +268,66 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
 
             {/* Navigation - Scrollable */}
             <nav 
+              ref={navRef}
+              id="sidebar-nav"
               className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin"
               aria-label="Main navigation"
-              role="navigation"
+              onKeyDown={handleKeyDown}
+              tabIndex={-1}
             >
               <div className="space-y-6">
-                {sidebarGroups.map((group, groupIndex) => (
-                  <div key={group.label}>
-                    {groupIndex > 0 && isCollapsed && (
-                      <div className="mx-4 my-2 border-t border-gray-800" aria-hidden="true" />
-                    )}
-                    {!isCollapsed && (
-                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
-                        {group.label}
-                      </h3>
-                    )}
-                    <div className="space-y-1">
+                {sidebarGroups.map((group, groupIndex) => {
+                  const groupStartIndex = sidebarGroups.slice(0, groupIndex).reduce((acc, g) => acc + g.items.length, 0)
+                  
+                  return (
+                    <div key={group.label} role="group" aria-labelledby={`group-${groupIndex}`}>
+                      {groupIndex > 0 && isCollapsed && (
+                        <div className="mx-4 my-2 border-t border-gray-800" aria-hidden="true" />
+                      )}
+                      {!isCollapsed && (
+                        <h3 
+                          id={`group-${groupIndex}`}
+                          className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4"
+                        >
+                          {group.label}
+                        </h3>
+                      )}
+                      <ul className="space-y-1" role="list">
                       {group.items.map((item, itemIndex) => {
                         const isActive = pathname === item.href || 
                           (item.href !== '/dashboard' && pathname.startsWith(item.href))
                         const animationDelay = groupIndex * 0.05 + itemIndex * 0.03
                         
+                        const globalIndex = groupStartIndex + itemIndex
+                        
                         return (
-                          <motion.button
-                            key={item.label}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: animationDelay }}
-                            onClick={() => {
-                              router.push(item.href)
-                              // Only close on mobile
-                              if (!isDesktop) {
-                                onClose()
-                              }
-                            }}
-                            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all group relative ${
-                              isActive 
-                                ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 text-white shadow-lg' 
-                                : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                            } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900`}
-                            whileHover={{ x: isCollapsed ? 0 : 4 }}
-                            whileTap={{ scale: 0.98 }}
-                            aria-label={item.label}
-                            aria-current={isActive ? 'page' : undefined}
-                          >
+                          <li key={item.label} role="none">
+                            <motion.button
+                              ref={(el) => { itemRefs.current[globalIndex] = el }}
+                              initial={{ x: -20, opacity: 0 }}
+                              animate={{ x: 0, opacity: 1 }}
+                              transition={{ delay: animationDelay }}
+                              onClick={() => {
+                                router.push(item.href)
+                                // Only close on mobile
+                                if (!isDesktop) {
+                                  onClose()
+                                }
+                              }}
+                              onFocus={() => setFocusedItemIndex(globalIndex)}
+                              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl transition-all group relative touch-target ${
+                                isActive 
+                                  ? 'bg-gradient-to-r from-purple-600/25 to-blue-600/25 text-white shadow-lg' 
+                                  : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                              } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900`}
+                              whileHover={{ x: isCollapsed ? 0 : 4 }}
+                              whileTap={{ scale: 0.98 }}
+                              aria-label={isCollapsed ? item.label : undefined}
+                              aria-current={isActive ? 'page' : undefined}
+                              aria-describedby={isCollapsed ? `tooltip-${globalIndex}` : undefined}
+                              tabIndex={focusedItemIndex === globalIndex ? 0 : -1}
+                              role="menuitem"
+                            >
                             {/* Active indicator */}
                             {isActive && (
                               <>
@@ -278,18 +350,32 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
                             
                             {/* Tooltip for collapsed state */}
                             {isCollapsed && (
-                              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                              <div 
+                                id={`tooltip-${globalIndex}`}
+                                role="tooltip"
+                                className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50"
+                              >
                                 {item.label}
                               </div>
                             )}
                           </motion.button>
+                          </li>
                         )
                       })}
+                      </ul>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </nav>
+
+            {/* Skip to main content link for keyboard users */}
+            <a 
+              href="#main-content" 
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-purple-600 text-white px-4 py-2 rounded-lg z-50"
+            >
+              Skip to main content
+            </a>
           </motion.aside>
     </>
   )

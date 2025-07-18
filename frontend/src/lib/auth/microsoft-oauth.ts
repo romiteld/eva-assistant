@@ -50,6 +50,7 @@ export async function signInWithMicrosoftPKCE() {
   
   // Store in sessionStorage for client-side callback
   sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+  sessionStorage.setItem('oauth_state', encodedState);
   
   // Construct the OAuth URL with PKCE
   const params = new URLSearchParams({
@@ -87,34 +88,24 @@ export async function handleMicrosoftCallback(code: string, state: string) {
   sessionStorage.removeItem('pkce_code_verifier');
   sessionStorage.removeItem('oauth_state');
   
-  // Exchange code for tokens with Microsoft
-  const tenantId = 'organizations'; // Use 'organizations' for multi-tenant, or specify your tenant ID
-  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-  
-  const tokenParams = new URLSearchParams({
-    client_id: 'bfa77df6-6952-4d0f-9816-003b3101b9da',
-    grant_type: 'authorization_code',
-    code: code,
-    redirect_uri: `${window.location.origin}/auth/microsoft/callback`,
-    code_verifier: codeVerifier,
-    client_secret: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_SECRET || '', // This should be server-side only
-  });
-  
-  const tokenResponse = await fetch(tokenUrl, {
+  // Exchange code for tokens using our secure server-side endpoint
+  const tokenResponse = await fetch('/api/auth/microsoft/token', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: tokenParams.toString(),
+    body: JSON.stringify({
+      code,
+      codeVerifier,
+      redirectUri: `${window.location.origin}/auth/microsoft/callback`,
+    }),
   });
   
   const tokenData = await tokenResponse.json();
   
-  if (tokenData.error) {
-    throw new Error(tokenData.error_description || 'Token exchange failed');
+  if (!tokenResponse.ok) {
+    throw new Error(tokenData.error || 'Token exchange failed');
   }
   
-  // Now we need to create a Supabase session with the Microsoft tokens
-  // This is typically done server-side for security
   return tokenData;
 }

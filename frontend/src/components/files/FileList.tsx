@@ -19,6 +19,7 @@ import {
 import { FileUploadService, FileMetadata, FileListOptions } from '@/lib/services/file-upload';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface FileListProps {
   bucket?: string;
@@ -48,6 +49,11 @@ export function FileList({
   className,
 }: FileListProps) {
   const [files, setFiles] = useState<FileMetadata[]>([]);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean;
+    fileId: string | null;
+    fileName: string;
+  }>({ open: false, fileId: null, fileName: '' });
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,8 +110,13 @@ export function FileList({
     }
   };
 
-  const handleDelete = async (fileId: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+  const handleDelete = async (fileId: string, fileName: string) => {
+    setDeleteConfirmation({ open: true, fileId, fileName });
+  };
+
+  const confirmDelete = async () => {
+    const { fileId } = deleteConfirmation;
+    if (!fileId) return;
 
     try {
       await uploadService.deleteFile(fileId);
@@ -114,6 +125,8 @@ export function FileList({
       onFileDelete?.(fileId);
     } catch (error) {
       console.error('Failed to delete file:', error);
+    } finally {
+      setDeleteConfirmation({ open: false, fileId: null, fileName: '' });
     }
   };
 
@@ -195,7 +208,7 @@ export function FileList({
                       className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 flex items-center space-x-2"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(file.id);
+                        handleDelete(file.id, file.name);
                         setActiveDropdown(null);
                       }}
                     >
@@ -291,7 +304,7 @@ export function FileList({
                         className="p-1 text-gray-400 hover:text-red-400"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(file.id);
+                          handleDelete(file.id, file.name);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -417,6 +430,17 @@ export function FileList({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) => !open && setDeleteConfirmation({ open: false, fileId: null, fileName: '' })}
+        title="Delete File"
+        description={`Are you sure you want to delete "${deleteConfirmation.fileName}"? This action cannot be undone.`}
+        actionLabel="Delete"
+        onConfirm={confirmDelete}
+        variant="destructive"
+      />
     </div>
   );
 }

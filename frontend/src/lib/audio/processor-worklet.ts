@@ -1,5 +1,7 @@
-// Audio Processing Module with AudioWorkletNode
-// Replaces deprecated ScriptProcessorNode with modern AudioWorkletNode
+// Enhanced Audio Processing Module with AudioWorkletNode
+// Provides comprehensive WebRTC audio processing for Voice Agent
+
+import { WebRTCAudioManager, AudioEvent, AudioMetrics } from './webrtc-audio-manager';
 
 export class AudioProcessor {
   private audioContext: AudioContext;
@@ -9,6 +11,10 @@ export class AudioProcessor {
   private stream: MediaStream | null = null;
   private isProcessing = false;
   private onAudioChunkCallback: ((chunk: Int16Array) => void) | null = null;
+  
+  // Enhanced WebRTC integration
+  private webrtcManager: WebRTCAudioManager | null = null;
+  private useWebRTC = false;
   
   // Configuration
   private readonly SAMPLE_RATE = 16000; // Required by Gemini API
@@ -21,10 +27,21 @@ export class AudioProcessor {
   private noiseGate = 0.02;
   private calibratedNoiseLevel = 0;
   
-  constructor() {
+  constructor(useWebRTC = false) {
     // Don't create AudioContext here - wait for user interaction
     this.audioContext = null as any;
     this.analyser = null as any;
+    this.useWebRTC = useWebRTC;
+    
+    if (useWebRTC) {
+      this.webrtcManager = new WebRTCAudioManager({
+        sampleRate: this.SAMPLE_RATE,
+        bufferSize: this.BUFFER_SIZE,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      });
+    }
   }
 
   /**
@@ -51,6 +68,12 @@ export class AudioProcessor {
    */
   async initializeAudioInput(stream: MediaStream): Promise<void> {
     this.stream = stream;
+    
+    // Use WebRTC manager if enabled
+    if (this.useWebRTC && this.webrtcManager) {
+      await this.webrtcManager.initialize();
+      return;
+    }
     
     // Ensure audio context is created and resumed
     await this.ensureAudioContext();
@@ -98,6 +121,13 @@ export class AudioProcessor {
    * Start audio processing
    */
   startProcessing(onAudioChunk: (chunk: Int16Array) => void): void {
+    // Use WebRTC manager if enabled
+    if (this.useWebRTC && this.webrtcManager) {
+      this.webrtcManager.startCapture(onAudioChunk);
+      this.isProcessing = true;
+      return;
+    }
+    
     if (!this.workletNode) {
       throw new Error('Audio input not initialized');
     }
@@ -116,6 +146,12 @@ export class AudioProcessor {
     this.isProcessing = false;
     this.onAudioChunkCallback = null;
     
+    // Use WebRTC manager if enabled
+    if (this.useWebRTC && this.webrtcManager) {
+      this.webrtcManager.stopCapture();
+      return;
+    }
+    
     if (this.workletNode) {
       this.workletNode.port.postMessage({ type: 'stop' });
     }
@@ -125,6 +161,11 @@ export class AudioProcessor {
    * Get current audio volume level (0-1)
    */
   getVolumeLevel(): number {
+    // Use WebRTC manager if enabled
+    if (this.useWebRTC && this.webrtcManager) {
+      return this.webrtcManager.getMetrics().inputLevel;
+    }
+    
     if (!this.analyser) return 0;
     
     const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
@@ -142,6 +183,11 @@ export class AudioProcessor {
    * Get frequency data for visualization
    */
   getFrequencyData(): Uint8Array {
+    // Use WebRTC manager if enabled
+    if (this.useWebRTC && this.webrtcManager) {
+      return this.webrtcManager.getFrequencyData() || new Uint8Array(0);
+    }
+    
     if (!this.analyser) return new Uint8Array(0);
     
     const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
@@ -153,6 +199,11 @@ export class AudioProcessor {
    * Get time domain data for waveform visualization
    */
   getWaveformData(): Uint8Array {
+    // Use WebRTC manager if enabled
+    if (this.useWebRTC && this.webrtcManager) {
+      return this.webrtcManager.getWaveformData() || new Uint8Array(0);
+    }
+    
     if (!this.analyser) return new Uint8Array(0);
     
     const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
@@ -326,10 +377,60 @@ export class AudioProcessor {
   }
 
   /**
+   * Get WebRTC manager for direct access
+   */
+  getWebRTCManager(): WebRTCAudioManager | null {
+    return this.webrtcManager;
+  }
+
+  /**
+   * Get enhanced metrics from WebRTC manager
+   */
+  getEnhancedMetrics(): AudioMetrics | null {
+    if (this.useWebRTC && this.webrtcManager) {
+      return this.webrtcManager.getMetrics();
+    }
+    return null;
+  }
+
+  /**
+   * Set input gain (WebRTC only)
+   */
+  setInputGain(gain: number): void {
+    if (this.useWebRTC && this.webrtcManager) {
+      this.webrtcManager.setInputGain(gain);
+    }
+  }
+
+  /**
+   * Set output gain (WebRTC only)
+   */
+  setOutputGain(gain: number): void {
+    if (this.useWebRTC && this.webrtcManager) {
+      this.webrtcManager.setOutputGain(gain);
+    }
+  }
+
+  /**
+   * Calibrate noise level (WebRTC only)
+   */
+  async calibrateNoiseLevel(duration = 2000): Promise<void> {
+    if (this.useWebRTC && this.webrtcManager) {
+      await this.webrtcManager.calibrateNoiseLevel(duration);
+    }
+  }
+
+  /**
    * Cleanup resources
    */
   cleanup(): void {
     this.stopProcessing();
+    
+    // Cleanup WebRTC manager
+    if (this.useWebRTC && this.webrtcManager) {
+      this.webrtcManager.dispose();
+      this.webrtcManager = null;
+    }
     
     if (this.sourceNode) {
       this.sourceNode.disconnect();

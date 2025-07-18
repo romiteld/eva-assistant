@@ -91,6 +91,13 @@ When the user shares their screen or camera:
     waveformData,
     hasPermission,
     requestPermission,
+    
+    // Enhanced WebRTC features
+    enhancedMetrics,
+    setInputGain,
+    setOutputGain,
+    calibrateNoise,
+    getWebRTCManager,
   } = useVoiceAgent({
     systemInstructions: enhancedInstructions,
     tools,
@@ -301,6 +308,15 @@ When the user shares their screen or camera:
             onToggleListening={toggleListening}
             hasPermission={hasPermission}
             onRequestPermission={requestPermission}
+            audioLevel={metrics.audioLevel}
+            
+            // Enhanced WebRTC features
+            frequencyData={frequencyData}
+            waveformData={waveformData}
+            metrics={enhancedMetrics}
+            onInputGainChange={setInputGain}
+            onOutputGainChange={setOutputGain}
+            onCalibrateNoise={calibrateNoise}
           />
 
           {/* Transcription Display */}

@@ -6,9 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 EVA (Executive Virtual Assistant) is an AI-powered recruitment platform for financial advisor recruiting, built for The Well Recruiting Solutions. It's a full-stack web application using Next.js, Supabase, and AI agents for automation.
 
+### Recent Updates (January 18, 2025)
+- **Security Hardening Complete**: Microsoft OAuth secrets moved server-side, webhook signatures enforced
+- **Integration Fixes**: LinkedIn OAuth UI, MS365 Calendar permissions, Twilio configuration UI
+- **UI/UX Enhancements**: Loading states, error boundaries, enhanced toast system, confirmation dialogs
+- **Backend Implementations**: Agent Orchestrator Edge Function, generic queue system, Teams UI
+- **Mobile Responsiveness**: Fixed all iPhone UI issues with proper viewport configuration, touch targets, responsive grids, and scrolling
+
 ### Implementation Status
 
-**✅ Fully Working Features (19/23):**
+**✅ Fully Working Features (23/27):**
 - Microsoft OAuth with PKCE implementation (standalone, no Supabase OAuth)
 - Magic Link authentication via Supabase
 - Token Manager with auto-refresh for OAuth providers
@@ -28,10 +35,13 @@ EVA (Executive Virtual Assistant) is an AI-powered recruitment platform for fina
 - **Agent Orchestrator v2** (UI and backend Edge Function implemented)
 - **LinkedIn OAuth Integration** (profile access, messaging, lead enrichment)
 - **Twilio Integration** (SMS, voice calls, phone numbers, IVR, conference calls, recordings, transcriptions)
+- **Microsoft Teams Integration** (Full UI at /dashboard/teams with channels, messaging, meeting creation)
+- **Generic Queue System** (Redis/Upstash with fallback, handles all async operations)
+- **Enhanced Security Middleware** (Centralized webhook validation, rate limiting)
+- **Advanced UI Components** (Loading states, enhanced toasts, confirmation dialogs)
 
-**⚠️ Partially Working Features (3/25):**
+**⚠️ Partially Working Features (2/27):**
 - Outreach Campaign Management (UI complete, agent needs testing)
-- **Microsoft Teams Integration** (channels, messages - backend only, no UI)
 - **Automated Email Templates** (backend exists, needs UI)
 
 **🚧 Pending Features (1/25):**
@@ -60,6 +70,29 @@ EVA (Executive Virtual Assistant) is an AI-powered recruitment platform for fina
    - ✅ Gemini API key configured
    - ✅ Zoho CRM tokens configured
    - ✅ Firecrawl API key configured
+   - ✅ LinkedIn OAuth credentials (requires user authentication)
+   - ✅ Twilio credentials (configuration UI available at /dashboard/settings/twilio)
+   - ✅ Webhook secrets for all providers
+
+### Critical Security Updates (January 18, 2025)
+
+1. **Microsoft OAuth Client Secret**:
+   - Moved from client-side to server-side only
+   - Created `/api/auth/microsoft/token` endpoint for secure token exchange
+   - Fixed OAuth state validation for CSRF protection
+   - **Action Required**: Rotate Microsoft client secret in Azure Portal
+
+2. **Webhook Security**:
+   - Centralized validation middleware at `/middleware/webhook-validation.ts`
+   - All webhooks now require signature validation
+   - Provider-specific validation logic implemented
+   - Timing-safe comparison to prevent timing attacks
+
+3. **Rate Limiting**:
+   - AI endpoints: 10 requests/minute
+   - API endpoints: 60 requests/minute  
+   - Auth endpoints: 5 requests/15 minutes
+   - Webhook endpoints: Protected with provider-specific limits
 
 ## Essential Commands
 
@@ -259,16 +292,17 @@ cd frontend && npm run db:test
 
 **Working Dashboard Routes:**
 - `/dashboard` - Main dashboard with tabs
-- `/dashboard/voice` - Voice Agent with Gemini Live
-- `/dashboard/lead-generation` - AI-powered lead search with Zoho CRM sync
-- `/dashboard/content-studio` - AI content creation with predictive analytics
-- `/dashboard/orchestrator` - Agent monitoring (static data only)
+- `/dashboard/voice` - Voice Agent with Gemini Live (enhanced with permission dialogs)
+- `/dashboard/lead-generation` - AI-powered lead search with Zoho CRM sync (now with pagination)
+- `/dashboard/content-studio` - AI content creation with predictive analytics (added loading states)
+- `/dashboard/orchestrator` - Agent monitoring (real-time with Edge Function)
 - `/dashboard/outreach` - Campaign management
-- `/dashboard/resume-parser` - Resume processing pipeline
-- `/dashboard/interview-center` - AI interview scheduling
 - `/dashboard/recruiter-intel` - Analytics dashboard
 - `/dashboard/tasks` - Task management
-- `/dashboard/firecrawl` - Web scraping, crawling, and search tools
+- `/dashboard/firecrawl` - Intelligence Hub (redesigned UI)
+- `/dashboard/teams` - Microsoft Teams collaboration (NEW)
+- `/dashboard/zoho` - Queue monitoring dashboard (NEW)
+- `/dashboard/settings/twilio` - Twilio configuration (NEW)
 
 ### Microsoft 365 Integration Details
 
@@ -284,6 +318,10 @@ The platform includes comprehensive Microsoft 365 integration through the Micros
 - `/api/microsoft/emails` - Email operations
 - `/api/microsoft/calendar` - Calendar management  
 - `/api/microsoft/contacts` - Contact management
+- `/api/microsoft/token` - Secure OAuth token exchange (NEW)
+- `/api/settings/twilio` - Twilio configuration management (NEW)
+- `/api/webhooks/*` - All webhook endpoints with signature validation
+- `/api/queue/*` - Queue management and monitoring
 
 **Recruitment-Specific Features:**
 - Interview scheduling with automatic Teams meeting creation
@@ -307,3 +345,132 @@ The platform includes comprehensive Microsoft 365 integration through the Micros
 - Removed all OAuth test pages (`test-oauth-flow`, `debug-oauth`, `test-oauth-diagnostics`, `test-microsoft-oauth`, `test-supabase-auth`)
 - Supabase OAuth provider configuration has been removed from the project
 - All authentication now uses either Magic Link (Supabase) or standalone Microsoft OAuth (PKCE)
+
+### Navigation System Architecture (Updated 2025-07-17)
+
+**Sidebar Component** (`/src/components/dashboard/Sidebar.tsx`):
+- Organized navigation into 8 logical groups with 24 total items
+- Full accessibility support with ARIA labels and keyboard navigation
+- Responsive design: slide-out overlay on mobile, collapsible sidebar on desktop
+- Glassmorphic design with smooth Framer Motion animations
+
+**Navigation Groups**:
+1. **Overview**: Dashboard
+2. **AI Tools**: Voice Agent, Agent Orchestrator, Content Studio, Intelligence Hub, Recruiter Intel, Post Predictor
+3. **Workflow & Automation**: Deal Automation, Workflow Designer, Task Management
+4. **Communication**: Lead Generation, Outreach Campaigns, Email Templates, Messages
+5. **Integrations**: Zoho CRM, Twilio, Zoom, LinkedIn, SharePoint
+6. **Analytics & Data**: Analytics, Competitor Analysis
+7. **Files & Documents**: File Manager, Documents
+8. **System**: Settings
+
+**Accessibility Features**:
+- ARIA labels on all interactive elements
+- Focus ring indicators (purple) for keyboard navigation
+- Screen reader support with proper roles and states
+- `aria-current="page"` for active navigation items
+- Enhanced keyboard navigation with arrow keys, Home, End, and Escape
+- Focus management using useRef and useCallback hooks
+- Skip to main content link for keyboard users
+- Accessible tooltips with role="tooltip" and aria-describedby
+
+**Note**: Intelligence Hub uses route `/dashboard/firecrawl` for backward compatibility while displaying "Intelligence Hub" in the UI
+
+### Recent UI Improvements (Updated 2025-07-18)
+
+**Enhanced User Experience**:
+1. **Improved Permission Handling**: Voice Agent now has a proper permission dialog for microphone access with clear visual indicators
+2. **Form Validation**: All forms now use toast notifications instead of browser alerts for a non-blocking user experience
+3. **Loading States**: Added comprehensive loading indicators to Content Studio and Intelligence Hub pages
+4. **Pagination**: Lead Generation results now have pagination (5 items per page) with smart page number display
+5. **Confirmation Dialogs**: Created reusable ConfirmationDialog component to replace browser confirm() calls across the platform
+6. **API Key Validation**: Lead Generation page validates Zoho API key on mount with clear error messaging
+
+**Component Enhancements**:
+- **VoiceControl**: Added permission dialog and error handling
+- **LeadGenerationPage**: Implemented pagination and API key validation
+- **FileList**: Replaced confirm() with ConfirmationDialog
+- **ZoomMeetingManager**: Integrated ConfirmationDialog for delete and start actions
+- **EmailTemplateList**: Uses ConfirmationDialog for template deletion
+- **SharePointBrowser**: Implemented ConfirmationDialog for item deletion
+
+**UI Consistency**:
+- Standardized error messaging with toast notifications
+- Consistent loading indicators across all async operations
+- Unified confirmation dialog experience
+- Improved accessibility with proper ARIA labels and keyboard navigation
+
+### New Components and Services (January 18, 2025)
+
+**UI Components**:
+- `/components/ui/loading-states.tsx` - Comprehensive loading states (AI, skeleton, pulse)
+- `/components/ui/enhanced-toast.tsx` - Advanced toast system with actions and promise support
+- `/components/ui/confirmation-dialog.tsx` - Reusable confirmation dialogs
+- `/components/ui/integration-status.tsx` - Integration health monitoring
+- `/components/dashboard/TeamsUI.tsx` - Full Microsoft Teams interface
+
+**Services**:
+- `/lib/services/queue-manager.ts` - Generic queue system for all async operations
+- `/lib/middleware/webhook-validation.ts` - Centralized webhook security
+- `/lib/auth/secure-token-manager.ts` - Enhanced token management with encryption
+- `/lib/services/twilio-sync.ts` - Real-time Twilio synchronization
+- `/lib/monitoring/integration-health.ts` - Integration health checks
+
+**Edge Functions**:
+- `agent-orchestrator` - Real-time agent coordination (deployed)
+- `queue-processor` - Background job processing
+- `webhook-handler` - Centralized webhook processing
+
+### Deployment Instructions (Updated January 18, 2025)
+
+**Environment Variables Required**:
+```bash
+# Microsoft OAuth (CRITICAL - Server-side only!)
+MICROSOFT_CLIENT_SECRET=your-secret-here  # MUST rotate if exposed
+MICROSOFT_CLIENT_ID=bfa77df6-6952-4d0f-9816-003b3101b9da
+MICROSOFT_TENANT_ID=29ee1479-b5f7-48c5-b665-7de9a8a9033e
+
+# Webhook Secrets (Generate with: openssl rand -hex 32)
+EMAIL_WEBHOOK_SECRET=generate-strong-secret
+ZOHO_WEBHOOK_TOKEN=your-zoho-webhook-token
+ZOOM_WEBHOOK_SECRET_TOKEN=your-zoom-webhook-secret
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+LINKEDIN_WEBHOOK_SECRET=your-linkedin-webhook-secret
+
+# New Integrations
+LINKEDIN_CLIENT_ID=your-linkedin-client-id
+LINKEDIN_CLIENT_SECRET=your-linkedin-client-secret
+TWILIO_ACCOUNT_SID=your-twilio-sid
+TWILIO_PHONE_NUMBER=+1234567890
+
+# AI Services
+GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-api-key
+```
+
+**Edge Functions Deployment**:
+```bash
+# Deploy all Edge Functions
+cd supabase
+supabase functions deploy agent-orchestrator
+supabase functions deploy gemini-websocket
+supabase functions deploy queue-processor
+supabase functions deploy webhook-handler
+```
+
+**Pre-Production Security Checklist**:
+1. ✅ Rotate Microsoft OAuth client secret (CRITICAL)
+2. ✅ Configure webhook endpoints in external services
+3. ✅ Set up Redis/Upstash for production
+4. ✅ Configure rate limiting rules
+5. ✅ Enable security headers and CORS
+6. ✅ Set up monitoring and alerts
+7. ✅ Configure backup strategy
+8. ✅ Test rollback procedures
+9. ✅ Verify all webhook signatures
+10. ✅ Enable audit logging
+
+**Integration Health Monitoring**:
+- Use `/dashboard/settings` to monitor integration status
+- Check webhook delivery logs in each provider's dashboard
+- Monitor queue performance at `/dashboard/zoho`
+- Review security logs for failed authentications

@@ -38,19 +38,16 @@ class SupabaseTokenProvider implements TokenCredential {
   }
 
   private async refreshToken(refreshToken: string): Promise<string> {
-    const tokenEndpoint = `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_ENTRA_TENANT_ID || process.env.ENTRA_TENANT_ID}/oauth2/v2.0/token`;
-    
-    const response = await fetch(tokenEndpoint, {
+    // Use secure server-side refresh endpoint
+    const response = await fetch('/api/oauth/refresh', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.supabaseAccessToken}`,
       },
-      body: new URLSearchParams({
-        client_id: process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID || process.env.ENTRA_CLIENT_ID || '',
-        client_secret: process.env.ENTRA_CLIENT_SECRET || '',
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-        scope: 'openid profile email offline_access User.Read Mail.ReadWrite Mail.Send MailboxSettings.Read Calendars.ReadWrite OnlineMeetings.ReadWrite Contacts.ReadWrite Sites.Read.All Files.ReadWrite.All',
+      body: JSON.stringify({
+        provider: 'microsoft',
+        refreshToken: refreshToken
       }),
     });
 

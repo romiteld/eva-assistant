@@ -43,9 +43,9 @@ export class VoiceService extends EventEmitter {
     jitter: 0,
   };
 
-  constructor(config: VoiceConfig = {}) {
+  constructor(config: VoiceConfig = {}, useWebRTC = true) {
     super();
-    this.audioProcessor = new AudioProcessor();
+    this.audioProcessor = new AudioProcessor(useWebRTC);
     this.config = {
       model: 'models/gemini-2.0-flash-exp',
       voice: VoiceType.PUCK,
@@ -620,6 +620,41 @@ export class VoiceService extends EventEmitter {
    */
   getWaveformData(): Uint8Array {
     return this.audioProcessor.getWaveformData();
+  }
+
+  /**
+   * Get enhanced metrics from WebRTC manager
+   */
+  getEnhancedMetrics(): any {
+    return this.audioProcessor.getEnhancedMetrics();
+  }
+
+  /**
+   * Set input gain
+   */
+  setInputGain(gain: number): void {
+    this.audioProcessor.setInputGain(gain);
+  }
+
+  /**
+   * Set output gain
+   */
+  setOutputGain(gain: number): void {
+    this.audioProcessor.setOutputGain(gain);
+  }
+
+  /**
+   * Calibrate noise level
+   */
+  async calibrateNoiseLevel(duration = 2000): Promise<void> {
+    await this.audioProcessor.calibrateNoiseLevel(duration);
+  }
+
+  /**
+   * Get WebRTC manager for direct access
+   */
+  getWebRTCManager(): any {
+    return this.audioProcessor.getWebRTCManager();
   }
 
   /**

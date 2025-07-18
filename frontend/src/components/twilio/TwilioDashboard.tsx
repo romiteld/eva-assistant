@@ -40,6 +40,7 @@ import { useTwilio } from '@/hooks/useTwilio'
 import { IVRDesigner } from './IVRDesigner'
 import { ConferenceManager } from './ConferenceManager'
 import type { CallDetails, MessageDetails } from '@/lib/services/twilio'
+import { toast } from 'sonner'
 
 interface TwilioDashboardProps {
   className?: string
@@ -100,7 +101,7 @@ export function TwilioDashboard({ className }: TwilioDashboardProps) {
 
   const handleMakeCall = async () => {
     if (!newCall.to) {
-      alert('Please enter a phone number')
+      toast.error('Please enter a phone number')
       return
     }
 
@@ -120,15 +121,17 @@ export function TwilioDashboard({ className }: TwilioDashboardProps) {
         statusCallback: '/api/twilio/call-status'
       })
       
+      toast.success('Call initiated successfully')
       setNewCall({ to: '', message: '' })
     } catch (error) {
       console.error('Error making call:', error)
+      toast.error('Failed to make call. Please try again.')
     }
   }
 
   const handleSendSMS = async () => {
     if (!newSMS.to || !newSMS.body) {
-      alert('Please enter phone number and message')
+      toast.error('Please enter phone number and message')
       return
     }
 
@@ -139,15 +142,17 @@ export function TwilioDashboard({ className }: TwilioDashboardProps) {
         statusCallback: '/api/twilio/sms-status'
       })
       
+      toast.success('SMS sent successfully')
       setNewSMS({ to: '', body: '' })
     } catch (error) {
       console.error('Error sending SMS:', error)
+      toast.error('Failed to send SMS. Please try again.')
     }
   }
 
   const handleSendBulkSMS = async () => {
     if (!bulkSMS.recipients || !bulkSMS.body) {
-      alert('Please enter recipients and message')
+      toast.error('Please enter recipients and message')
       return
     }
 
@@ -164,9 +169,11 @@ export function TwilioDashboard({ className }: TwilioDashboardProps) {
         })
 
       await sendBulkSMS(recipientList)
+      toast.success(`Bulk SMS sent to ${recipientList.length} recipients`)
       setBulkSMS({ recipients: '', body: '' })
     } catch (error) {
       console.error('Error sending bulk SMS:', error)
+      toast.error('Failed to send bulk SMS. Please try again.')
     }
   }
 

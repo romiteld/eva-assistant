@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { 
   Video, 
   Calendar, 
@@ -44,6 +45,15 @@ export function ZoomMeetingManager() {
     duration: 60,
     agenda: ''
   })
+  const [startMeetingConfirm, setStartMeetingConfirm] = useState<{
+    open: boolean;
+    meetingId: string | null;
+  }>({ open: false, meetingId: null })
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean;
+    meetingId: string | null;
+    meetingTopic: string;
+  }>({ open: false, meetingId: null, meetingTopic: '' })
 
   const handleCreateInstantMeeting = async () => {
     if (!newMeeting.topic) return
@@ -53,11 +63,8 @@ export function ZoomMeetingManager() {
       const meeting = await createInstantMeeting(newMeeting.topic)
       setNewMeeting({ ...newMeeting, topic: '' })
       
-      const shouldStart = confirm('Meeting created! Would you like to start it now?')
-      if (shouldStart) {
-        const startUrl = await startMeeting(meeting.id)
-        window.open(startUrl, '_blank')
-      }
+      // Show start meeting confirmation
+      setStartMeetingConfirm({ open: true, meetingId: meeting.id })
     } catch (err) {
       console.error('Failed to create instant meeting:', err)
     } finally {
@@ -112,8 +119,13 @@ export function ZoomMeetingManager() {
     }
   }
 
-  const handleDeleteMeeting = async (meetingId: string) => {
-    if (!confirm('Are you sure you want to delete this meeting?')) return
+  const handleDeleteMeeting = async (meetingId: string, meetingTopic: string) => {
+    setDeleteConfirmation({ open: true, meetingId, meetingTopic })
+  }
+
+  const confirmDeleteMeeting = async () => {
+    const { meetingId } = deleteConfirmation
+    if (!meetingId) return
 
     try {
       setActionLoading(`delete-${meetingId}`)
@@ -122,6 +134,21 @@ export function ZoomMeetingManager() {
       console.error('Failed to delete meeting:', err)
     } finally {
       setActionLoading(null)
+      setDeleteConfirmation({ open: false, meetingId: null, meetingTopic: '' })
+    }
+  }
+
+  const confirmStartMeeting = async () => {
+    const { meetingId } = startMeetingConfirm
+    if (!meetingId) return
+
+    try {
+      const startUrl = await startMeeting(meetingId)
+      window.open(startUrl, '_blank')
+    } catch (err) {
+      console.error('Failed to start meeting:', err)
+    } finally {
+      setStartMeetingConfirm({ open: false, meetingId: null })
     }
   }
 
@@ -273,7 +300,7 @@ export function ZoomMeetingManager() {
                   onStart={() => handleStartMeeting(meeting.id)}
                   onJoin={() => handleJoinMeeting(meeting.id)}
                   onCopy={() => handleCopyJoinUrl(meeting.id)}
-                  onDelete={() => handleDeleteMeeting(meeting.id)}
+                  onDelete={() => handleDeleteMeeting(meeting.id, meeting.topic)}
                   actionLoading={actionLoading}
                 />
               ))
@@ -281,6 +308,27 @@ export function ZoomMeetingManager() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Start Meeting Confirmation Dialog */}
+      <ConfirmationDialog
+        open={startMeetingConfirm.open}
+        onOpenChange={(open) => !open && setStartMeetingConfirm({ open: false, meetingId: null })}
+        title="Start Meeting"
+        description="Meeting created! Would you like to start it now?"
+        actionLabel="Start Meeting"
+        onConfirm={confirmStartMeeting}
+      />
+
+      {/* Delete Meeting Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteConfirmation.open}
+        onOpenChange={(open) => !open && setDeleteConfirmation({ open: false, meetingId: null, meetingTopic: '' })}
+        title="Delete Meeting"
+        description={`Are you sure you want to delete "${deleteConfirmation.meetingTopic}"? This action cannot be undone.`}
+        actionLabel="Delete"
+        onConfirm={confirmDeleteMeeting}
+        variant="destructive"
+      />
     </div>
   )
 }

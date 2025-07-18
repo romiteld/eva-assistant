@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { EnhancedLeadGenerationAgent } from '@/lib/agents/enhanced-lead-generation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Search, 
   Users, 
@@ -20,17 +21,46 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Settings,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/app/providers';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function LeadGenerationPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
   const [progress, setProgress] = useState(0);
+  const [apiKeyStatus, setApiKeyStatus] = useState<'loading' | 'valid' | 'invalid' | 'missing'>('loading');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
+  const [totalResults, setTotalResults] = useState(0);
+
+  // Check API keys on mount
+  useEffect(() => {
+    const checkApiKeys = () => {
+      const geminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      const firecrawlKey = process.env.NEXT_PUBLIC_FIRECRAWL_API_KEY;
+      
+      if (!geminiKey || !firecrawlKey) {
+        setApiKeyStatus('missing');
+        toast.error('API keys are not configured. Please add them to your environment variables.');
+      } else if (geminiKey === 'your-gemini-api-key' || firecrawlKey === 'your-firecrawl-api-key') {
+        setApiKeyStatus('invalid');
+        toast.warning('Please replace the placeholder API keys with your actual keys.');
+      } else {
+        setApiKeyStatus('valid');
+      }
+    };
+
+    checkApiKeys();
+  }, []);
 
   const handleSearch = async () => {
     if (!searchQuery.trim() || !user?.id) return;
@@ -40,9 +70,19 @@ export default function LeadGenerationPage() {
     setLeads([]);
 
     try {
+      // Double-check API keys before creating agent
+      const geminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      const firecrawlKey = process.env.NEXT_PUBLIC_FIRECRAWL_API_KEY;
+      
+      if (!geminiKey || !firecrawlKey || geminiKey === 'your-gemini-api-key' || firecrawlKey === 'your-firecrawl-api-key') {
+        toast.error('Please configure valid API keys in settings.');
+        router.push('/dashboard/settings?tab=api-keys');
+        return;
+      }
+
       const agent = new EnhancedLeadGenerationAgent(
-        process.env.NEXT_PUBLIC_GEMINI_API_KEY!,
-        process.env.NEXT_PUBLIC_FIRECRAWL_API_KEY!,
+        geminiKey,
+        firecrawlKey,
         { userId: user.id }
       );
 
@@ -60,6 +100,8 @@ export default function LeadGenerationPage() {
       clearInterval(progressInterval);
       setProgress(100);
       setLeads(results);
+      setTotalResults(results.length);
+      setCurrentPage(1); // Reset to first page
       toast.success(`Found ${results.length} potential leads`);
     } catch (error) {
       console.error('Lead search error:', error);
@@ -81,6 +123,21 @@ export default function LeadGenerationPage() {
     }
   };
 
+  // Calculate pagination
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentLeads = leads.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of results
+    const resultsCard = document.getElementById('lead-results');
+    if (resultsCard) {
+      resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -95,6 +152,30 @@ export default function LeadGenerationPage() {
           </Badge>
         </div>
 
+        {apiKeyStatus === 'missing' || apiKeyStatus === 'invalid' ? (
+          <Alert className="bg-yellow-500/10 border-yellow-500/20">
+            <AlertCircle className="h-4 w-4 text-yellow-500" />
+            <AlertDescription className="text-yellow-200">
+              <div className="flex items-center justify-between">
+                <span>
+                  {apiKeyStatus === 'missing' 
+                    ? 'Lead Generation requires Gemini and Firecrawl API keys to be configured.'
+                    : 'Please replace the placeholder API keys with your actual keys.'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => router.push('/dashboard/settings?tab=api-keys')}
+                  className="ml-4"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure API Keys
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <Card className="bg-white/5 backdrop-blur-xl border-white/10">
           <CardHeader>
             <CardTitle>Search for Leads</CardTitle>
@@ -102,12 +183,12 @@ export default function LeadGenerationPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Label htmlFor="search">Search Query</Label>
                   <Input
                     id="search"
-                    placeholder="e.g., Financial advisors in New York with 10+ years experience"
+                    placeholder="e.g., Financial advisors in New York"
                     value={searchQuery}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                     onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearch()}
@@ -116,8 +197,8 @@ export default function LeadGenerationPage() {
                 </div>
                 <Button 
                   onClick={handleSearch}
-                  disabled={isSearching || !searchQuery.trim()}
-                  className="mt-auto"
+                  disabled={isSearching || !searchQuery.trim() || apiKeyStatus !== 'valid'}
+                  className="sm:mt-auto w-full sm:w-auto"
                 >
                   {isSearching ? (
                     <>
@@ -147,52 +228,117 @@ export default function LeadGenerationPage() {
         </Card>
 
         {leads.length > 0 && (
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+          <Card id="lead-results" className="bg-white/5 backdrop-blur-xl border-white/10">
             <CardHeader>
-              <CardTitle>Found Leads ({leads.length})</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Found Leads ({totalResults})</CardTitle>
+                <div className="text-sm text-gray-400">
+                  Showing {startIndex + 1}-{Math.min(endIndex, totalResults)} of {totalResults} results
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[600px]">
-                <div className="space-y-4">
-                  {leads.map((lead, index) => (
-                    <Card key={index} className="bg-white/5 border-white/10">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-2">
-                            <h3 className="text-lg font-semibold text-white">{lead.name}</h3>
-                            <p className="text-gray-400">{lead.title} at {lead.company}</p>
-                            <div className="flex gap-2">
-                              <Badge variant="secondary">{lead.location}</Badge>
-                              <Badge variant="secondary">{lead.experience}</Badge>
-                              {lead.score && (
-                                <Badge 
-                                  variant="secondary" 
-                                  className={lead.score > 7 ? 'bg-green-500/20' : 'bg-yellow-500/20'}
-                                >
-                                  Score: {lead.score}/10
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {lead.linkedInUrl && (
-                              <Button size="sm" variant="ghost" asChild>
-                                <a href={lead.linkedInUrl} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="w-4 h-4" />
-                                </a>
-                              </Button>
+              <div className="space-y-4">
+                {currentLeads.map((lead, index) => (
+                  <Card key={startIndex + index} className="bg-white/5 border-white/10">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="space-y-2 flex-1">
+                          <h3 className="text-lg font-semibold text-white">{lead.name}</h3>
+                          <p className="text-gray-400 text-sm sm:text-base">{lead.title} at {lead.company}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary" className="text-xs">{lead.location}</Badge>
+                            <Badge variant="secondary" className="text-xs">{lead.experience}</Badge>
+                            {lead.score && (
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-xs ${lead.score > 7 ? 'bg-green-500/20' : 'bg-yellow-500/20'}`}
+                              >
+                                Score: {lead.score}/10
+                              </Badge>
                             )}
-                            <Button size="sm">
-                              <Mail className="w-4 h-4 mr-1" />
-                              Contact
-                            </Button>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          {lead.linkedInUrl && (
+                            <Button size="sm" variant="ghost" asChild className="flex-1 sm:flex-initial">
+                              <a href={lead.linkedInUrl} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            </Button>
+                          )}
+                          <Button size="sm" className="flex-1 sm:flex-initial">
+                            <Mail className="w-4 h-4 mr-1" />
+                            Contact
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="bg-white/5 border-white/10 w-full sm:w-auto"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Previous</span>
+                  </Button>
+                  
+                  <div className="flex gap-1 overflow-x-auto">
+                    {/* Show page numbers */}
+                    {[...Array(totalPages)].map((_, i) => {
+                      const pageNumber = i + 1;
+                      // Show first page, last page, current page, and pages around current
+                      if (
+                        pageNumber === 1 ||
+                        pageNumber === totalPages ||
+                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                      ) {
+                        return (
+                          <Button
+                            key={pageNumber}
+                            variant={currentPage === pageNumber ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`min-w-[40px] ${currentPage === pageNumber ? "" : "bg-white/5 border-white/10"}`}
+                          >
+                            {pageNumber}
+                          </Button>
+                        );
+                      } else if (
+                        pageNumber === currentPage - 2 ||
+                        pageNumber === currentPage + 2
+                      ) {
+                        return (
+                          <span key={pageNumber} className="px-2 text-gray-400">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="bg-white/5 border-white/10 w-full sm:w-auto"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              </ScrollArea>
+              )}
             </CardContent>
           </Card>
         )}
