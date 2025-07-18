@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         },
         // Add other providers as needed
         microsoft: {
-          tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+          tokenUrl: 'https://login.microsoftonline.com/29ee1479-b5f7-48c5-b665-7de9a8a9033e/oauth2/v2.0/token',
           clientId: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
           clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
           tenantId: process.env.MICROSOFT_TENANT_ID || 'common'
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         },
         // Add other providers as needed
         microsoft: {
-          tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+          tokenUrl: 'https://login.microsoftonline.com/29ee1479-b5f7-48c5-b665-7de9a8a9033e/oauth2/v2.0/token',
           clientId: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
           clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
           tenantId: process.env.MICROSOFT_TENANT_ID || 'common'
