@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/browser'
 import type { User } from '@supabase/supabase-js'
-import { useVoiceSession } from '@/hooks/useVoiceSession'
+import { supabaseVoiceStreaming } from '@/lib/services/supabase-voice-streaming'
 import { AudioVisualizer } from '@/components/voice/AudioVisualizer'
 
 interface VoiceState {
@@ -101,7 +101,6 @@ export default function TalkToEvaPage() {
   const [commandPalette, setCommandPalette] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
   const router = useRouter()
-  const { voiceStreaming } = useVoiceSession()
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Scroll to bottom when new messages are added
@@ -133,7 +132,7 @@ export default function TalkToEvaPage() {
 
   // Set up voice streaming event listeners
   useEffect(() => {
-    if (!voiceStreaming) return
+    if (!supabaseVoiceStreaming) return
 
     const handleConnected = (sessionId: string) => {
       setConnectionStatus('connected')
@@ -198,41 +197,41 @@ export default function TalkToEvaPage() {
     }
 
     // Add event listeners
-    voiceStreaming.on('connected', handleConnected)
-    voiceStreaming.on('disconnected', handleDisconnected)
-    voiceStreaming.on('transcript', handleTranscript)
-    voiceStreaming.on('response', handleResponse)
-    voiceStreaming.on('listening', handleListening)
-    voiceStreaming.on('speakingStart', handleSpeakingStart)
-    voiceStreaming.on('speakingEnd', handleSpeakingEnd)
-    voiceStreaming.on('processingStart', handleProcessingStart)
-    voiceStreaming.on('processingEnd', handleProcessingEnd)
-    voiceStreaming.on('audioData', handleAudioData)
-    voiceStreaming.on('error', handleError)
+    supabaseVoiceStreaming.on('connected', handleConnected)
+    supabaseVoiceStreaming.on('disconnected', handleDisconnected)
+    supabaseVoiceStreaming.on('transcript', handleTranscript)
+    supabaseVoiceStreaming.on('response', handleResponse)
+    supabaseVoiceStreaming.on('listening', handleListening)
+    supabaseVoiceStreaming.on('speakingStart', handleSpeakingStart)
+    supabaseVoiceStreaming.on('speakingEnd', handleSpeakingEnd)
+    supabaseVoiceStreaming.on('processingStart', handleProcessingStart)
+    supabaseVoiceStreaming.on('processingEnd', handleProcessingEnd)
+    supabaseVoiceStreaming.on('audioData', handleAudioData)
+    supabaseVoiceStreaming.on('error', handleError)
 
     return () => {
       // Clean up event listeners
-      voiceStreaming.removeListener('connected', handleConnected)
-      voiceStreaming.removeListener('disconnected', handleDisconnected)
-      voiceStreaming.removeListener('transcript', handleTranscript)
-      voiceStreaming.removeListener('response', handleResponse)
-      voiceStreaming.removeListener('listening', handleListening)
-      voiceStreaming.removeListener('speakingStart', handleSpeakingStart)
-      voiceStreaming.removeListener('speakingEnd', handleSpeakingEnd)
-      voiceStreaming.removeListener('processingStart', handleProcessingStart)
-      voiceStreaming.removeListener('processingEnd', handleProcessingEnd)
-      voiceStreaming.removeListener('audioData', handleAudioData)
-      voiceStreaming.removeListener('error', handleError)
+      supabaseVoiceStreaming.removeListener('connected', handleConnected)
+      supabaseVoiceStreaming.removeListener('disconnected', handleDisconnected)
+      supabaseVoiceStreaming.removeListener('transcript', handleTranscript)
+      supabaseVoiceStreaming.removeListener('response', handleResponse)
+      supabaseVoiceStreaming.removeListener('listening', handleListening)
+      supabaseVoiceStreaming.removeListener('speakingStart', handleSpeakingStart)
+      supabaseVoiceStreaming.removeListener('speakingEnd', handleSpeakingEnd)
+      supabaseVoiceStreaming.removeListener('processingStart', handleProcessingStart)
+      supabaseVoiceStreaming.removeListener('processingEnd', handleProcessingEnd)
+      supabaseVoiceStreaming.removeListener('audioData', handleAudioData)
+      supabaseVoiceStreaming.removeListener('error', handleError)
     }
-  }, [voiceStreaming])
+  }, [])
 
   // Handle connect
   const handleConnect = async () => {
-    if (!user || !voiceStreaming) return
+    if (!user) return
 
     try {
       setConnectionStatus('connecting')
-      await voiceStreaming.startSession(user.id)
+      await supabaseVoiceStreaming.startSession(user.id)
     } catch (error) {
       console.error('Failed to connect:', error)
       setConnectionStatus('disconnected')
@@ -241,10 +240,8 @@ export default function TalkToEvaPage() {
 
   // Handle disconnect
   const handleDisconnect = async () => {
-    if (!voiceStreaming) return
-
     try {
-      await voiceStreaming.endSession()
+      await supabaseVoiceStreaming.endSession()
       setConversations([])
       setLastTranscript('')
       setLastResponse('')
