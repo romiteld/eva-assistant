@@ -931,6 +931,20 @@ export function EVAVoiceInterface() {
       ws.onmessage = async (event) => {
         const message = JSON.parse(event.data);
         
+        // Handle error messages from the proxy
+        if (message.type === 'error') {
+          console.error('Gemini WebSocket error:', message);
+          setError(`Connection error: ${message.error} - ${message.details || ''}`);
+          return;
+        }
+        
+        // Handle Gemini disconnection
+        if (message.type === 'gemini_disconnected') {
+          console.error('Gemini disconnected:', message);
+          setError(`Gemini API disconnected: ${message.reason} (code: ${message.code})`);
+          return;
+        }
+        
         // Handle input transcription (user speech to text)
         if (message.serverContent?.inputTranscription) {
           setCurrentUserText(prev => prev + message.serverContent.inputTranscription.text);
