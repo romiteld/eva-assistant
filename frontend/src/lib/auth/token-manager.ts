@@ -17,7 +17,7 @@ interface OAuthToken {
   refreshCount: number;
 }
 
-interface TokenRefreshConfig {
+export interface TokenRefreshConfig {
   microsoft: {
     tokenUrl: string;
     clientId: string;
@@ -110,7 +110,7 @@ export class TokenManager {
       );
       
       // Convert to hex string
-      const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+      const ivHex = Array.from(iv).map((b: unknown) => (b as number).toString(16).padStart(2, '0')).join('');
       const encryptedHex = Array.from(new Uint8Array(encryptedData))
         .map(b => b.toString(16).padStart(2, '0')).join('');
       
@@ -230,8 +230,8 @@ export class TokenManager {
         id: credential.id,
         userId: credential.user_id,
         provider: credential.provider as OAuthToken['provider'],
-        accessToken: this.decrypt(credential.access_token),
-        refreshToken: credential.refresh_token ? this.decrypt(credential.refresh_token) : undefined,
+        accessToken: await this.decrypt(credential.access_token),
+        refreshToken: credential.refresh_token ? await this.decrypt(credential.refresh_token) : undefined,
         expiresAt: new Date(credential.expires_at),
         scopes: credential.scopes || [],
         metadata: credential.metadata,

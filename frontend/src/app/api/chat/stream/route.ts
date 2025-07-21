@@ -5,17 +5,16 @@ import { NextResponse } from 'next/server';
 import { withAuthAndRateLimit } from '@/middleware/api-security';
 import { AuthenticatedRequest } from '@/middleware/auth';
 
-// Create Google AI model instance with explicit API key
-const model = google('gemini-2.0-flash-exp', {
-  apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-  // Optional model settings
-  safetySettings: [
-    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-  ],
-});
+// Set API key for Google AI SDK
+// The @ai-sdk/google package expects the API key to be in GOOGLE_GENERATIVE_AI_API_KEY env var
+if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+  // If only NEXT_PUBLIC_GEMINI_API_KEY is set, we need to ensure it's available
+  // to the Google AI SDK (Note: This is a workaround, ideally use GOOGLE_GENERATIVE_AI_API_KEY)
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+}
+
+// Create Google AI model instance
+const model = google('gemini-2.0-flash-exp');
 
 async function handlePost(request: AuthenticatedRequest) {
   try {
@@ -56,7 +55,9 @@ Be professional, knowledgeable, and helpful. Provide specific, actionable advice
     });
 
     // Return the streaming response
-    return result.toDataStreamResponse();
+    // The AI SDK returns a Response object, but Next.js expects NextResponse
+    // Since NextResponse extends Response, we can safely cast it
+    return result.toDataStreamResponse() as unknown as NextResponse;
   } catch (error) {
     console.error('Chat stream error:', error);
     return NextResponse.json(

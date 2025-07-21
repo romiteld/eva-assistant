@@ -90,8 +90,43 @@ export function useWebRTCAudio(options: UseWebRTCAudioOptions = {}): UseWebRTCAu
       onVoiceEnd: options.onVoiceEnd,
       onError: options.onError,
     };
-  }, [options]);
+  }, [options.onPermissionGranted, options.onPermissionDenied, options.onAudioData, options.onVoiceStart, options.onVoiceEnd, options.onError]);
   
+  // Calibrate noise level
+  const calibrateNoise = useCallback(async (duration = 2000): Promise<void> => {
+    if (!managerRef.current || !isInitialized) {
+      throw new Error('Audio not initialized');
+    }
+    
+    try {
+      setIsCalibrating(true);
+      
+      toast({
+        title: 'Calibrating Audio',
+        description: 'Please remain quiet for a moment...',
+      });
+      
+      await managerRef.current.calibrateNoiseLevel(duration);
+      
+      toast({
+        title: 'Calibration Complete',
+        description: 'Audio noise level has been calibrated.',
+      });
+    } catch (error) {
+      const errorObj = error as Error;
+      setError(errorObj);
+      callbacksRef.current.onError?.(errorObj);
+      
+      toast({
+        title: 'Calibration Failed',
+        description: errorObj.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCalibrating(false);
+    }
+  }, [isInitialized, toast]);
+
   // Initialize audio manager
   const initialize = useCallback(async (): Promise<void> => {
     try {
@@ -178,7 +213,7 @@ export function useWebRTCAudio(options: UseWebRTCAudioOptions = {}): UseWebRTCAu
       callbacksRef.current.onError?.(errorObj);
       throw error;
     }
-  }, [options, toast]);
+  }, [options, toast, calibrateNoise]);
   
   // Start audio capture
   const startCapture = useCallback((callback?: (data: Int16Array) => void) => {
@@ -236,41 +271,6 @@ export function useWebRTCAudio(options: UseWebRTCAudioOptions = {}): UseWebRTCAu
       managerRef.current.setOutputGain(gain);
     }
   }, []);
-  
-  // Calibrate noise level
-  const calibrateNoise = useCallback(async (duration = 2000): Promise<void> => {
-    if (!managerRef.current || !isInitialized) {
-      throw new Error('Audio not initialized');
-    }
-    
-    try {
-      setIsCalibrating(true);
-      
-      toast({
-        title: 'Calibrating Audio',
-        description: 'Please remain quiet for a moment...',
-      });
-      
-      await managerRef.current.calibrateNoiseLevel(duration);
-      
-      toast({
-        title: 'Calibration Complete',
-        description: 'Audio noise level has been calibrated.',
-      });
-    } catch (error) {
-      const errorObj = error as Error;
-      setError(errorObj);
-      callbacksRef.current.onError?.(errorObj);
-      
-      toast({
-        title: 'Calibration Failed',
-        description: errorObj.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCalibrating(false);
-    }
-  }, [isInitialized, toast]);
   
   // Update audio constraints
   const updateConstraints = useCallback(async (constraints: MediaTrackConstraints): Promise<void> => {

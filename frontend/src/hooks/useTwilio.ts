@@ -78,6 +78,49 @@ export function useTwilio() {
   const [ivrFlows, setIvrFlows] = useState<IVRFlow[]>([])
   const [activeConferences, setActiveConferences] = useState<ConferenceCall[]>([])
 
+  // Load phone numbers
+  const loadPhoneNumbers = useCallback(async (twilioService: TwilioService) => {
+    try {
+      const numbers = await twilioService.listPhoneNumbers()
+      setPhoneNumbers(numbers)
+    } catch (err) {
+      console.error('Error loading phone numbers:', err)
+    }
+  }, [])
+
+  // Load recent calls
+  const loadRecentCalls = useCallback(async (twilioService: TwilioService, limit = 50) => {
+    try {
+      const recentCalls = await twilioService.listCalls({ limit })
+      setCalls(recentCalls)
+    } catch (err) {
+      console.error('Error loading calls:', err)
+    }
+  }, [])
+
+  // Load recent messages
+  const loadRecentMessages = useCallback(async (twilioService: TwilioService, limit = 50) => {
+    try {
+      const recentMessages = await twilioService.getMessages({ limit })
+      setMessages(recentMessages)
+    } catch (err) {
+      console.error('Error loading messages:', err)
+    }
+  }, [])
+
+  // Load IVR flows
+  const loadIVRFlows = useCallback(async () => {
+    try {
+      const response = await fetch('/api/twilio/ivr')
+      if (response.ok) {
+        const flows = await response.json()
+        setIvrFlows(flows)
+      }
+    } catch (err) {
+      console.error('Error loading IVR flows:', err)
+    }
+  }, [])
+
   // Initialize Twilio service
   useEffect(() => {
     const initTwilio = async () => {
@@ -112,50 +155,7 @@ export function useTwilio() {
     }
     
     initTwilio()
-  }, [])
-
-  // Load phone numbers
-  const loadPhoneNumbers = useCallback(async (twilioService: TwilioService) => {
-    try {
-      const numbers = await twilioService.listPhoneNumbers()
-      setPhoneNumbers(numbers)
-    } catch (err) {
-      console.error('Error loading phone numbers:', err)
-    }
-  }, [])
-
-  // Load recent calls
-  const loadRecentCalls = useCallback(async (twilioService: TwilioService, limit = 50) => {
-    try {
-      const recentCalls = await twilioService.listCalls({ limit })
-      setCalls(recentCalls)
-    } catch (err) {
-      console.error('Error loading calls:', err)
-    }
-  }, [])
-
-  // Load recent messages
-  const loadRecentMessages = useCallback(async (twilioService: TwilioService, limit = 50) => {
-    try {
-      const recentMessages = await twilioService.getMessages({ limit })
-      setMessages(recentMessages)
-    } catch (err) {
-      console.error('Error loading messages:', err)
-    }
-  }, [])
-
-  // Load IVR flows from API
-  const loadIVRFlows = useCallback(async () => {
-    try {
-      const response = await fetch('/api/twilio/ivr')
-      if (response.ok) {
-        const flows = await response.json()
-        setIvrFlows(flows)
-      }
-    } catch (err) {
-      console.error('Error loading IVR flows:', err)
-    }
-  }, [])
+  }, [loadPhoneNumbers, loadRecentCalls, loadRecentMessages, loadIVRFlows])
 
   // Phone number management
   const purchasePhoneNumber = useCallback(async (options: {

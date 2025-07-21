@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/options';
 import {
   WebSocketEvent,
   AuthPayload,
@@ -273,7 +275,7 @@ export async function GET(req: NextRequest) {
   });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
     

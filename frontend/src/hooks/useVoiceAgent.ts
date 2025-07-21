@@ -283,7 +283,7 @@ export function useVoiceAgent(options: UseVoiceAgentOptions = {}): UseVoiceAgent
       voiceService.removeAllListeners();
       voiceService.disconnect();
     };
-  }, [checkPermissionAndConnect, options]);
+  }, [checkPermissionAndConnect]);
 
   // Update visualization data
   useEffect(() => {

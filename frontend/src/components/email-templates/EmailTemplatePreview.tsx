@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Copy, Mail } from 'lucide-react';
 import { EmailTemplate, emailTemplateService } from '@/lib/services/email-templates';
 import { useToast } from '@/hooks/use-toast';
@@ -24,12 +24,9 @@ export function EmailTemplatePreview({ template, onClose }: EmailTemplatePreview
       defaultVariables[v.name] = v.defaultValue;
     });
     setPreviewVariables(defaultVariables);
-
-    // Load statistics
-    loadStatistics();
   }, [template]);
 
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     setIsLoadingStats(true);
     try {
       const statistics = await emailTemplateService.getTemplateStatistics(template.id);
@@ -39,7 +36,11 @@ export function EmailTemplatePreview({ template, onClose }: EmailTemplatePreview
     } finally {
       setIsLoadingStats(false);
     }
-  };
+  }, [template.id]);
+
+  useEffect(() => {
+    loadStatistics();
+  }, [loadStatistics]);
 
   const getRenderedContent = () => {
     return emailTemplateService.renderTemplate(template, previewVariables);

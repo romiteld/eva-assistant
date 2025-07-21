@@ -27,6 +27,62 @@ export function AudioVisualizer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
 
+  const drawFrequency = useCallback((
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array,
+    width: number,
+    height: number,
+    offsetY = 0
+  ) => {
+    const barWidth = width / data.length * 2.5;
+    let x = 0;
+
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, offsetY + height, 0, offsetY);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, `${color}33`);
+    ctx.fillStyle = gradient;
+
+    for (let i = 0; i < data.length; i++) {
+      const barHeight = (data[i] / 255) * height;
+      
+      ctx.fillRect(x, offsetY + height - barHeight, barWidth - 2, barHeight);
+      x += barWidth;
+      
+      if (x > width) break;
+    }
+  }, [color]);
+
+  const drawWaveform = useCallback((
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array,
+    width: number,
+    height: number,
+    offsetY = 0
+  ) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    const sliceWidth = width / data.length;
+    let x = 0;
+
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] / 128.0;
+      const y = v * height / 2;
+
+      if (i === 0) {
+        ctx.moveTo(x, offsetY + y);
+      } else {
+        ctx.lineTo(x, offsetY + y);
+      }
+
+      x += sliceWidth;
+    }
+
+    ctx.stroke();
+  }, [color]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -69,63 +125,7 @@ export function AudioVisualizer({
         drawWaveform(ctx, waveformData, rect.width, rect.height / 2, rect.height / 2);
       }
     }
-  }, [frequencyData, waveformData, isActive, type, color, backgroundColor]);
-
-  const drawFrequency = (
-    ctx: CanvasRenderingContext2D,
-    data: Uint8Array,
-    width: number,
-    height: number,
-    offsetY = 0
-  ) => {
-    const barWidth = width / data.length * 2.5;
-    let x = 0;
-
-    // Create gradient
-    const gradient = ctx.createLinearGradient(0, offsetY + height, 0, offsetY);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(1, `${color}33`);
-    ctx.fillStyle = gradient;
-
-    for (let i = 0; i < data.length; i++) {
-      const barHeight = (data[i] / 255) * height;
-      
-      ctx.fillRect(x, offsetY + height - barHeight, barWidth - 2, barHeight);
-      x += barWidth;
-      
-      if (x > width) break;
-    }
-  };
-
-  const drawWaveform = (
-    ctx: CanvasRenderingContext2D,
-    data: Uint8Array,
-    width: number,
-    height: number,
-    offsetY = 0
-  ) => {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    const sliceWidth = width / data.length;
-    let x = 0;
-
-    for (let i = 0; i < data.length; i++) {
-      const v = data[i] / 128.0;
-      const y = offsetY + (v * height) / 2;
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-
-      x += sliceWidth;
-    }
-
-    ctx.stroke();
-  };
+  }, [frequencyData, waveformData, isActive, type, color, backgroundColor, drawFrequency, drawWaveform]);
 
   useEffect(() => {
     const animate = () => {

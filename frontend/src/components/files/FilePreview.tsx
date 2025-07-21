@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   X,
   Download,
@@ -54,13 +54,9 @@ export function FilePreview({
   const [tagInput, setTagInput] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
 
-  const uploadService = new FileUploadService();
+  const uploadService = useMemo(() => new FileUploadService(), []);
 
-  useEffect(() => {
-    loadFile();
-  }, [fileId]);
-
-  const loadFile = async () => {
+  const loadFile = useCallback(async () => {
     setLoading(true);
     try {
       const fileData = await uploadService.getFile(fileId);
@@ -76,7 +72,11 @@ export function FilePreview({
     } finally {
       setLoading(false);
     }
-  };
+  }, [fileId, uploadService]);
+
+  useEffect(() => {
+    loadFile();
+  }, [loadFile]);
 
   const getFileIcon = (fileType: string) => {
     for (const [key, Icon] of Object.entries(FILE_ICONS)) {

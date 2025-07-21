@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   FileText,
   Image,
@@ -64,14 +64,10 @@ export function FileList({
   const [currentPage, setCurrentPage] = useState(0);
   const [totalFiles, setTotalFiles] = useState(0);
 
-  const uploadService = new FileUploadService();
+  const uploadService = useMemo(() => new FileUploadService(), []);
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    loadFiles();
-  }, [bucket, searchQuery, selectedType, sortBy, sortOrder, currentPage]);
-
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
       const { files: fetchedFiles, total } = await uploadService.listFiles({
@@ -90,7 +86,11 @@ export function FileList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [bucket, searchQuery, selectedType, sortBy, sortOrder, currentPage, uploadService]);
+
+  useEffect(() => {
+    loadFiles();
+  }, [loadFiles]);
 
   const getFileIcon = (fileType: string) => {
     for (const [key, Icon] of Object.entries(FILE_ICONS)) {
@@ -208,7 +208,7 @@ export function FileList({
                       className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 flex items-center space-x-2"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(file.id, file.name);
+                        handleDelete(file.id, file.filename);
                         setActiveDropdown(null);
                       }}
                     >
@@ -304,7 +304,7 @@ export function FileList({
                         className="p-1 text-gray-400 hover:text-red-400"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(file.id, file.name);
+                          handleDelete(file.id, file.filename);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />

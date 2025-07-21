@@ -16,7 +16,10 @@ import {
   Users,
   Briefcase,
   Eye,
-  EyeOff
+  EyeOff,
+  BarChart3,
+  Clock,
+  Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RealtimePreview } from './RealtimePreview';
@@ -95,7 +98,7 @@ export function PostPredictorForm({ onSubmit, isLoading = false }: PostPredictor
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Preview Toggle */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-300">Create Your Post</h3>
@@ -105,37 +108,45 @@ export function PostPredictorForm({ onSubmit, isLoading = false }: PostPredictor
           className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
         >
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          {showPreview ? 'Hide Preview' : 'Show Preview'}
+          <span className="hidden sm:inline">{showPreview ? 'Hide Preview' : 'Show Preview'}</span>
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
       {/* Platform Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-3">
           Select Platform
         </label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-3">
           {platforms.map((p) => (
             <motion.button
               key={p.id}
               type="button"
               onClick={() => setPlatform(p.id)}
               className={cn(
-                "relative p-4 rounded-xl border transition-all",
+                "w-full p-4 rounded-xl border transition-all flex items-center gap-4",
                 platform === p.id
-                  ? "bg-gradient-to-br border-white/20 shadow-lg"
+                  ? "bg-gradient-to-r border-white/20 shadow-lg"
                   : "bg-white/5 border-white/10 hover:bg-white/10"
               )}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
             >
               {platform === p.id && (
                 <div className={cn("absolute inset-0 bg-gradient-to-br rounded-xl opacity-20", p.color)} />
               )}
-              <div className="relative z-10 flex flex-col items-center gap-2">
-                <p.icon className="w-6 h-6 text-white" />
-                <span className="text-sm font-medium text-white">{p.name}</span>
+              <div className="relative z-10 flex items-center gap-4 w-full">
+                <div className={cn("p-2 rounded-lg", platform === p.id ? "bg-white/10" : "bg-white/5")}>
+                  <p.icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white">{p.name}</p>
+                  <p className="text-xs text-gray-400">{p.limit.toLocaleString()} characters</p>
+                </div>
+                {platform === p.id && (
+                  <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                )}
               </div>
             </motion.button>
           ))}
@@ -181,14 +192,14 @@ export function PostPredictorForm({ onSubmit, isLoading = false }: PostPredictor
         <label className="block text-sm font-medium text-gray-300 mb-3">
           Post Type
         </label>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {postTypes.map((type) => (
             <motion.button
               key={type.id}
               type="button"
               onClick={() => setPostType(type.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
+                "flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all text-center",
                 postType === type.id
                   ? "bg-purple-600/20 border-purple-500/50 text-purple-300"
                   : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
@@ -204,17 +215,17 @@ export function PostPredictorForm({ onSubmit, isLoading = false }: PostPredictor
       </div>
 
       {/* Additional Options */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-4">
         {/* Industry */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            <Briefcase className="w-4 h-4 inline mr-2" />
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+            <Briefcase className="w-4 h-4 text-purple-400" />
             Industry (Optional)
           </label>
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
           >
             <option value="">Select Industry</option>
             {industries.map((ind) => (
@@ -227,14 +238,14 @@ export function PostPredictorForm({ onSubmit, isLoading = false }: PostPredictor
 
         {/* Target Audience */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            <Users className="w-4 h-4 inline mr-2" />
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+            <Users className="w-4 h-4 text-purple-400" />
             Target Audience (Optional)
           </label>
           <select
             value={targetAudience}
             onChange={(e) => setTargetAudience(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
           >
             <option value="">Select Audience</option>
             {audienceTypes.map((aud) => (
@@ -284,6 +295,7 @@ export function PostPredictorForm({ onSubmit, isLoading = false }: PostPredictor
         )}
       </motion.button>
     </form>
+
 
     {/* Real-time Preview */}
     {showPreview && content && (

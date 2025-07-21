@@ -4,6 +4,23 @@ import { createClient } from '@/lib/supabase/server';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { withAuthAndRateLimit, API_SECURITY_TYPES } from '@/middleware/api-security';
 
+interface DatabaseTask {
+  id: string;
+  agent_id: string;
+  status: 'assigned' | 'in_progress' | 'completed' | 'failed';
+  actual_duration?: number;
+  completed_at?: string;
+  created_at: string;
+}
+
+interface TaskStats {
+  total: number;
+  completed: number;
+  failed: number;
+  inProgress: number;
+  avgDuration: number;
+}
+
 // GET /api/agents/stats - Get workload statistics
 export const GET = withAuthAndRateLimit(handleGetStats, API_SECURITY_TYPES.API);
 
@@ -68,17 +85,23 @@ async function handleGetStats(request: AuthenticatedRequest) {
     }
 
     // Calculate task statistics
-    const taskStats = {
-      total: tasks?.length || 0,
-      completed: tasks?.filter((t: any) => t.status === 'completed').length || 0,
-      failed: tasks?.filter((t: any) => t.status === 'failed').length || 0,
-      inProgress: tasks?.filter((t: any) => t.status === 'in_progress').length || 0,
-      avgDuration: tasks && tasks.length > 0
-        ? tasks
-            .filter((t: any) => t.actual_duration)
-            .reduce((sum: number, t: any) => sum + t.actual_duration, 0) / 
-            (tasks.filter((t: any) => t.actual_duration).length || 1)
-        : 0
+    const typedTasks = (tasks || []) as DatabaseTask[];
+    const tasksWithDuration = typedTasks.filter(t => 
+      t.actual_duration && 
+      typeof t.actual_duration === 'number' && 
+      !isNaN(t.actual_duration)
+    );
+    
+    const avgDuration = tasksWithDuration.length > 0
+      ? tasksWithDuration.reduce((sum, task) => sum + (task.actual_duration ?? 0), 0) / tasksWithDuration.length
+      : 0;
+    
+    const taskStats: TaskStats = {
+      total: typedTasks.length,
+      completed: typedTasks.filter(t => t.status === 'completed').length,
+      failed: typedTasks.filter(t => t.status === 'failed').length,
+      inProgress: typedTasks.filter(t => t.status === 'in_progress').length,
+      avgDuration: isNaN(avgDuration) ? 0 : Math.round(avgDuration * 100) / 100
     };
 
     return NextResponse.json({

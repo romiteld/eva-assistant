@@ -638,7 +638,7 @@ export function UltraContentCreator() {
                     {results.visuals?.concepts?.map((concept: any, index: number) => (
                       <div key={index} className="space-y-2">
                         <div className="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-                          <Image className="h-12 w-12 text-purple-600" />
+                          <Image className="h-12 w-12 text-purple-600" alt="Visual concept placeholder" />
                         </div>
                         <p className="text-sm font-medium">{concept.concepts?.heroImage?.concept}</p>
                         <p className="text-xs text-muted-foreground">{concept.concepts?.heroImage?.mood}</p>

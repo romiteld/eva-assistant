@@ -111,9 +111,9 @@ export class CompetitorAnalysisAdapter {
       try {
         const scrapeResult = await firecrawlService.scrapeUrl(existing.competitor_url);
 
-        if (scrapeResult?.data) {
+        if (scrapeResult?.content) {
           // Extract competitor intelligence from scraped content
-          const intelligence = this.extractCompetitorIntelligence(scrapeResult.data);
+          const intelligence = this.extractCompetitorIntelligence(scrapeResult.content);
           analysisFindings = {
             ...analysisFindings,
             ...intelligence,
@@ -380,7 +380,7 @@ export class CompetitorAnalysisAdapter {
     if (!content) return [];
 
     const contentLower = content.toLowerCase();
-    const shared = [];
+    const shared: string[] = [];
 
     keywords.forEach(keyword => {
       const keywordLower = keyword.toLowerCase();
@@ -393,7 +393,7 @@ export class CompetitorAnalysisAdapter {
   }
 
   private generateCompetitorReason(result: any, industry: string): string {
-    const shared: any[] = [];
+    const shared: string[] = [];
     const reasons = [
       `Active in ${industry} industry`,
       'Similar target market and services',
@@ -414,6 +414,7 @@ export class CompetitorAnalysisAdapter {
         category: 'technology' as const,
         impact: 'positive',
         relevance: 95,
+        competitors: [],
         recommendations: [
           'Enhance AI capabilities in EVA',
           'Highlight AI features in marketing',
@@ -426,6 +427,7 @@ export class CompetitorAnalysisAdapter {
         category: 'economic' as const,
         impact: 'positive',
         relevance: 88,
+        competitors: [],
         recommendations: [
           'Optimize for remote recruitment workflows',
           'Add video interview features',

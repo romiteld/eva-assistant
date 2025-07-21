@@ -1,9 +1,9 @@
-import { TokenManager } from './token-manager'
+import { TokenManager, type TokenRefreshConfig } from './token-manager'
 import { zoomOAuth } from './zoom-oauth'
 
 class ZoomTokenManager extends TokenManager {
-  constructor() {
-    super('zoom')
+  constructor(encryptionKey: string, refreshConfigs: TokenRefreshConfig) {
+    super(encryptionKey, refreshConfigs)
   }
 
   protected async refreshAccessToken(refreshToken: string): Promise<{
@@ -44,5 +44,7 @@ class ZoomTokenManager extends TokenManager {
   }
 }
 
-// Export singleton instance
-export const zoomTokenManager = new ZoomTokenManager()
+// Export factory function for creating ZoomTokenManager instance
+export function createZoomTokenManager(encryptionKey: string, refreshConfigs: TokenRefreshConfig): ZoomTokenManager {
+  return new ZoomTokenManager(encryptionKey, refreshConfigs)
+}

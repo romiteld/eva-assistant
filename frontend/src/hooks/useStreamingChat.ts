@@ -65,19 +65,53 @@ export function useStreamingChat(options: UseStreamingChatOptions = {}) {
     },
   });
 
+  // Load all sessions
+  const loadSessions = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoadingSessions(true);
+    try {
+      const loadedSessions = await textChatHistory.getSessions();
+      setSessions(loadedSessions);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [user]);
+
+  // Load a specific session
+  const loadSession = useCallback(async (sessionId: string) => {
+    if (!user) return;
+    
+    const session = await textChatHistory.getSession(sessionId);
+    if (session) {
+      setCurrentSession(session);
+      
+      // Load messages for this session
+      const messages = await textChatHistory.getMessages(sessionId);
+      const formattedMessages = messages.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        createdAt: new Date(msg.created_at),
+      }));
+      
+      setMessages(formattedMessages);
+    }
+  }, [user, setMessages]);
+
   // Load sessions on mount if history is enabled
   useEffect(() => {
     if (options.enableHistory && user) {
       loadSessions();
     }
-  }, [options.enableHistory, user]);
+  }, [options.enableHistory, user, loadSessions]);
 
   // Load specific session if sessionId is provided
   useEffect(() => {
     if (options.sessionId && options.enableHistory) {
       loadSession(options.sessionId);
     }
-  }, [options.sessionId, options.enableHistory]);
+  }, [options.sessionId, options.enableHistory, loadSession]);
 
   // Create session on first message if history is enabled
   const ensureSession = async (): Promise<TextChatSession | null> => {
@@ -97,40 +131,6 @@ export function useStreamingChat(options: UseStreamingChatOptions = {}) {
     }
     
     return session;
-  };
-
-  // Load all sessions
-  const loadSessions = async () => {
-    if (!user) return;
-    
-    setIsLoadingSessions(true);
-    try {
-      const loadedSessions = await textChatHistory.getSessions();
-      setSessions(loadedSessions);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
-
-  // Load a specific session
-  const loadSession = async (sessionId: string) => {
-    if (!user) return;
-    
-    const session = await textChatHistory.getSession(sessionId);
-    if (session) {
-      setCurrentSession(session);
-      
-      // Load messages for this session
-      const messages = await textChatHistory.getMessages(sessionId);
-      const formattedMessages = messages.map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        createdAt: new Date(msg.created_at),
-      }));
-      
-      setMessages(formattedMessages);
-    }
   };
 
   // Create a new session

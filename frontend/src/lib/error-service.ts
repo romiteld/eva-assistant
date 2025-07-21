@@ -46,6 +46,20 @@ export interface ErrorStats {
   }
 }
 
+interface ErrorLogRow {
+  id: string
+  message: string
+  category: string
+  severity: string
+  context?: Record<string, any>
+  stack?: string
+  created_at: string
+  user_id?: string
+  session_id?: string
+  user_agent?: string
+  url?: string
+}
+
 class ErrorService {
   private static instance: ErrorService
   private errors: ErrorDetails[] = []
@@ -325,7 +339,7 @@ class ErrorService {
         return []
       }
 
-      return data?.map(row => ({
+      return data?.map((row: ErrorLogRow) => ({
         id: row.id,
         message: row.message,
         category: row.category as ErrorCategory,

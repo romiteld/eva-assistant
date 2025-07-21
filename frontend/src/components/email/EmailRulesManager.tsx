@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,8 @@ import {
   Calendar,
   Tag,
   ArrowRight,
-  Wand2
+  Wand2,
+  Briefcase
 } from 'lucide-react';
 import { AutomationRule, RuleCondition, RuleAction } from '@/lib/automation/email-rules';
 import { supabase } from '@/lib/supabase/browser';
@@ -160,10 +161,13 @@ const actionTypes = [
   { value: 'update_deal', label: 'Update Deal', icon: <Edit className="w-4 h-4" /> },
   { value: 'create_contact', label: 'Create Contact', icon: <Users className="w-4 h-4" /> },
   { value: 'parse_resume', label: 'Parse Resume', icon: <FileText className="w-4 h-4" /> },
+  { value: 'match_to_jobs', label: 'Match to Jobs', icon: <Briefcase className="w-4 h-4" /> },
   { value: 'notify', label: 'Send Notification', icon: <AlertCircle className="w-4 h-4" /> },
   { value: 'send_reply', label: 'Send Reply', icon: <Mail className="w-4 h-4" /> },
   { value: 'create_task', label: 'Create Task', icon: <Calendar className="w-4 h-4" /> },
-  { value: 'add_tag', label: 'Add Tag', icon: <Tag className="w-4 h-4" /> }
+  { value: 'add_tag', label: 'Add Tag', icon: <Tag className="w-4 h-4" /> },
+  { value: 'assign_to', label: 'Assign To', icon: <Users className="w-4 h-4" /> },
+  { value: 'log_activity', label: 'Log Activity', icon: <FileText className="w-4 h-4" /> }
 ];
 
 export function EmailRulesManager() {
@@ -177,7 +181,7 @@ export function EmailRulesManager() {
   const [testResults, setTestResults] = useState<any>(null);
 
   // Load rules
-  const loadRules = async () => {
+  const loadRules = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -208,11 +212,11 @@ export function EmailRulesManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadRules();
-  }, [user]);
+  }, [loadRules]);
 
   // Create or update rule
   const saveRule = async (rule: Partial<AutomationRule>) => {

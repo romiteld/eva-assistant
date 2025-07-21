@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,14 +35,7 @@ export function WaitingRoomManager({ meetingId, accessToken }: WaitingRoomManage
   const [error, setError] = useState<string | null>(null)
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([])
 
-  useEffect(() => {
-    loadWaitingRoomParticipants()
-    // Poll for updates every 5 seconds
-    const interval = setInterval(loadWaitingRoomParticipants, 5000)
-    return () => clearInterval(interval)
-  }, [meetingId])
-
-  const loadWaitingRoomParticipants = async () => {
+  const loadWaitingRoomParticipants = useCallback(async () => {
     try {
       const response = await fetch(`/api/zoom/meetings/${meetingId}/waiting-room`, {
         headers: {
@@ -62,7 +55,14 @@ export function WaitingRoomManager({ meetingId, accessToken }: WaitingRoomManage
     } finally {
       setLoading(false)
     }
-  }
+  }, [meetingId, accessToken])
+
+  useEffect(() => {
+    loadWaitingRoomParticipants()
+    // Poll for updates every 5 seconds
+    const interval = setInterval(loadWaitingRoomParticipants, 5000)
+    return () => clearInterval(interval)
+  }, [loadWaitingRoomParticipants])
 
   const admitParticipant = async (participantId: string) => {
     try {

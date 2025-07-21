@@ -264,24 +264,24 @@ export default function AnalyticsDashboard() {
     }
   };
 
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        fetchOverviewMetrics(),
+        fetchLeadMetrics(),
+        fetchCampaignMetrics(),
+        fetchAgentMetrics(),
+        fetchUserMetrics(),
+      ]);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAllData = async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([
-          fetchOverviewMetrics(),
-          fetchLeadMetrics(),
-          fetchCampaignMetrics(),
-          fetchAgentMetrics(),
-          fetchUserMetrics(),
-        ]);
-      } catch (error) {
-        console.error('Error fetching analytics data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);

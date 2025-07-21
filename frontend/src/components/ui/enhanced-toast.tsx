@@ -124,7 +124,7 @@ export function useEnhancedToast() {
       try {
         const result = await promise;
         originalToast({
-          id: toastId.id,
+          id: toastId,
           title: typeof messages.success === 'function' 
             ? messages.success(result) 
             : messages.success,
@@ -134,7 +134,7 @@ export function useEnhancedToast() {
         return result;
       } catch (error) {
         originalToast({
-          id: toastId.id,
+          id: toastId,
           title: typeof messages.error === 'function'
             ? messages.error(error)
             : messages.error,

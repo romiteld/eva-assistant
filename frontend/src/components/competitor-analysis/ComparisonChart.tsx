@@ -215,7 +215,7 @@ export function ComparisonChart({ competitorIds }: ComparisonChartProps) {
   };
   
     loadComparisonData();
-  }, [competitorIds]);
+  }, [competitorIds, service]);
 
   const getCompetitorName = (competitorId: string): string => {
     return competitors.find(c => c.id === competitorId)?.name || 'Unknown';

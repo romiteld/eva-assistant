@@ -107,7 +107,7 @@ export function RecruiterDashboard() {
     avgRevenuePerRecruiter: recruiters.filter(r => r.is_active).length > 0
       ? recruiters.reduce((sum: number, r: RecruiterDashboardType) => sum + r.recent_revenue, 0) / recruiters.filter((r: RecruiterDashboardType) => r.is_active).length
       : 0,
-    utilizationRate: recruiters.filter(r => r.is_active && r.active_candidates > 0).length / Math.max(recruiters.filter(r => r.is_active).length, 1) * 100,
+    utilizationRate: recruiters.filter(r => r.is_active && r.active_contacts > 0).length / Math.max(recruiters.filter(r => r.is_active).length, 1) * 100,
   };
 
   // Calculate performance distribution
@@ -126,7 +126,7 @@ export function RecruiterDashboard() {
   // At-risk recruiters (low activity or revenue)
   const atRiskRecruiters = recruiters.filter(r => 
     r.is_active && 
-    (r.recent_placements === 0 || r.active_candidates < 2)
+    (r.recent_placements === 0 || r.active_contacts < 2)
   );
 
   const performanceTierColors = {
@@ -449,7 +449,7 @@ export function RecruiterDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium">{recruiter.active_candidates}</div>
+                          <div className="text-sm font-medium">{recruiter.active_contacts}</div>
                           <div className="text-xs text-muted-foreground">active</div>
                         </div>
                       </td>

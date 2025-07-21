@@ -87,7 +87,7 @@ export default function TestGeminiAPIPage() {
       setResult(prev => prev + `\n\nPotential Live/Streaming Models:\n${JSON.stringify(liveModels, null, 2)}`);
 
     } catch (error) {
-      setResult(`Error: ${error.message}`);
+      setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }

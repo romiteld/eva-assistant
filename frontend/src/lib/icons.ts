@@ -1,77 +1,171 @@
-// Optimized icon imports - only import what we use
-export { TrendingUp } from 'lucide-react/dist/esm/icons/trending-up';
-export { TrendingDown } from 'lucide-react/dist/esm/icons/trending-down';
-export { Users } from 'lucide-react/dist/esm/icons/users';
-export { Mail } from 'lucide-react/dist/esm/icons/mail';
-export { Briefcase } from 'lucide-react/dist/esm/icons/briefcase';
-export { CheckCircle } from 'lucide-react/dist/esm/icons/check-circle';
-export { Clock } from 'lucide-react/dist/esm/icons/clock';
-export { Zap } from 'lucide-react/dist/esm/icons/zap';
-export { BarChart3 } from 'lucide-react/dist/esm/icons/bar-chart-3';
-export { RefreshCw } from 'lucide-react/dist/esm/icons/refresh-cw';
-export { Download } from 'lucide-react/dist/esm/icons/download';
-export { Filter } from 'lucide-react/dist/esm/icons/filter';
-export { Settings } from 'lucide-react/dist/esm/icons/settings';
-export { Search } from 'lucide-react/dist/esm/icons/search';
-export { Plus } from 'lucide-react/dist/esm/icons/plus';
-export { Minus } from 'lucide-react/dist/esm/icons/minus';
-export { Edit } from 'lucide-react/dist/esm/icons/edit';
-export { Trash2 } from 'lucide-react/dist/esm/icons/trash-2';
-export { Save } from 'lucide-react/dist/esm/icons/save';
-export { X } from 'lucide-react/dist/esm/icons/x';
-export { Home } from 'lucide-react/dist/esm/icons/home';
-export { Menu } from 'lucide-react/dist/esm/icons/menu';
-export { ChevronDown } from 'lucide-react/dist/esm/icons/chevron-down';
-export { ChevronUp } from 'lucide-react/dist/esm/icons/chevron-up';
-export { ChevronLeft } from 'lucide-react/dist/esm/icons/chevron-left';
-export { ChevronRight } from 'lucide-react/dist/esm/icons/chevron-right';
-export { ArrowLeft } from 'lucide-react/dist/esm/icons/arrow-left';
-export { ArrowRight } from 'lucide-react/dist/esm/icons/arrow-right';
-export { Calendar } from 'lucide-react/dist/esm/icons/calendar';
-export { FileText } from 'lucide-react/dist/esm/icons/file-text';
-export { Loader2 } from 'lucide-react/dist/esm/icons/loader-2';
-export { AlertCircle } from 'lucide-react/dist/esm/icons/alert-circle';
-export { CheckCircle2 } from 'lucide-react/dist/esm/icons/check-circle-2';
-export { Info } from 'lucide-react/dist/esm/icons/info';
-export { ExternalLink } from 'lucide-react/dist/esm/icons/external-link';
-export { Copy } from 'lucide-react/dist/esm/icons/copy';
-export { Eye } from 'lucide-react/dist/esm/icons/eye';
-export { EyeOff } from 'lucide-react/dist/esm/icons/eye-off';
-export { Star } from 'lucide-react/dist/esm/icons/star';
-export { Heart } from 'lucide-react/dist/esm/icons/heart';
-export { Share } from 'lucide-react/dist/esm/icons/share';
-export { Bookmark } from 'lucide-react/dist/esm/icons/bookmark';
-export { Bell } from 'lucide-react/dist/esm/icons/bell';
-export { User } from 'lucide-react/dist/esm/icons/user';
-export { LogOut } from 'lucide-react/dist/esm/icons/log-out';
-export { LogIn } from 'lucide-react/dist/esm/icons/log-in';
-export { Lock } from 'lucide-react/dist/esm/icons/lock';
-export { Unlock } from 'lucide-react/dist/esm/icons/unlock';
-export { Shield } from 'lucide-react/dist/esm/icons/shield';
-export { ShieldCheck } from 'lucide-react/dist/esm/icons/shield-check';
-export { Database } from 'lucide-react/dist/esm/icons/database';
-export { Server } from 'lucide-react/dist/esm/icons/server';
-export { Cloud } from 'lucide-react/dist/esm/icons/cloud';
-export { Wifi } from 'lucide-react/dist/esm/icons/wifi';
-export { WifiOff } from 'lucide-react/dist/esm/icons/wifi-off';
-export { Activity } from 'lucide-react/dist/esm/icons/activity';
-export { Cpu } from 'lucide-react/dist/esm/icons/cpu';
-export { HardDrive } from 'lucide-react/dist/esm/icons/hard-drive';
-export { Monitor } from 'lucide-react/dist/esm/icons/monitor';
-export { Smartphone } from 'lucide-react/dist/esm/icons/smartphone';
-export { Tablet } from 'lucide-react/dist/esm/icons/tablet';
-export { Laptop } from 'lucide-react/dist/esm/icons/laptop';
-export { Phone } from 'lucide-react/dist/esm/icons/phone';
-export { Globe } from 'lucide-react/dist/esm/icons/globe';
-export { MapPin } from 'lucide-react/dist/esm/icons/map-pin';
-export { Navigation } from 'lucide-react/dist/esm/icons/navigation';
-export { Compass } from 'lucide-react/dist/esm/icons/compass';
-export { Target } from 'lucide-react/dist/esm/icons/target';
-export { Crosshair } from 'lucide-react/dist/esm/icons/crosshair';
-export { Maximize } from 'lucide-react/dist/esm/icons/maximize';
-export { Minimize } from 'lucide-react/dist/esm/icons/minimize';
-export { MoreHorizontal } from 'lucide-react/dist/esm/icons/more-horizontal';
-export { MoreVertical } from 'lucide-react/dist/esm/icons/more-vertical';
+// All icons imported from main lucide-react package
+export {
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  Anchor,
+  Apple,
+  Archive,
+  ArrowLeft,
+  ArrowRight,
+  AtSign,
+  Award,
+  CircleDot,
+  BarChart,
+  BarChart3,
+  Battery,
+  Beer,
+  Bell,
+  Book,
+  BookOpen,
+  Bookmark,
+  Briefcase,
+  Brush,
+  Cake,
+  Calendar,
+  Camera,
+  CameraOff,
+  Carrot,
+  CheckCircle,
+  CheckCircle2,
+  CheckSquare,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Circle,
+  Clock,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  Coffee,
+  Compass,
+  Cookie,
+  Copy,
+  Cpu,
+  CreditCard,
+  Crosshair,
+  Crown,
+  Database,
+  DollarSign,
+  Download,
+  Droplet,
+  Edit,
+  Euro,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  File,
+  FileText,
+  Filter,
+  Flame,
+  Flag,
+  Folder,
+  Gamepad2,
+  Gift,
+  Globe,
+  HardDrive,
+  Hash,
+  Headphones,
+  Heart,
+  HelpCircle,
+  Hexagon,
+  Home,
+  Image,
+  Inbox,
+  Info,
+  Keyboard,
+  Laptop,
+  Link,
+  Loader2,
+  Lock,
+  LogIn,
+  LogOut,
+  Mail,
+  Map,
+  MapPin,
+  Maximize,
+  Medal,
+  Menu,
+  MessageSquare,
+  Mic,
+  MicOff,
+  Minimize,
+  Minus,
+  Monitor,
+  Moon,
+  MoreHorizontal,
+  MoreVertical,
+  Mouse,
+  Music,
+  Navigation,
+  Newspaper,
+  Octagon,
+  Package,
+  Palette,
+  Paperclip,
+  PartyPopper,
+  Pause,
+  PenTool,
+  Percent,
+  Phone,
+  PhoneOff,
+  PieChart,
+  Pizza,
+  Play,
+  Plus,
+  PoundSterling,
+  Printer,
+  Radio,
+  RefreshCw,
+  Rocket,
+  Save,
+  Scissors,
+  Search,
+  Send,
+  Server,
+  Settings,
+  Share,
+  Shield,
+  ShieldCheck,
+  ShoppingCart,
+  SkipBack,
+  SkipForward,
+  Smartphone,
+  Snowflake,
+  Sparkles,
+  Speaker,
+  Square,
+  Star,
+  Sun,
+  Tablet,
+  Tag,
+  Tags,
+  Target,
+  Thermometer,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Triangle,
+  Trophy,
+  Tv,
+  Umbrella,
+  Unlock,
+  Upload,
+  User,
+  Users,
+  Video,
+  Volume2,
+  VolumeX,
+  Watch,
+  Wifi,
+  WifiOff,
+  Wind,
+  Wine,
+  X,
+  XCircle,
+  Zap
+} from 'lucide-react';
 
 // Common icon props type
 export type IconProps = {

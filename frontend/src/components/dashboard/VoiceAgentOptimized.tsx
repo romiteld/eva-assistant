@@ -15,12 +15,13 @@ import {
   Brain,
   Zap
 } from 'lucide-react'
+import { VoiceType } from '@/types/voice'
 
 // Lazy load heavy AI components
 const GeminiLiveChat = lazy(() => import('./GeminiLiveChat'))
 const VoiceProcessingEngine = lazy(() => import('./VoiceProcessingEngine'))
 const AIModelSelector = lazy(() => import('./AIModelSelector'))
-const VoiceSettings = lazy(() => import('./VoiceSettings'))
+const VoiceSettings = lazy(() => import('../voice/VoiceSettings').then(module => ({ default: module.VoiceSettings })))
 
 // Reduced motion variants for performance
 const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -218,8 +219,14 @@ export default function VoiceAgentOptimized({ className = "" }: VoiceAgentProps)
   const [selectedTab, setSelectedTab] = React.useState<'main' | 'models' | 'settings'>('main')
   const [volume, setVolume] = React.useState(0)
   const [loadedComponents, setLoadedComponents] = React.useState<Set<string>>(new Set())
+  const [selectedVoice, setSelectedVoice] = React.useState<VoiceType>(VoiceType.PUCK)
+  const [isConnected, setIsConnected] = React.useState(false)
 
   // Memoized handlers
+  const handleVoiceChange = useCallback((voice: VoiceType) => {
+    setSelectedVoice(voice)
+  }, [])
+
   const handleVoiceToggle = useCallback(() => {
     setIsRecording(prev => !prev)
     if (!isRecording) {
@@ -385,7 +392,11 @@ export default function VoiceAgentOptimized({ className = "" }: VoiceAgentProps)
             transition={{ duration: reduceMotion ? 0.1 : 0.3 }}
           >
             <Suspense fallback={<VoiceLoader name="Voice Settings" />}>
-              <VoiceSettings />
+              <VoiceSettings 
+                selectedVoice={selectedVoice}
+                onVoiceChange={handleVoiceChange}
+                isConnected={isConnected}
+              />
             </Suspense>
           </motion.div>
         )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Mail, Edit, Trash2, Copy, Send, Filter, Search, 
   Tag, Clock, BarChart3, Plus 
@@ -48,8 +48,7 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
     templateName: string;
   }>({ open: false, templateId: null, templateName: '' });
 
-  useEffect(() => {
-    const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     setIsLoading(true);
     try {
       const filters = selectedCategory !== 'all' ? { category: selectedCategory } : undefined;
@@ -65,10 +64,11 @@ export function EmailTemplateList({ onEdit, onCreate, refresh }: EmailTemplateLi
     } finally {
       setIsLoading(false);
     }
-  };
-  
+  }, [selectedCategory, toast]);
+
+  useEffect(() => {
     loadTemplates();
-  }, [selectedCategory, refresh]);
+  }, [selectedCategory, refresh, loadTemplates]);
 
   const handleDelete = async (templateId: string, templateName: string) => {
     setDeleteConfirmation({ open: true, templateId, templateName });

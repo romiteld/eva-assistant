@@ -4,11 +4,14 @@ import {
   Users, Mail, Briefcase, CheckCircle, 
   Clock, Zap, BarChart3, Globe 
 } from '@/lib/icons';
+import { LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MetricData } from '@/types/analytics';
 import { cn } from '@/lib/utils';
 
-const iconMap: Record<string, any> = {
+type IconMapKey = 'users' | 'mail' | 'briefcase' | 'checkCircle' | 'clock' | 'zap' | 'barChart' | 'globe';
+
+const iconMap: Record<IconMapKey, LucideIcon> = {
   users: Users,
   mail: Mail,
   briefcase: Briefcase,
@@ -25,7 +28,7 @@ interface MetricsCardProps {
 }
 
 const MetricsCard = memo(function MetricsCard({ metric, className }: MetricsCardProps) {
-  const Icon = metric.icon ? iconMap[metric.icon] : BarChart3;
+  const Icon = metric.icon && metric.icon in iconMap ? iconMap[metric.icon as IconMapKey] : BarChart3;
   
   const getTrendIcon = () => {
     if (!metric.change) return null;
@@ -52,6 +55,11 @@ const MetricsCard = memo(function MetricsCard({ metric, className }: MetricsCard
   };
   
   const formatValue = (value: number, unit?: string) => {
+    // Handle NaN, undefined, or null values
+    if (value === null || value === undefined || isNaN(value)) {
+      return unit === 'percent' ? '0%' : unit === 'time' ? '0s' : unit === 'currency' ? '$0' : '0';
+    }
+    
     if (unit === 'percent') {
       return `${value}%`;
     } else if (unit === 'time') {
@@ -78,10 +86,10 @@ const MetricsCard = memo(function MetricsCard({ metric, className }: MetricsCard
               <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
                 {formatValue(metric.value, metric.unit)}
               </p>
-              {metric.change !== undefined && (
+              {metric.change !== undefined && !isNaN(metric.change) && (
                 <div className={cn("flex items-center space-x-1 text-sm", getTrendColor())}>
                   {getTrendIcon()}
-                  <span>{Math.abs(metric.change)}%</span>
+                  <span>{Math.abs(metric.change).toFixed(1)}%</span>
                 </div>
               )}
             </div>

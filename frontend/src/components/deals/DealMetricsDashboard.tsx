@@ -60,7 +60,7 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
   if (!data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">No data available</div>
+        <div className="text-gray-400">No data available</div>
       </div>
     );
   }
@@ -92,7 +92,7 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="24h">Last 24 Hours</option>
             <option value="7d">Last 7 Days</option>
@@ -102,42 +102,42 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
           <button
             onClick={() => fetchData(timeRange)}
             disabled={isLoading}
-            className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="p-2 text-gray-400 hover:text-gray-300 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900">
+        <button className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-gray-300">
           <Download className="w-4 h-4" />
           Export Report
         </button>
       </div>
 
       {/* Performance Score */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Performance Score</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className="text-lg font-semibold text-white mb-2">Performance Score</h3>
+            <p className="text-sm text-gray-400">
               Percentage of deals created in under 30 seconds
             </p>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600">{performanceScore}%</div>
-            <div className="text-sm text-gray-600 mt-1">
+            <div className="text-4xl font-bold text-purple-400">{performanceScore}%</div>
+            <div className="text-sm text-gray-400 mt-1">
               {data.summary.under30s} of {data.summary.totalDeals} deals
             </div>
           </div>
         </div>
         
         <div className="mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-700 rounded-full h-3">
             <div
               className={`h-3 rounded-full transition-all ${
-                performanceScore >= 80 ? 'bg-green-500' :
-                performanceScore >= 60 ? 'bg-yellow-500' :
-                'bg-red-500'
+                performanceScore >= 80 ? 'bg-green-400' :
+                performanceScore >= 60 ? 'bg-yellow-400' :
+                'bg-red-400'
               }`}
               style={{ width: `${performanceScore}%` }}
             />
@@ -148,9 +148,9 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Creation Time Trend */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-600" />
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-blue-400" />
             Creation Time Trend
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -180,9 +180,9 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
         </div>
 
         {/* Source Distribution */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-purple-600" />
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-purple-400" />
             Deals by Source
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -207,9 +207,9 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
         </div>
 
         {/* Average Time by Source */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-orange-600" />
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-orange-400" />
             Average Time by Source
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -224,27 +224,27 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
         </div>
 
         {/* Recent Deals Table */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-green-600" />
+        <div className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-green-400" />
             Recent Deal Creations
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {data.recentDeals?.map((deal: any, index: number) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b">
+              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-700">
                 <div>
-                  <div className="text-sm font-medium">{deal.dealId}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm font-medium text-white">{deal.dealId}</div>
+                  <div className="text-xs text-gray-400">
                     {new Date(deal.createdAt).toLocaleString()}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className={`text-sm font-medium ${
-                    deal.duration < 30000 ? 'text-green-600' : 'text-orange-600'
+                    deal.duration < 30000 ? 'text-green-400' : 'text-orange-400'
                   }`}>
                     {(deal.duration / 1000).toFixed(1)}s
                   </div>
-                  <div className="text-xs text-gray-500 capitalize">{deal.source}</div>
+                  <div className="text-xs text-gray-400 capitalize">{deal.source}</div>
                 </div>
               </div>
             ))}
@@ -253,12 +253,12 @@ export const DealMetricsDashboard: React.FC<DealMetricsDashboardProps> = ({ data
       </div>
 
       {/* Insights */}
-      <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-200">
-        <h3 className="font-semibold text-yellow-900 mb-3 flex items-center gap-2">
+      <div className="bg-yellow-500/10 backdrop-blur-xl rounded-xl p-6 border border-yellow-500/20">
+        <h3 className="font-semibold text-yellow-300 mb-3 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
           Performance Insights
         </h3>
-        <div className="space-y-2 text-sm text-yellow-800">
+        <div className="space-y-2 text-sm text-yellow-200">
           {performanceScore < 60 && (
             <div>• Consider optimizing your Zoho API integration to improve speed</div>
           )}

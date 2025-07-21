@@ -5,23 +5,10 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase/browser';
-
-// Dynamic imports for Three.js to reduce initial bundle size
-const loadThreeJS = async () => {
-  const [
-    THREE,
-    { EffectComposer },
-    { RenderPass },
-    { UnrealBloomPass }
-  ] = await Promise.all([
-    import('three'),
-    import('three/examples/jsm/postprocessing/EffectComposer.js'),
-    import('three/examples/jsm/postprocessing/RenderPass.js'),
-    import('three/examples/jsm/postprocessing/UnrealBloomPass.js')
-  ]);
-  
-  return { THREE: THREE.default || THREE, EffectComposer, RenderPass, UnrealBloomPass };
-};
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 // Audio Analyser class
 class AudioAnalyser {
@@ -161,10 +148,8 @@ export function EVAVoiceInterface() {
 
     let cleanup: (() => void) | null = null;
     
-    const initializeScene = async () => {
+    const initializeScene = () => {
       try {
-        // Load Three.js dynamically
-        const { THREE, EffectComposer, RenderPass, UnrealBloomPass } = await loadThreeJS();
         
         // Get container dimensions
         const container = mountRef.current;
@@ -584,7 +569,7 @@ export function EVAVoiceInterface() {
     composer.addPass(renderPass);
 
     const bloomPass = new UnrealBloomPass(
-      { x: width, y: height },
+      new THREE.Vector2(width, height),
       2.5,
       0.8,
       0.1
@@ -646,13 +631,13 @@ export function EVAVoiceInterface() {
     const ctx = canvas.getContext('2d');
     
     // Create soft circular gradient
-    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    const gradient = ctx!.createRadialGradient(16, 16, 0, 16, 16, 16);
     gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
     gradient.addColorStop(0.7, 'rgba(255,255,255,0.3)');
     gradient.addColorStop(1, 'rgba(255,255,255,0)');
     
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 32, 32);
+    ctx!.fillStyle = gradient;
+    ctx!.fillRect(0, 0, 32, 32);
     
     const particleTexture = new THREE.CanvasTexture(canvas);
     
@@ -865,6 +850,8 @@ export function EVAVoiceInterface() {
       console.error('Failed to connect WebSocket:', err);
       setError('Connection failed');
     });
+    // connectWebSocket is defined locally and contains complex logic
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Connect to WebSocket
@@ -1266,6 +1253,8 @@ export function EVAVoiceInterface() {
         saveConversation();
       }
     };
+    // saveConversation is included in cleanup, not as a dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
 
   // Helper functions

@@ -117,7 +117,7 @@ export function useAIStreaming(options: UseAIStreamingOptions = {}) {
     return () => {
       unsubscribe.forEach(unsub => unsub());
     };
-  }, [isConnected, on, options]);
+  }, [isConnected, on, options.onChunk, options.onComplete, options.onError]);
 
   // Start a new stream
   const startStream = useCallback(async (request: StreamRequest): Promise<string> => {

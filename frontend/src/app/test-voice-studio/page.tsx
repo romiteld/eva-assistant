@@ -28,7 +28,7 @@ export default function TestVoiceStudioPage() {
         setTests(prev => ({ ...prev, auth: { status: 'error', message: 'Not authenticated' } }));
       }
     } catch (error) {
-      setTests(prev => ({ ...prev, auth: { status: 'error', message: error.message } }));
+      setTests(prev => ({ ...prev, auth: { status: 'error', message: error instanceof Error ? error.message : String(error) } }));
     }
 
     // Test 2: Check Supabase connection
@@ -37,7 +37,7 @@ export default function TestVoiceStudioPage() {
       if (error) throw error;
       setTests(prev => ({ ...prev, supabase: { status: 'success', message: 'Connected to Supabase' } }));
     } catch (error) {
-      setTests(prev => ({ ...prev, supabase: { status: 'error', message: error.message } }));
+      setTests(prev => ({ ...prev, supabase: { status: 'error', message: error instanceof Error ? error.message : String(error) } }));
     }
 
     // Test 3: Check Gemini API key
@@ -66,21 +66,24 @@ export default function TestVoiceStudioPage() {
         }
       }
     } catch (error) {
-      setTests(prev => ({ ...prev, edgeFunction: { status: 'error', message: error.message } }));
+      setTests(prev => ({ ...prev, edgeFunction: { status: 'error', message: error instanceof Error ? error.message : String(error) } }));
     }
 
     // Test 5: Check AudioContext support
     try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContext) {
-        const ctx = new AudioContext();
+      // Properly type webkitAudioContext for Safari compatibility
+      const AudioContextConstructor = window.AudioContext || 
+        (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      
+      if (AudioContextConstructor) {
+        const ctx = new AudioContextConstructor();
         await ctx.close();
         setTests(prev => ({ ...prev, audioContext: { status: 'success', message: 'AudioContext supported' } }));
       } else {
         setTests(prev => ({ ...prev, audioContext: { status: 'error', message: 'AudioContext not supported' } }));
       }
     } catch (error) {
-      setTests(prev => ({ ...prev, audioContext: { status: 'error', message: error.message } }));
+      setTests(prev => ({ ...prev, audioContext: { status: 'error', message: error instanceof Error ? error.message : String(error) } }));
     }
 
     // Test 6: Check microphone permissions
@@ -118,7 +121,7 @@ export default function TestVoiceStudioPage() {
         setTests(prev => ({ ...prev, database: { status: 'success', message: 'Can write to database' } }));
       }
     } catch (error) {
-      setTests(prev => ({ ...prev, database: { status: 'error', message: error.message } }));
+      setTests(prev => ({ ...prev, database: { status: 'error', message: error instanceof Error ? error.message : String(error) } }));
     }
   };
 

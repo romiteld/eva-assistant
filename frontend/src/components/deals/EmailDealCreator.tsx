@@ -114,12 +114,12 @@ export const EmailDealCreator: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+      <div className="bg-blue-500/10 backdrop-blur-xl rounded-lg p-4 border border-blue-500/20">
         <div className="flex items-start gap-3">
-          <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
+          <Mail className="w-5 h-5 text-blue-400 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-900 mb-1">How to create deals from emails</h3>
-            <ol className="space-y-1 text-sm text-blue-800">
+            <h3 className="font-semibold text-blue-300 mb-1">How to create deals from emails</h3>
+            <ol className="space-y-1 text-sm text-blue-200">
               <li>1. Copy the entire email (including From: and Subject: lines)</li>
               <li>2. Paste it into the box below</li>
               <li>3. Our AI will analyze and extract deal information</li>
@@ -133,24 +133,24 @@ export const EmailDealCreator: React.FC = () => {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               From Email
             </label>
             <input
               type="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="client@company.com"
               value={emailContent.from}
               onChange={(e) => setEmailContent({ ...emailContent, from: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Subject
             </label>
             <input
               type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Urgent: Need Senior Developer ASAP"
               value={emailContent.subject}
               onChange={(e) => setEmailContent({ ...emailContent, subject: e.target.value })}
@@ -159,11 +159,11 @@ export const EmailDealCreator: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
             Email Content
           </label>
           <textarea
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             rows={8}
             placeholder="Paste the full email content here..."
             value={emailContent.content}
@@ -176,7 +176,7 @@ export const EmailDealCreator: React.FC = () => {
           <button
             onClick={() => handleAnalyze()}
             disabled={!emailContent.content || isAnalyzing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isAnalyzing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -187,7 +187,7 @@ export const EmailDealCreator: React.FC = () => {
           </button>
 
           <button
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-800"
             onClick={() => {
               setEmailContent({ from: '', subject: '', content: '' });
               setPreview(null);
@@ -200,45 +200,45 @@ export const EmailDealCreator: React.FC = () => {
 
       {/* AI Analysis Preview */}
       {preview && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-purple-600" />
+        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-purple-400" />
             AI Analysis Results
           </h3>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Suggested Deal Name</div>
-              <div className="font-medium">{preview.suggestedName}</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Suggested Deal Name</div>
+              <div className="font-medium text-white">{preview.suggestedName}</div>
             </div>
             
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Stage</div>
-              <div className="font-medium">{preview.stage}</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Stage</div>
+              <div className="font-medium text-white">{preview.stage}</div>
             </div>
             
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Urgency Level</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Urgency Level</div>
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  preview.urgency === 'urgent' ? 'bg-red-500' :
-                  preview.urgency === 'high' ? 'bg-orange-500' :
-                  preview.urgency === 'medium' ? 'bg-yellow-500' :
-                  'bg-green-500'
+                  preview.urgency === 'urgent' ? 'bg-red-400' :
+                  preview.urgency === 'high' ? 'bg-orange-400' :
+                  preview.urgency === 'medium' ? 'bg-yellow-400' :
+                  'bg-green-400'
                 }`} />
-                <span className="font-medium capitalize">{preview.urgency}</span>
+                <span className="font-medium capitalize text-white">{preview.urgency}</span>
               </div>
             </div>
             
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Deal Type</div>
-              <div className="font-medium">{preview.dealType || 'Standard'}</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-1">Deal Type</div>
+              <div className="font-medium text-white">{preview.dealType || 'Standard'}</div>
             </div>
             
             {preview.estimatedAmount && (
-              <div className="bg-white rounded-lg p-4 col-span-2">
-                <div className="text-sm text-gray-600 mb-1">Estimated Value</div>
-                <div className="font-medium text-lg">${preview.estimatedAmount.toLocaleString()}</div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 col-span-2">
+                <div className="text-sm text-gray-400 mb-1">Estimated Value</div>
+                <div className="font-medium text-lg text-white">${preview.estimatedAmount.toLocaleString()}</div>
               </div>
             )}
           </div>
@@ -265,8 +265,8 @@ export const EmailDealCreator: React.FC = () => {
       )}
 
       {/* Sample Email Templates */}
-      <div className="border-t pt-6">
-        <h3 className="font-semibold text-gray-900 mb-3">Sample Email Templates</h3>
+      <div className="border-t border-gray-700 pt-6">
+        <h3 className="font-semibold text-white mb-3">Sample Email Templates</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button
             onClick={() => {
@@ -294,10 +294,10 @@ VP of Engineering, TechCorp`
               setEmailContent(sample);
               handleAnalyze(sample);
             }}
-            className="text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="text-left p-4 border border-gray-600 bg-gray-800/50 rounded-lg hover:bg-gray-800"
           >
-            <div className="font-medium text-sm mb-1">Urgent Placement Request</div>
-            <div className="text-xs text-gray-600">High-priority permanent role with budget</div>
+            <div className="font-medium text-sm mb-1 text-white">Urgent Placement Request</div>
+            <div className="text-xs text-gray-400">High-priority permanent role with budget</div>
           </button>
 
           <button
@@ -322,10 +322,10 @@ Sarah`
               setEmailContent(sample);
               handleAnalyze(sample);
             }}
-            className="text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="text-left p-4 border border-gray-600 bg-gray-800/50 rounded-lg hover:bg-gray-800"
           >
-            <div className="font-medium text-sm mb-1">Contract Opportunity</div>
-            <div className="text-xs text-gray-600">Short-term project with flexible timeline</div>
+            <div className="font-medium text-sm mb-1 text-white">Contract Opportunity</div>
+            <div className="text-xs text-gray-400">Short-term project with flexible timeline</div>
           </button>
         </div>
       </div>

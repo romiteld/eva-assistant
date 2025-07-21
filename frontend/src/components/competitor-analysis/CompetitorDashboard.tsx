@@ -99,6 +99,8 @@ export function CompetitorDashboard() {
     return () => {
       service.removeAllListeners();
     };
+    // Event handlers and load functions are defined locally
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
   // Load competitors

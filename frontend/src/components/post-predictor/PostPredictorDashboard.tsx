@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3,
@@ -41,13 +41,9 @@ export function PostPredictorDashboard({ userId }: PostPredictorDashboardProps) 
   const [timeRange, setTimeRange] = useState(30);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'trends' | 'insights'>('overview');
   const { toast } = useToast();
-  const postPredictorService = new PostPredictorService();
+  const postPredictorService = useMemo(() => new PostPredictorService(), []);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [userId, timeRange]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await postPredictorService.getAnalytics(userId, timeRange);
@@ -62,7 +58,11 @@ export function PostPredictorDashboard({ userId }: PostPredictorDashboardProps) 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, timeRange, postPredictorService, toast]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   const handleRefresh = () => {
     loadAnalytics();

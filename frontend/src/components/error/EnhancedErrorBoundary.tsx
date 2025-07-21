@@ -39,7 +39,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     return { 
       hasError: true, 
       error,
-      errorCount: (prevState?.errorCount || 0) + 1
+      errorCount: 1
     };
   }
 
@@ -50,9 +50,10 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
     
     // Update state with error details
-    this.setState({
-      errorInfo
-    });
+    this.setState(prevState => ({
+      errorInfo,
+      errorCount: prevState.errorCount + 1
+    }));
 
     // Log to error reporting service
     if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {

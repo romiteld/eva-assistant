@@ -87,7 +87,7 @@ export class StorageSetupService {
       return data
     } catch (error) {
       console.error('Storage cleanup error:', error)
-      throw new Error(`Failed to cleanup temp files: ${error.message}`)
+      throw new Error(`Failed to cleanup temp files: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

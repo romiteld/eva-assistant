@@ -35,22 +35,6 @@ export async function GET(request: NextRequest) {
       message: 'Use /api/auth/microsoft/token for secure token exchange',
       redirect: `${requestUrl.origin}/login?error=deprecated_endpoint`
     }, { status: 410 }) // Gone
-
-    const data = await response.json()
-    
-    if (data.error) {
-      console.error('Token exchange error:', data)
-      return NextResponse.redirect(`${requestUrl.origin}/login?error=token_exchange_failed`)
-    }
-
-    // Now we have the tokens, but we need to create a Supabase session
-    // This is where it gets complex because Supabase expects to handle the entire OAuth flow
-    
-    return NextResponse.json({ 
-      message: 'PKCE OAuth successful!', 
-      data,
-      note: 'This proves Microsoft OAuth works, but Supabase needs to handle the flow'
-    })
     
   } catch (error) {
     console.error('Callback error:', error)

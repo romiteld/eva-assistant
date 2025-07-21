@@ -15,7 +15,8 @@ const pipelineAsync = promisify(pipeline);
 async function scanFileForViruses(filePath: string): Promise<boolean> {
   // TODO: Implement actual virus scanning
   // For now, check for suspicious patterns in file headers
-  const buffer = await fs.readFile(filePath, { length: 512 });
+  const fullBuffer = await fs.readFile(filePath);
+  const buffer = fullBuffer.subarray(0, 512);
   
   // Check for executable file signatures
   const executableSignatures = [

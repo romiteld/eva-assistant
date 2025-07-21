@@ -1,28 +1,28 @@
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-
-// Lazy load chart components to reduce bundle size
-const LineChartComponent = lazy(() => import('recharts').then(module => ({ default: module.LineChart })));
-const LineComponent = lazy(() => import('recharts').then(module => ({ default: module.Line })));
-const BarChartComponent = lazy(() => import('recharts').then(module => ({ default: module.BarChart })));
-const BarComponent = lazy(() => import('recharts').then(module => ({ default: module.Bar })));
-const PieChartComponent = lazy(() => import('recharts').then(module => ({ default: module.PieChart })));
-const PieComponent = lazy(() => import('recharts').then(module => ({ default: module.Pie })));
-const CellComponent = lazy(() => import('recharts').then(module => ({ default: module.Cell })));
-const XAxisComponent = lazy(() => import('recharts').then(module => ({ default: module.XAxis })));
-const YAxisComponent = lazy(() => import('recharts').then(module => ({ default: module.YAxis })));
-const CartesianGridComponent = lazy(() => import('recharts').then(module => ({ default: module.CartesianGrid })));
-const TooltipComponent = lazy(() => import('recharts').then(module => ({ default: module.Tooltip })));
-const LegendComponent = lazy(() => import('recharts').then(module => ({ default: module.Legend })));
-const ResponsiveContainerComponent = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })));
-const AreaComponent = lazy(() => import('recharts').then(module => ({ default: module.Area })));
-const AreaChartComponent = lazy(() => import('recharts').then(module => ({ default: module.AreaChart })));
-const RadarChartComponent = lazy(() => import('recharts').then(module => ({ default: module.RadarChart })));
-const PolarGridComponent = lazy(() => import('recharts').then(module => ({ default: module.PolarGrid })));
-const PolarAngleAxisComponent = lazy(() => import('recharts').then(module => ({ default: module.PolarAngleAxis })));
-const PolarRadiusAxisComponent = lazy(() => import('recharts').then(module => ({ default: module.PolarRadiusAxis })));
-const RadarComponent = lazy(() => import('recharts').then(module => ({ default: module.Radar })));
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  RadarChart,
+  Radar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Cell,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer
+} from 'recharts';
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'radar';
 
@@ -83,37 +83,35 @@ export default function ChartCard({
     switch (type) {
       case 'line':
         return (
-          <Suspense fallback={<div className="animate-pulse bg-gray-700 h-full rounded" />}>
-            <LineChartComponent {...commonProps}>
-              {showGrid && <CartesianGridComponent strokeDasharray="3 3" stroke="#374151" />}
-              <XAxisComponent dataKey={xAxisKey} {...axisStyle} />
-              <YAxisComponent {...axisStyle} />
-              <TooltipComponent contentStyle={tooltipStyle} />
-              {showLegend && <LegendComponent />}
-              {Array.isArray(dataKey) ? (
-                dataKey.map((key, index) => (
-                  <LineComponent
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={2}
-                    dot={{ fill: colors[index % colors.length], r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                ))
-              ) : (
-                <LineComponent
+          <LineChart {...commonProps}>
+            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#374151" />}
+            <XAxis dataKey={xAxisKey} {...axisStyle} />
+            <YAxis {...axisStyle} />
+            <Tooltip contentStyle={tooltipStyle} />
+            {showLegend && <Legend />}
+            {Array.isArray(dataKey) ? (
+              dataKey.map((key, index) => (
+                <Line
+                  key={key}
                   type="monotone"
-                  dataKey={dataKey}
-                  stroke={colors[0]}
+                  dataKey={key}
+                  stroke={colors[index % colors.length]}
                   strokeWidth={2}
-                  dot={{ fill: colors[0], r: 4 }}
+                  dot={{ fill: colors[index % colors.length], r: 4 }}
                   activeDot={{ r: 6 }}
                 />
-              )}
-            </LineChartComponent>
-          </Suspense>
+              ))
+            ) : (
+              <Line
+                type="monotone"
+                dataKey={dataKey}
+                stroke={colors[0]}
+                strokeWidth={2}
+                dot={{ fill: colors[0], r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            )}
+          </LineChart>
         );
 
       case 'bar':
@@ -242,11 +240,9 @@ export default function ChartCard({
         )}
       </CardHeader>
       <CardContent>
-        <Suspense fallback={<div className="animate-pulse bg-gray-700 h-full rounded" style={{ height }} />}>
-          <ResponsiveContainerComponent width="100%" height={height}>
-            {renderChart()}
-          </ResponsiveContainerComponent>
-        </Suspense>
+        <ResponsiveContainer width="100%" height={height}>
+          {renderChart()}
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );

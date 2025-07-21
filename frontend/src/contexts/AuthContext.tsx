@@ -87,23 +87,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Set up automatic session refresh
+    return () => {
+      subscription.unsubscribe();
+    };
+    // loadSession only needs to run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Separate effect for session refresh interval
+  useEffect(() => {
+    if (!session) return;
+
     const refreshInterval = setInterval(async () => {
-      if (session) {
-        const expiresAt = new Date(session.expires_at! * 1000);
-        const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000);
-        
-        if (expiresAt <= tenMinutesFromNow) {
-          await refreshSession();
-        }
+      const expiresAt = new Date(session.expires_at! * 1000);
+      const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000);
+      
+      if (expiresAt <= tenMinutesFromNow) {
+        await refreshSession();
       }
     }, 60000); // Check every minute
 
     return () => {
-      subscription.unsubscribe();
       clearInterval(refreshInterval);
     };
-  }, []);
+  }, [session, refreshSession]);
 
   const signOut = async () => {
     try {

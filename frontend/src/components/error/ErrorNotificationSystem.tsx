@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { X, AlertTriangle, AlertCircle, Info, CheckCircle, ExternalLink } from 'lucide-react'
 import { errorService, ErrorSeverity, ErrorCategory, ErrorDetails } from '@/lib/error-service'
 
@@ -27,42 +27,22 @@ export function ErrorNotificationSystem({
   const [notifications, setNotifications] = useState<ErrorNotification[]>([])
   const [isEnabled, setIsEnabled] = useState(true)
 
-  useEffect(() => {
-    // Listen for new errors
-    const originalLogError = errorService.logError.bind(errorService)
+  const closeNotification = useCallback((notificationId: string) => {
+    setNotifications(prev => 
+      prev.map(n => 
+        n.id === notificationId 
+          ? { ...n, isVisible: false }
+          : n
+      )
+    )
     
-    errorService.logError = async (error, category, severity, context) => {
-      const errorId = await originalLogError(error, category, severity, context)
-      
-      if (isEnabled && (severity === ErrorSeverity.HIGH || severity === ErrorSeverity.CRITICAL)) {
-        const errorDetails: ErrorDetails = {
-          id: errorId,
-          message: error instanceof Error ? error.message : String(error),
-          category: category || ErrorCategory.UNKNOWN,
-          severity: severity || ErrorSeverity.MEDIUM,
-          context,
-          timestamp: new Date(),
-          userId: undefined,
-          sessionId: undefined
-        }
-        
-        showNotification(errorDetails)
-      }
-      
-      return errorId
-    }
+    // Remove from DOM after animation
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId))
+    }, 300)
+  }, [])
 
-    return () => {
-      // Cleanup timeouts
-      notifications.forEach(notification => {
-        if (notification.autoCloseTimeout) {
-          clearTimeout(notification.autoCloseTimeout)
-        }
-      })
-    }
-  }, [isEnabled, notifications])
-
-  const showNotification = (error: ErrorDetails) => {
+  const showNotification = useCallback((error: ErrorDetails) => {
     const notificationId = error.id || crypto.randomUUID()
     
     // Play sound if enabled
@@ -107,26 +87,46 @@ export function ErrorNotificationSystem({
       
       return newNotifications
     })
-  }
+  }, [enableSound, autoCloseDelay, closeNotification, maxNotifications])
 
-  const closeNotification = (id: string) => {
-    setNotifications(prev => prev.map(notification => 
-      notification.id === id 
-        ? { ...notification, isVisible: false }
-        : notification
-    ))
-
-    // Remove from array after animation
-    setTimeout(() => {
-      setNotifications(prev => {
-        const notification = prev.find(n => n.id === id)
-        if (notification?.autoCloseTimeout) {
-          clearTimeout(notification.autoCloseTimeout)
+  useEffect(() => {
+    // Listen for new errors
+    const originalLogError = errorService.logError.bind(errorService)
+    
+    errorService.logError = async (error, category, severity, context) => {
+      const errorId = await originalLogError(error, category, severity, context)
+      
+      if (isEnabled && (severity === ErrorSeverity.HIGH || severity === ErrorSeverity.CRITICAL)) {
+        const errorDetails: ErrorDetails = {
+          id: errorId,
+          message: error instanceof Error ? error.message : String(error),
+          category: category || ErrorCategory.UNKNOWN,
+          severity: severity || ErrorSeverity.MEDIUM,
+          context,
+          timestamp: new Date(),
+          userId: undefined,
+          sessionId: undefined
         }
-        return prev.filter(n => n.id !== id)
+        
+        showNotification(errorDetails)
+      }
+      
+      return errorId
+    }
+
+    // Cleanup function that only clears timeouts for current notifications
+    return () => {
+      // Clear timeouts for notifications that exist at cleanup time
+      setNotifications(prev => {
+        prev.forEach(notification => {
+          if (notification.autoCloseTimeout) {
+            clearTimeout(notification.autoCloseTimeout)
+          }
+        })
+        return prev
       })
-    }, 300)
-  }
+    }
+  }, [isEnabled, showNotification]) // Removed 'notifications' dependency to prevent infinite loop
 
   const getSeverityConfig = (severity: ErrorSeverity) => {
     switch (severity) {

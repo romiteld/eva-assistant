@@ -131,7 +131,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('POST /api/tasks/[taskId]/comments error:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request data', details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -196,7 +196,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('PUT /api/tasks/[taskId]/comments error:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request data', details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -126,7 +126,7 @@ export function IntegrationStatus({
             className={cn(
               'w-5 h-5',
               config.color,
-              config.animate
+              (config as any).animate
             )} 
           />
           <div>

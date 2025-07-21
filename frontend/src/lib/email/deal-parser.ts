@@ -1,5 +1,4 @@
-import { ParsedEmail, DealData, ExtractedData } from '@/types/email';
-import { Deal, Contact } from '@/types/zoho';
+import { ParsedEmail, DealData, ExtractedData, Contact } from '@/types/email';
 
 export interface EmailPattern {
   pattern: RegExp;
@@ -110,7 +109,7 @@ export class EmailDealParser {
         emailSubject: email.subject,
         senderEmail: email.from.email,
         receivedAt: email.receivedAt,
-        hasAttachments: email.attachments?.length > 0,
+        hasAttachments: Boolean(email.attachments?.length),
         dealType: extracted.dealType,
         location: extracted.location,
         experienceLevel: extracted.experience
@@ -144,7 +143,7 @@ export class EmailDealParser {
           weight: pattern.weight || 1.0,
           matches: matches.slice(0, 5) // Keep first 5 matches
         };
-        extracted.matchedKeywords.push(...matches);
+        extracted.matchedKeywords?.push(...matches);
       }
     }
 
@@ -226,7 +225,7 @@ export class EmailDealParser {
         lastName: email.from.name?.split(' ').slice(1).join(' ') || '',
         source: 'Email',
         type: 'Primary'
-      } as Contact);
+      });
     }
 
     // Extract additional contacts from CC
@@ -238,7 +237,7 @@ export class EmailDealParser {
           lastName: cc.name?.split(' ').slice(1).join(' ') || '',
           source: 'Email',
           type: 'CC'
-        } as Contact);
+        });
       }
     }
 
@@ -252,7 +251,7 @@ export class EmailDealParser {
           email: emailMatch,
           source: 'Email Body',
           type: 'Mentioned'
-        } as Contact);
+        });
       }
     }
 

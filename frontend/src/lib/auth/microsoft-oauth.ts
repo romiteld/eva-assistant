@@ -358,23 +358,63 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     }
   }
 
-  // Exchange code for tokens using our secure server-side endpoint
-  const tokenResponse = await fetch("/api/auth/microsoft/token", {
-    method: "POST",
+  // Try server-side exchange first (more secure)
+  try {
+    const tokenResponse = await fetch("/api/auth/microsoft/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        codeVerifier,
+        redirectUri: process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`,
+      }),
+    });
+
+    if (tokenResponse.ok) {
+      const tokenData = await tokenResponse.json();
+      return tokenData;
+    }
+
+    // If server-side fails, log the error
+    const errorData = await tokenResponse.json();
+    console.warn("[Microsoft OAuth] Server-side token exchange failed:", errorData.error);
+  } catch (error) {
+    console.warn("[Microsoft OAuth] Server-side token exchange error:", error);
+  }
+
+  // Fallback to client-side exchange for SPAs
+  console.log("[Microsoft OAuth] Using client-side token exchange");
+  
+  const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID;
+  const tenantId = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID || process.env.NEXT_PUBLIC_ENTRA_TENANT_ID;
+  
+  if (!clientId || !tenantId) {
+    throw new Error("Microsoft OAuth configuration missing");
+  }
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const tokenParams = new URLSearchParams({
+    client_id: clientId,
+    grant_type: 'authorization_code',
+    code: code,
+    redirect_uri: process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`,
+    code_verifier: codeVerifier,
+  });
+
+  const tokenResponse = await fetch(tokenUrl, {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: JSON.stringify({
-      code,
-      codeVerifier,
-      redirectUri: process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`,
-    }),
+    body: tokenParams.toString(),
   });
 
   const tokenData = await tokenResponse.json();
 
   if (!tokenResponse.ok) {
-    throw new Error(tokenData.error || "Token exchange failed");
+    throw new Error(tokenData.error_description || tokenData.error || "Token exchange failed");
   }
 
   return tokenData;

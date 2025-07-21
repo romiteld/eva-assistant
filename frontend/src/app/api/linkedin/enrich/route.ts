@@ -53,17 +53,47 @@ async function handlePost(request: AuthenticatedRequest) {
       }, { status: 401 });
     }
 
-    // Create LinkedIn service
+    // Create LinkedIn service with proper TokenRefreshConfig
+    const tokenRefreshConfig = {
+      linkedin: {
+        tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
+        clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!,
+        clientSecret: process.env.LINKEDIN_CLIENT_SECRET!
+      },
+      // Add placeholders for other providers to satisfy the TokenRefreshConfig type
+      microsoft: {
+        tokenUrl: '',
+        clientId: '',
+        clientSecret: '',
+        tenantId: ''
+      },
+      google: {
+        tokenUrl: '',
+        clientId: '',
+        clientSecret: ''
+      },
+      zoom: {
+        tokenUrl: '',
+        clientId: '',
+        clientSecret: '',
+        accountId: ''
+      },
+      salesforce: {
+        tokenUrl: '',
+        clientId: '',
+        clientSecret: ''
+      },
+      zoho: {
+        tokenUrl: '',
+        clientId: '',
+        clientSecret: ''
+      }
+    };
+    
     const linkedInService = createLinkedInService(
       userId,
       process.env.OAUTH_ENCRYPTION_KEY!,
-      {
-        linkedin: {
-          tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
-          clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!,
-          clientSecret: process.env.LINKEDIN_CLIENT_SECRET!
-        }
-      }
+      tokenRefreshConfig
     );
 
     const enrichedLeads = [];

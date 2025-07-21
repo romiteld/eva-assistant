@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChat } from 'ai/react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,16 +48,7 @@ export function ChatMode({ sessionId, onNewSession }: ChatModeProps) {
     },
   });
 
-  // Load messages when session changes
-  useEffect(() => {
-    if (sessionId && user) {
-      loadMessages();
-    } else {
-      setMessages([]);
-    }
-  }, [sessionId, user]);
-
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     if (!sessionId || !user) return;
 
     try {
@@ -80,7 +71,16 @@ export function ChatMode({ sessionId, onNewSession }: ChatModeProps) {
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
-  };
+  }, [sessionId, user, setMessages]);
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (sessionId && user) {
+      loadMessages();
+    } else {
+      setMessages([]);
+    }
+  }, [sessionId, user, loadMessages, setMessages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

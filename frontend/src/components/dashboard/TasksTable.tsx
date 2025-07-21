@@ -11,23 +11,13 @@ import { Label } from '@/components/ui/label';
 import { useTasks } from '@/hooks/useTasks';
 import { toast } from '@/hooks/use-toast';
 import { LoadingStates } from '@/components/ui/loading-states';
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  assigned_agent?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: number;
-  due_date?: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { Task } from '@/lib/supabase/task-service';
+import { TaskStatus } from '@/types/database';
 
 interface TaskFormData {
   title: string;
   description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: Task['status'];
   priority: number;
   due_date: string;
   assigned_agent: string;
@@ -49,7 +39,7 @@ export function TasksTable() {
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     description: '',
-    status: 'pending',
+    status: TaskStatus.pending,
     priority: 0.5,
     due_date: '',
     assigned_agent: ''
@@ -88,13 +78,13 @@ export function TasksTable() {
   // Helper functions
   const getStatusIcon = (status: Task['status']) => {
     switch (status) {
-      case 'completed':
+      case TaskStatus.completed:
         return <CheckSquare className="w-4 h-4 text-green-400" />;
-      case 'in_progress':
+      case TaskStatus.in_progress:
         return <Clock className="w-4 h-4 text-blue-400" />;
-      case 'pending':
+      case TaskStatus.pending:
         return <AlertCircle className="w-4 h-4 text-yellow-400" />;
-      case 'cancelled':
+      case TaskStatus.cancelled:
         return <AlertCircle className="w-4 h-4 text-red-400" />;
     }
   };
@@ -136,7 +126,13 @@ export function TasksTable() {
           description: 'Task updated successfully'
         });
       } else {
-        await createTask(formData);
+        await createTask({
+          ...formData,
+          completion_percentage: 0,
+          tags: [],
+          is_recurring: false,
+          metadata: {}
+        });
         toast({
           title: 'Success',
           description: 'Task created successfully'
@@ -147,7 +143,7 @@ export function TasksTable() {
       setFormData({
         title: '',
         description: '',
-        status: 'pending',
+        status: TaskStatus.pending,
         priority: 0.5,
         due_date: '',
         assigned_agent: ''
@@ -192,9 +188,9 @@ export function TasksTable() {
 
   const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
     try {
-      if (newStatus === 'completed') {
+      if (newStatus === TaskStatus.completed) {
         await completeTask(taskId);
-      } else if (newStatus === 'in_progress') {
+      } else if (newStatus === TaskStatus.in_progress) {
         await startTask(taskId);
       } else {
         await updateTask(taskId, { status: newStatus });
@@ -216,7 +212,7 @@ export function TasksTable() {
   if (loading) {
     return (
       <div className="p-8">
-        <LoadingStates.AI />
+        <LoadingStates.AILoadingState />
       </div>
     );
   }
@@ -254,10 +250,10 @@ export function TasksTable() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value={TaskStatus.pending}>Pending</SelectItem>
+              <SelectItem value={TaskStatus.in_progress}>In Progress</SelectItem>
+              <SelectItem value={TaskStatus.completed}>Completed</SelectItem>
+              <SelectItem value={TaskStatus.cancelled}>Cancelled</SelectItem>
             </SelectContent>
           </Select>
           
@@ -316,10 +312,10 @@ export function TasksTable() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value={TaskStatus.pending}>Pending</SelectItem>
+                      <SelectItem value={TaskStatus.in_progress}>In Progress</SelectItem>
+                      <SelectItem value={TaskStatus.completed}>Completed</SelectItem>
+                      <SelectItem value={TaskStatus.cancelled}>Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -374,7 +370,7 @@ export function TasksTable() {
                     setFormData({
                       title: '',
                       description: '',
-                      status: 'pending',
+                      status: TaskStatus.pending,
                       priority: 0.5,
                       due_date: '',
                       assigned_agent: ''
@@ -469,14 +465,14 @@ export function TasksTable() {
                           <Edit2 className="w-4 h-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        {task.status === 'pending' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'in_progress')} className="text-white hover:bg-gray-700">
+                        {task.status === TaskStatus.pending && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(task.id, TaskStatus.in_progress)} className="text-white hover:bg-gray-700">
                             <Clock className="w-4 h-4 mr-2" />
                             Start
                           </DropdownMenuItem>
                         )}
-                        {task.status !== 'completed' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')} className="text-white hover:bg-gray-700">
+                        {task.status !== TaskStatus.completed && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(task.id, TaskStatus.completed)} className="text-white hover:bg-gray-700">
                             <CheckSquare className="w-4 h-4 mr-2" />
                             Complete
                           </DropdownMenuItem>

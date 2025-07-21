@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useZoomMeetings } from '@/hooks/useZoomMeetings'
 import { 
@@ -45,13 +45,7 @@ export function ZoomAnalytics() {
     }
   })
 
-  useEffect(() => {
-    if (meetings.length > 0) {
-      calculateAnalytics()
-    }
-  }, [meetings])
-
-  const calculateAnalytics = () => {
+  const calculateAnalytics = useCallback(() => {
     const totalMeetings = meetings.length
     const totalDuration = meetings.reduce((sum, m) => sum + (m.duration || 0), 0)
     const averageDuration = totalMeetings > 0 ? Math.round(totalDuration / totalMeetings) : 0
@@ -122,7 +116,13 @@ export function ZoomAnalytics() {
         totalSize: 0 // Would need to calculate from recording data
       }
     })
-  }
+  }, [meetings])
+
+  useEffect(() => {
+    if (meetings.length > 0) {
+      calculateAnalytics()
+    }
+  }, [meetings, calculateAnalytics])
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 

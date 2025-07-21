@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Mail, ChevronDown } from 'lucide-react';
 import { EmailTemplate, TemplateCategory, emailTemplateService } from '@/lib/services/email-templates';
 import { EmailTemplateSender } from './EmailTemplateSender';
@@ -31,11 +31,7 @@ export function EmailTemplateSelector({
   const [showSender, setShowSender] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    loadTemplates();
-  }, [category]);
-
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     setIsLoading(true);
     try {
       const filters = category ? { category, isActive: true } : { isActive: true };
@@ -46,7 +42,11 @@ export function EmailTemplateSelector({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [category]);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   const handleSelectTemplate = (template: EmailTemplate) => {
     setSelectedTemplate(template);

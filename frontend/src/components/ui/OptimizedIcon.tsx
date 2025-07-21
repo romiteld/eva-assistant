@@ -20,7 +20,6 @@ import {
   Edit, 
   Delete, 
   Save, 
-  Cancel, 
   Check, 
   X, 
   ChevronLeft, 
@@ -56,7 +55,7 @@ import {
   Music, 
   Play, 
   Pause, 
-  Stop, 
+  Square, 
   Volume2, 
   VolumeX, 
   Home, 
@@ -76,7 +75,7 @@ import {
   Trash2, 
   Archive, 
   Bookmark, 
-  BookmarkOff, 
+  BookmarkX, 
   Tag, 
   Tags, 
   Flag, 
@@ -117,8 +116,8 @@ import {
   CreditCard, 
   DollarSign, 
   Euro, 
-  Pound, 
-  Yen, 
+  Hash, 
+  Currency, 
   Building, 
   Building2, 
   MapPin, 
@@ -130,7 +129,7 @@ import {
   Plane, 
   Train, 
   Ship, 
-  Bicycle, 
+  Bike, 
   Camera, 
   Smartphone, 
   Tablet, 
@@ -143,8 +142,7 @@ import {
   Keyboard, 
   Mouse, 
   Printer, 
-  Scanner, 
-  Fax, 
+  Scan, 
   HardDrive, 
   Usb, 
   Wifi as WifiIcon, 
@@ -173,14 +171,11 @@ import {
   Flame, 
   Zap as Lightning, 
   Gauge, 
-  Meter, 
   Scale, 
   Ruler, 
   Timer, 
-  Stopwatch, 
   Hourglass, 
   AlarmClock, 
-  Calendar as CalendarIcon, 
   CalendarDays, 
   CalendarCheck, 
   CalendarX, 
@@ -202,7 +197,7 @@ const iconMap = {
   'volume-x': VolumeX,
   'play': Play,
   'pause': Pause,
-  'stop': Stop,
+  'stop': Square,
   'music': Music,
   'speaker': Speaker,
   'headphones': Headphones,
@@ -235,7 +230,7 @@ const iconMap = {
   'edit': Edit,
   'delete': Delete,
   'save': Save,
-  'cancel': Cancel,
+  'cancel': X,
   'check': Check,
   'x': X,
   'search': Search,
@@ -266,7 +261,7 @@ const iconMap = {
   'flag': Flag,
   'flag-off': FlagOff,
   'bookmark': Bookmark,
-  'bookmark-off': BookmarkOff,
+  'bookmark-off': BookmarkX,
   
   // Users
   'user': User,
@@ -307,7 +302,6 @@ const iconMap = {
   'trending-down': TrendingDown,
   'target': Target,
   'gauge': Gauge,
-  'meter': Meter,
   'scale': Scale,
   'ruler': Ruler,
   
@@ -337,8 +331,8 @@ const iconMap = {
   'keyboard': Keyboard,
   'mouse': Mouse,
   'printer': Printer,
-  'scanner': Scanner,
-  'fax': Fax,
+  'scanner': Scan,
+  'fax': Printer,
   'hard-drive': HardDrive,
   'usb': Usb,
   'battery': Battery,
@@ -359,7 +353,6 @@ const iconMap = {
   'calendar-minus': CalendarMinus,
   'calendar-plus': CalendarPlus,
   'timer': Timer,
-  'stopwatch': Stopwatch,
   'hourglass': Hourglass,
   'alarm-clock': AlarmClock,
   
@@ -369,8 +362,8 @@ const iconMap = {
   'credit-card': CreditCard,
   'dollar-sign': DollarSign,
   'euro': Euro,
-  'pound': Pound,
-  'yen': Yen,
+  'pound': Hash,
+  'yen': Currency,
   
   // Location
   'building': Building,
@@ -384,7 +377,7 @@ const iconMap = {
   'plane': Plane,
   'train': Train,
   'ship': Ship,
-  'bicycle': Bicycle,
+  'bicycle': Bike,
   
   // Weather/Nature
   'sun': Sun,
@@ -447,137 +440,171 @@ OptimizedIcon.displayName = 'OptimizedIcon'
 export const MicIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="mic" {...props} />
 )
+MicIcon.displayName = 'MicIcon'
 
 export const PhoneIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="phone" {...props} />
 )
+PhoneIcon.displayName = 'PhoneIcon'
 
 export const MessageIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="message-square" {...props} />
 )
+MessageIcon.displayName = 'MessageIcon'
 
 export const SettingsIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="settings" {...props} />
 )
+SettingsIcon.displayName = 'SettingsIcon'
 
 export const UserIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="user" {...props} />
 )
+UserIcon.displayName = 'UserIcon'
 
 export const SearchIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="search" {...props} />
 )
+SearchIcon.displayName = 'SearchIcon'
 
 export const EditIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="edit" {...props} />
 )
+EditIcon.displayName = 'EditIcon'
 
 export const DeleteIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="trash-2" {...props} />
 )
+DeleteIcon.displayName = 'DeleteIcon'
 
 export const SaveIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="save" {...props} />
 )
+SaveIcon.displayName = 'SaveIcon'
 
 export const CheckIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="check" {...props} />
 )
+CheckIcon.displayName = 'CheckIcon'
 
 export const CloseIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="x" {...props} />
 )
+CloseIcon.displayName = 'CloseIcon'
 
 export const LoaderIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="loader-2" {...props} />
 )
+LoaderIcon.displayName = 'LoaderIcon'
 
 export const AlertIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="alert-triangle" {...props} />
 )
+AlertIcon.displayName = 'AlertIcon'
 
 export const InfoIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="info" {...props} />
 )
+InfoIcon.displayName = 'InfoIcon'
 
 export const HomeIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="home" {...props} />
 )
+HomeIcon.displayName = 'HomeIcon'
 
 export const MenuIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="menu" {...props} />
 )
+MenuIcon.displayName = 'MenuIcon'
 
 export const ChevronLeftIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="chevron-left" {...props} />
 )
+ChevronLeftIcon.displayName = 'ChevronLeftIcon'
 
 export const ChevronRightIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="chevron-right" {...props} />
 )
+ChevronRightIcon.displayName = 'ChevronRightIcon'
 
 export const CalendarIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="calendar" {...props} />
 )
+CalendarIcon.displayName = 'CalendarIcon'
 
 export const ClockIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="clock" {...props} />
 )
+ClockIcon.displayName = 'ClockIcon'
 
 export const FileIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="file-text" {...props} />
 )
+FileIcon.displayName = 'FileIcon'
 
 export const FolderIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="folder" {...props} />
 )
+FolderIcon.displayName = 'FolderIcon'
 
 export const BrainIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="brain" {...props} />
 )
+BrainIcon.displayName = 'BrainIcon'
 
 export const ZapIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="zap" {...props} />
 )
+ZapIcon.displayName = 'ZapIcon'
 
 export const BarChartIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="bar-chart-3" {...props} />
 )
+BarChartIcon.displayName = 'BarChartIcon'
 
 export const TrendingUpIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="trending-up" {...props} />
 )
+TrendingUpIcon.displayName = 'TrendingUpIcon'
 
 export const TrendingDownIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="trending-down" {...props} />
 )
+TrendingDownIcon.displayName = 'TrendingDownIcon'
 
 export const ActivityIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="activity" {...props} />
 )
+ActivityIcon.displayName = 'ActivityIcon'
 
 export const PackageIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="package" {...props} />
 )
+PackageIcon.displayName = 'PackageIcon'
 
 export const GaugeIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="gauge" {...props} />
 )
+GaugeIcon.displayName = 'GaugeIcon'
 
 export const TargetIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="target" {...props} />
 )
+TargetIcon.displayName = 'TargetIcon'
 
 export const RefreshIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="refresh-cw" {...props} />
 )
+RefreshIcon.displayName = 'RefreshIcon'
 
 export const DownloadIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="download" {...props} />
 )
+DownloadIcon.displayName = 'DownloadIcon'
 
 export const UploadIcon = React.memo<Omit<OptimizedIconProps, 'name'>>((props) => 
   <OptimizedIcon name="upload" {...props} />
 )
+UploadIcon.displayName = 'UploadIcon'
 
 export default OptimizedIcon

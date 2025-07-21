@@ -37,7 +37,10 @@ export class IntegrationHealthTester {
     
     // Test 1: Authentication
     try {
-      const client = new ZohoCRMIntegration(process.env.ZOHO_ACCESS_TOKEN!, process.env.ZOHO_REFRESH_TOKEN!);
+      const client = new ZohoCRMIntegration(
+        process.env.ENCRYPTION_KEY || 'test-encryption-key',
+        process.env.ZOHO_WEBHOOK_TOKEN || 'test-webhook-token'
+      );
       const authTest = await this.timeOperation(async () => {
         const token = process.env.ZOHO_ACCESS_TOKEN;
         if (!token) throw new Error('No Zoho access token configured');
@@ -60,18 +63,19 @@ export class IntegrationHealthTester {
     // Test 2: Lead Creation
     if (this.config.testMode !== 'basic') {
       try {
-        const client = new ZohoCRMIntegration(process.env.ZOHO_ACCESS_TOKEN!, process.env.ZOHO_REFRESH_TOKEN!);
+        const client = new ZohoCRMIntegration(
+          process.env.ENCRYPTION_KEY || 'test-encryption-key',
+          process.env.ZOHO_WEBHOOK_TOKEN || 'test-webhook-token'
+        );
         const leadTest = await this.timeOperation(async () => {
           return await client.createLead('test-user-id', {
-            firstName: 'Integration',
-            lastName: `Test_${Date.now()}`,
-            email: `test_${Date.now()}@example.com`,
-            company: 'Test Company',
-            phone: '+1234567890',
-            leadSource: 'API Test',
-            customFields: {
-              Description: 'Integration test lead - can be deleted',
-            },
+            First_Name: 'Integration',
+            Last_Name: `Test_${Date.now()}`,
+            Email: `test_${Date.now()}@example.com`,
+            Company: 'Test Company',
+            Phone: '+1234567890',
+            Lead_Source: 'API Test',
+            Description: 'Integration test lead - can be deleted',
           });
         });
         
@@ -98,7 +102,10 @@ export class IntegrationHealthTester {
 
     // Test 3: Queue System
     try {
-      const queueClient = new QueuedZohoCRMIntegration('test-user-id');
+      const queueClient = new QueuedZohoCRMIntegration(
+        process.env.ENCRYPTION_KEY || 'test-encryption-key',
+        process.env.ZOHO_WEBHOOK_TOKEN || 'test-webhook-token'
+      );
       const queueTest = await this.timeOperation(async () => {
         const queueStatus = await queueClient.getQueueStatus();
         return queueStatus;
@@ -121,14 +128,17 @@ export class IntegrationHealthTester {
     // Test 4: Rate Limiting
     if (this.config.testMode === 'stress') {
       try {
-        const client = new ZohoCRMIntegration(process.env.ZOHO_ACCESS_TOKEN!, process.env.ZOHO_REFRESH_TOKEN!);
+        const client = new ZohoCRMIntegration(
+          process.env.ENCRYPTION_KEY || 'test-encryption-key',
+          process.env.ZOHO_WEBHOOK_TOKEN || 'test-webhook-token'
+        );
         const rateLimitTest = await this.timeOperation(async () => {
           const results = [];
           for (let i = 0; i < 5; i++) {
             const start = Date.now();
             // Note: searchLeads method not implemented in ZohoCRMIntegration
             // Using getLeads instead
-            await client.getLeads('page=1&per_page=1');
+            await client.getLeads('test-user-id', { page: 1, perPage: 1 });
             results.push(Date.now() - start);
           }
           return { avgResponseTime: results.reduce((a, b) => a + b, 0) / results.length };

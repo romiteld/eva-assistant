@@ -3,24 +3,9 @@ import { AgentType, RequestMessage } from './base/types';
 import { z } from 'zod';
 import { QueuedZohoCRMIntegration } from '@/lib/integrations/zoho-crm-queued';
 import { models, geminiHelpers } from '@/lib/gemini/client';
+import { ZohoDeal } from '@/types/zoho';
 
 // Type definitions
-interface ZohoDeal {
-  id?: string;
-  Deal_Name: string;
-  Amount?: number;
-  Stage: string;
-  Closing_Date: string;
-  Account_Name?: string;
-  Contact_Name?: string;
-  Probability?: number;
-  Description?: string;
-  Lead_Source?: string;
-  Type?: string;
-  Next_Step?: string;
-  Owner?: string;
-  Custom_Fields?: Record<string, any>;
-}
 
 interface Email {
   id: string;
@@ -76,8 +61,8 @@ interface DealCreationMetrics {
   steps: Array<{
     name: string;
     startTime: number;
-    endTime?: number;
-    duration?: number;
+    endTime: number;
+    duration: number;
     success: boolean;
     error?: string;
   }>;
@@ -150,7 +135,10 @@ export class DealAutomationAgent extends Agent {
     });
 
     // Initialize Zoho integration
-    this.zoho = new QueuedZohoCRMIntegration(config.metadata?.userId || '');
+    this.zoho = new QueuedZohoCRMIntegration(
+      config.metadata?.encryptionKey || process.env.ZOHO_ENCRYPTION_KEY || '',
+      config.metadata?.webhookToken || process.env.ZOHO_WEBHOOK_TOKEN || ''
+    );
     
     this.initializeTemplates();
   }
@@ -190,7 +178,10 @@ export class DealAutomationAgent extends Agent {
     // Initialize Zoho client with user ID from the request
     const userId = message.payload.userId;
     if (!this.zoho) {
-      this.zoho = new QueuedZohoCRMIntegration(userId);
+      this.zoho = new QueuedZohoCRMIntegration(
+        process.env.ZOHO_ENCRYPTION_KEY || '',
+        process.env.ZOHO_WEBHOOK_TOKEN || ''
+      );
     }
 
     // Execute the action handler based on the action name
@@ -219,7 +210,7 @@ export class DealAutomationAgent extends Agent {
 
     try {
       // Step 1: Extract deal information using AI
-      const extractStep = { name: 'extract_deal_info', startTime: Date.now(), success: false };
+      const extractStep = { name: 'extract_deal_info', startTime: Date.now(), endTime: 0, duration: 0, success: false };
       const dealInfo = await this.extractDealInfo(params.email);
       extractStep.endTime = Date.now();
       extractStep.duration = extractStep.endTime - extractStep.startTime;
@@ -227,7 +218,7 @@ export class DealAutomationAgent extends Agent {
       metrics.steps.push(extractStep);
 
       // Step 2: Get smart defaults based on patterns
-      const defaultsStep = { name: 'get_smart_defaults', startTime: Date.now(), success: false };
+      const defaultsStep = { name: 'get_smart_defaults', startTime: Date.now(), endTime: 0, duration: 0, success: false };
       const defaults = await this.getSmartDefaults(dealInfo, params.userId);
       defaultsStep.endTime = Date.now();
       defaultsStep.duration = defaultsStep.endTime - defaultsStep.startTime;
@@ -235,7 +226,7 @@ export class DealAutomationAgent extends Agent {
       metrics.steps.push(defaultsStep);
 
       // Step 3: Find or create contact
-      const contactStep = { name: 'find_or_create_contact', startTime: Date.now(), success: false };
+      const contactStep = { name: 'find_or_create_contact', startTime: Date.now(), endTime: 0, duration: 0, success: false };
       const contactId = await this.findOrCreateContact(dealInfo, params.userId);
       contactStep.endTime = Date.now();
       contactStep.duration = contactStep.endTime - contactStep.startTime;
@@ -243,8 +234,8 @@ export class DealAutomationAgent extends Agent {
       metrics.steps.push(contactStep);
 
       // Step 4: Create deal with minimal fields
-      const createStep = { name: 'create_deal', startTime: Date.now(), success: false };
-      const deal = await this.zoho.createDeal({
+      const createStep = { name: 'create_deal', startTime: Date.now(), endTime: 0, duration: 0, success: false };
+      const dealData: ZohoDeal = {
         Deal_Name: dealInfo.subject || `Deal - ${dealInfo.contactName || dealInfo.companyName}`,
         Stage: defaults.stage,
         Amount: defaults.estimatedAmount,
@@ -256,14 +247,16 @@ export class DealAutomationAgent extends Agent {
         Description: this.formatDealDescription(dealInfo, params.email),
         Next_Step: this.suggestNextAction(dealInfo, defaults),
         Custom_Fields: this.mapCustomFields(dealInfo)
-      });
+      };
+      
+      const deal = await this.zoho.createDeal(params.userId, dealData);
       createStep.endTime = Date.now();
       createStep.duration = createStep.endTime - createStep.startTime;
       createStep.success = true;
       metrics.steps.push(createStep);
 
       // Step 5: Auto-link related records
-      const linkStep = { name: 'link_related_records', startTime: Date.now(), success: false };
+      const linkStep = { name: 'link_related_records', startTime: Date.now(), endTime: 0, duration: 0, success: false };
       await this.linkRelatedRecords(deal.id, params.email, params.userId);
       linkStep.endTime = Date.now();
       linkStep.duration = linkStep.endTime - linkStep.startTime;
@@ -310,7 +303,7 @@ export class DealAutomationAgent extends Agent {
         endTime: Date.now(),
         duration: 0,
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
 
       throw error;
@@ -334,7 +327,7 @@ export class DealAutomationAgent extends Agent {
     };
 
     try {
-      const createStep = { name: 'create_from_template', startTime: Date.now(), success: false };
+      const createStep = { name: 'create_from_template', startTime: Date.now(), endTime: 0, duration: 0, success: false };
       
       const dealData = {
         ...template.fields,
@@ -342,7 +335,15 @@ export class DealAutomationAgent extends Agent {
         Closing_Date: template.fields.Closing_Date || this.calculateClosingDate(30)
       };
 
-      const deal = await this.zoho.createDeal(dealData);
+      // Ensure required fields are present
+      const validatedDealData: ZohoDeal = {
+        ...dealData,
+        Deal_Name: dealData.Deal_Name || template.name,
+        Stage: dealData.Stage || 'Qualification',
+        Closing_Date: dealData.Closing_Date || this.calculateClosingDate(30)
+      };
+      
+      const deal = await this.zoho.createDeal(params.userId, validatedDealData);
       
       createStep.endTime = Date.now();
       createStep.duration = createStep.endTime - createStep.startTime;
@@ -404,8 +405,18 @@ export class DealAutomationAgent extends Agent {
         }
       }
 
-      const createStep = { name: 'quick_create', startTime: Date.now(), success: false };
-      const deal = await this.zoho.createDeal(dealData);
+      const createStep = { name: 'quick_create', startTime: Date.now(), endTime: 0, duration: 0, success: false };
+      
+      // Ensure required fields are present for quick creation
+      const validatedDealData: ZohoDeal = {
+        Deal_Name: params.dealName,
+        Stage: params.stage || 'Qualification',
+        Closing_Date: this.calculateClosingDate(30),
+        Amount: params.amount,
+        ...(params.dealType && { Type: params.dealType })
+      };
+      
+      const deal = await this.zoho.createDeal(params.userId, validatedDealData);
       createStep.endTime = Date.now();
       createStep.duration = createStep.endTime - createStep.startTime;
       createStep.success = true;
@@ -528,21 +539,21 @@ Return as JSON with these fields:
    * Get smart defaults based on deal patterns
    */
   private async getSmartDefaults(dealInfo: DealInfo, userId: string): Promise<SmartDefaults> {
-    const stageMap = {
+    const stageMap: Record<string, string> = {
       urgent: 'Value Proposition',
       high: 'Needs Analysis',
       medium: 'Qualification',
       low: 'Qualification'
     };
 
-    const typeAmounts = {
+    const typeAmounts: Record<string, number> = {
       placement: 25000,
       contract: 15000,
       temp: 8000,
       consulting: 20000
     };
 
-    const closingDays = {
+    const closingDays: Record<string, number> = {
       urgent: 7,
       high: 14,
       medium: 30,
@@ -552,7 +563,7 @@ Return as JSON with these fields:
     return {
       stage: stageMap[dealInfo.urgency || 'medium'],
       probability: this.calculateProbabilityForStage(stageMap[dealInfo.urgency || 'medium']),
-      estimatedAmount: dealInfo.budget?.amount || typeAmounts[dealInfo.dealType || 'placement'],
+      estimatedAmount: dealInfo.budget?.amount || typeAmounts[dealInfo.dealType || 'placement'] || typeAmounts.placement,
       closingDate: this.calculateClosingDate(closingDays[dealInfo.urgency || 'medium']),
       dealType: dealInfo.dealType,
       priority: dealInfo.urgency === 'urgent' ? 'High' : 'Normal'
@@ -568,27 +579,27 @@ Return as JSON with these fields:
     try {
       // Search for existing contact
       const searchResult = await this.zoho.searchRecords(
+        userId,
         'Contacts',
-        `(Email:equals:${dealInfo.contactEmail})`,
-        { page: 1, per_page: 1 }
+        { criteria: `(Email:equals:${dealInfo.contactEmail})` }
       );
 
-      if (searchResult.data && searchResult.data.length > 0) {
+      if (searchResult.data && searchResult.data.length > 0 && searchResult.data[0]?.id) {
         return searchResult.data[0].id;
       }
 
       // Create new contact
       const nameParts = dealInfo.contactName?.split(' ') || ['Unknown', 'Contact'];
-      const contact = await this.zoho.createContact({
+      const contact = await this.zoho.createContact(userId, {
         First_Name: nameParts[0],
         Last_Name: nameParts.slice(1).join(' ') || nameParts[0],
         Email: dealInfo.contactEmail,
         Account_Name: dealInfo.companyName
       });
 
-      return contact.id;
+      return contact?.id;
     } catch (error) {
-      console.error('Error finding/creating contact:', error);
+      console.error('Error finding/creating contact:', error instanceof Error ? error.message : String(error));
       return undefined;
     }
   }
@@ -599,7 +610,7 @@ Return as JSON with these fields:
   private async linkRelatedRecords(dealId: string, email: Email, userId: string): Promise<void> {
     try {
       // Create activity for email
-      await this.zoho.makeApiCall('/Activities', 'POST', {
+      await this.zoho.makeApiCall(userId, '/Activities', 'POST', {
         data: [{
           Subject: `Email: ${email.subject}`,
           Activity_Type: 'Emails',
@@ -612,7 +623,7 @@ Return as JSON with these fields:
       // Link attachments if any
       if (email.attachments && email.attachments.length > 0) {
         for (const attachment of email.attachments) {
-          await this.zoho.makeApiCall(`/Deals/${dealId}/Attachments`, 'POST', {
+          await this.zoho.makeApiCall(userId, `/Deals/${dealId}/Attachments`, 'POST', {
             attachment_url: attachment.url
           });
         }
@@ -681,9 +692,9 @@ ${email.content}`;
   private async findContactByEmail(email: string, userId: string): Promise<any> {
     try {
       const result = await this.zoho.searchRecords(
+        userId,
         'Contacts',
-        `(Email:equals:${email})`,
-        { page: 1, per_page: 1 }
+        { criteria: `(Email:equals:${email})` }
       );
       return result.data?.[0];
     } catch (error) {

@@ -63,7 +63,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
     this.setState({
       error,
       errorInfo,
-      errorId
+      errorId: errorId || null
     })
 
     // Call custom error handler if provided

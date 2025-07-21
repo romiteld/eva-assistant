@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { EmailAutomationRules } from '@/lib/automation/email-rules';
 import { EmailDealParser } from '@/lib/email/deal-parser';
-import { ZohoCRMClient } from '@/lib/integrations/zoho';
+import { ZohoCRMIntegration } from '@/lib/integrations/zoho-crm';
 import { Redis } from '@upstash/redis';
 import { withRateLimit } from '@/middleware/rate-limit';
 import { withWebhookValidation } from '@/middleware/webhook-validation';
@@ -203,12 +203,10 @@ async function processEmailInline(emailData: any) {
   const userId = userData.id;
   
   // Initialize services
-  const zoho = new ZohoCRMClient({
-    clientId: process.env.ZOHO_CLIENT_ID!,
-    clientSecret: process.env.ZOHO_CLIENT_SECRET!,
-    refreshToken: process.env.ZOHO_REFRESH_TOKEN!,
-    accessToken: process.env.ZOHO_ACCESS_TOKEN || ''
-  });
+  const zoho = new ZohoCRMIntegration(
+    process.env.ENCRYPTION_KEY || '',
+    process.env.ZOHO_WEBHOOK_TOKEN || ''
+  );
   
   const automationRules = new EmailAutomationRules(zoho, userId);
   

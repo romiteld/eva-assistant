@@ -108,14 +108,18 @@ export function useTwilioSync(options: TwilioSyncOptions = {}) {
     
     // Cleanup on unmount
     return () => {
+      // Copy ref values to local variables for cleanup
+      const currentEventHandlers = eventHandlers.current
+      const isCurrentlyConnected = state.connected
+      
       // Remove all event handlers
-      eventHandlers.current.forEach((handler, event) => {
+      currentEventHandlers.forEach((handler, event) => {
         sync.off(event, handler)
       })
-      eventHandlers.current.clear()
+      currentEventHandlers.clear()
       
       // Disconnect if connected
-      if (state.connected) {
+      if (isCurrentlyConnected) {
         disconnect()
       }
     }

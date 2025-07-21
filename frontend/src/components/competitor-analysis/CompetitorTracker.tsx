@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -163,11 +163,7 @@ export function CompetitorTracker({ competitors, alerts }: CompetitorTrackerProp
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadMonitoringData();
-  }, [competitors, alerts]);
-
-  const loadMonitoringData = () => {
+  const loadMonitoringData = useCallback(() => {
     // Create monitoring status for each competitor
     const statusMap = new Map();
     competitors.forEach(comp => {
@@ -209,7 +205,11 @@ export function CompetitorTracker({ competitors, alerts }: CompetitorTrackerProp
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     setActivities(allActivities);
-  };
+  }, [competitors, alerts]);
+
+  useEffect(() => {
+    loadMonitoringData();
+  }, [loadMonitoringData]);
 
   // Filter activities based on selected filter and time range
   const filteredActivities = activities.filter(activity => {

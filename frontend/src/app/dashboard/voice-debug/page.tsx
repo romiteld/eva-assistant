@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/browser';
 
 export default function VoiceDebugPage() {
@@ -8,17 +8,13 @@ export default function VoiceDebugPage() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  const addLog = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
+  const addLog = useCallback((message: string, type: 'info' | 'error' | 'success' = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
     const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
     setLogs(prev => [...prev, `${timestamp} ${prefix} ${message}`]);
-  };
-
-  useEffect(() => {
-    checkAuth();
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     setIsAuthenticated(!!session);
     if (session) {
@@ -26,7 +22,11 @@ export default function VoiceDebugPage() {
     } else {
       addLog('Not authenticated', 'error');
     }
-  };
+  }, [addLog]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const testDirectGeminiAPI = async () => {
     addLog('Testing direct Gemini API...');

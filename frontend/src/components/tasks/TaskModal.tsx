@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Dialog,
   DialogContent,
@@ -176,13 +176,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, parentTask }: TaskMod
   }, [task, parentTask]);
 
   // Check for calendar conflicts when due date changes
-  useEffect(() => {
-    if (dueDate && addToCalendar) {
-      checkCalendarConflicts();
-    }
-  }, [dueDate, dueTime, addToCalendar]);
-
-  const checkCalendarConflicts = async () => {
+  const checkCalendarConflicts = useCallback(async () => {
     if (!dueDate) return;
     
     try {
@@ -209,7 +203,13 @@ export function TaskModal({ isOpen, onClose, onSave, task, parentTask }: TaskMod
     } catch (error) {
       console.error('Failed to check calendar conflicts:', error);
     }
-  };
+  }, [dueDate, dueTime, formData.estimated_hours]);
+
+  useEffect(() => {
+    if (dueDate && addToCalendar) {
+      checkCalendarConflicts();
+    }
+  }, [dueDate, dueTime, addToCalendar, checkCalendarConflicts]);
 
   const handleAddTag = () => {
     if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
@@ -334,7 +334,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, parentTask }: TaskMod
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         categories: taskData.category ? [taskData.category] : [],
-        importance: taskData.priority >= 7 ? 'high' : taskData.priority >= 4 ? 'normal' : 'low',
+        importance: taskData.priority && taskData.priority >= 7 ? 'high' : taskData.priority && taskData.priority >= 4 ? 'normal' : 'low',
       }),
     });
 

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withWebhookValidation, logWebhookEvent } from '@/middleware/webhook-validation';
 import { createClient } from '@/lib/supabase/server';
 
@@ -83,11 +83,12 @@ async function handleZohoWebhook(request: NextRequest, body: any) {
         console.log('Unhandled Zoho module:', module);
     }
     
-    return new Response('OK', { status: 200 });
+    return NextResponse.json({ message: 'OK' }, { status: 200 });
   } catch (error) {
     console.error('Zoho webhook error:', error);
-    await logWebhookEvent('zoho', body.module || 'unknown', 'error', body, error.message);
-    return new Response('Internal Server Error', { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await logWebhookEvent('zoho', body.module || 'unknown', 'error', body, errorMessage);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 

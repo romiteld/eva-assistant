@@ -38,12 +38,18 @@ class SupabaseTokenProvider implements TokenCredential {
   }
 
   private async refreshToken(refreshToken: string): Promise<string> {
+    // Get current Supabase user session for authorization
+    const { data: { session } } = await this.supabase.auth.getSession();
+    if (!session) {
+      throw new Error('User not authenticated');
+    }
+
     // Use secure server-side refresh endpoint
     const response = await fetch('/api/oauth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.tokenProvider.supabaseAccessToken}`,
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
         provider: 'microsoft',

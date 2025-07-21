@@ -2,62 +2,11 @@ import { getAuthenticatedAPI } from '@/lib/services/authenticated-api';
 import { getTokenManager } from '@/lib/auth/token-manager';
 import { Database } from '@/types/supabase';
 import { supabase } from '@/lib/supabase/browser';
+import { ZohoLead, ZohoContact, ZohoDeal, ZohoWebhookPayload } from '@/types/zoho';
 
-interface ZohoLead {
-  id?: string;
-  First_Name: string;
-  Last_Name: string;
-  Email: string;
-  Phone?: string;
-  Company: string;
-  Title?: string;
-  Lead_Status?: string;
-  Lead_Source?: string;
-  Industry?: string;
-  Annual_Revenue?: number;
-  Description?: string;
-  Website?: string;
-  LinkedIn?: string;
-  Lead_Score?: number;
-  Custom_Fields?: Record<string, any>;
-}
-
-interface ZohoContact {
-  id?: string;
-  First_Name: string;
-  Last_Name: string;
-  Email: string;
-  Phone?: string;
-  Account_Name?: string;
-  Title?: string;
-  Department?: string;
-  LinkedIn?: string;
-  Description?: string;
-}
-
-interface ZohoDeal {
-  id?: string;
-  Deal_Name: string;
-  Amount: number;
-  Stage: string;
-  Closing_Date: string;
-  Account_Name?: string;
-  Contact_Name?: string;
-  Probability?: number;
-  Description?: string;
-  Lead_Source?: string;
-}
-
-interface ZohoWebhookPayload {
-  module: string;
-  operation: 'insert' | 'update' | 'delete';
-  ids: string[];
-  data?: any;
-  timestamp: string;
-}
 
 export class ZohoCRMIntegration {
-  private api: ReturnType<typeof getAuthenticatedAPI>;
+  protected api: ReturnType<typeof getAuthenticatedAPI>;
   private supabase = supabase;
   private webhookToken: string;
   
@@ -261,7 +210,7 @@ export class ZohoCRMIntegration {
         body: JSON.stringify({
           data: [{
             ...dealData,
-            Probability: dealData.Probability || this.calculateDealProbability(dealData.Stage)
+            Probability: dealData.Probability || this.calculateDealProbability(dealData.Stage || 'Qualification')
           }]
         })
       });
@@ -567,7 +516,7 @@ export class ZohoCRMIntegration {
     }
   }
 
-  private chunkArray<T>(array: T[], size: number): T[][] {
+  protected chunkArray<T>(array: T[], size: number): T[][] {
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
       chunks.push(array.slice(i, i + size));

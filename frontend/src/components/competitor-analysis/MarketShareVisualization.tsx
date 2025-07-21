@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -183,11 +183,7 @@ export function MarketShareVisualization({ competitors }: MarketShareVisualizati
   const [loading, setLoading] = useState(true);
   const [selectedView, setSelectedView] = useState<'share' | 'growth' | 'trends'>('share');
 
-  useEffect(() => {
-    loadMetrics();
-  }, [competitors]);
-
-  const loadMetrics = async () => {
+  const loadMetrics = useCallback(async () => {
     setLoading(true);
     try {
       // In production, this would fetch real metrics
@@ -227,7 +223,11 @@ export function MarketShareVisualization({ competitors }: MarketShareVisualizati
     } finally {
       setLoading(false);
     }
-  };
+  }, [competitors]);
+
+  useEffect(() => {
+    loadMetrics();
+  }, [loadMetrics]);
 
   const getCompetitorColor = (index: number): string => {
     const colors = [

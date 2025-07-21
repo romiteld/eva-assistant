@@ -3,7 +3,7 @@
  * Provides screen reader announcements, focus management, and keyboard navigation
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { liveRegionUtils, focusUtils, keyboardUtils, generateId } from '@/lib/utils/accessibility';
 
 interface UseAccessibilityOptions {

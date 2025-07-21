@@ -366,7 +366,7 @@ export class MicrosoftGraphService {
     taskTitle: string,
     taskDescription: string,
     dueDate: Date,
-    priority: 'low' | 'medium' | 'high' = 'normal'
+    priority: 'low' | 'medium' | 'high' = 'medium'
   ): Promise<CalendarEvent> {
     const event: Omit<CalendarEvent, 'id'> = {
       subject: `Task: ${taskTitle}`,
@@ -394,7 +394,7 @@ export class MicrosoftGraphService {
     return this.msalInstance.getActiveAccount() !== null;
   }
 
-  isInitialized(): boolean {
+  getInitializationStatus(): boolean {
     return this.isInitialized;
   }
 }

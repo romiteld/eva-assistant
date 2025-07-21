@@ -658,7 +658,7 @@ export default function RecruiterIntelligenceHub() {
     }
     
     loadData()
-  }, [])
+  }, [toast])
 
   const filteredTemplates = researchTemplates
     .filter(t => selectedCategory === 'all' || t.category === selectedCategory)
@@ -1133,7 +1133,7 @@ export default function RecruiterIntelligenceHub() {
                   <Lightbulb className="h-4 w-4 mr-2" />
                   AI Insights
                   {insights.filter(i => i.impact === 'high').length > 0 && (
-                    <Badge variant="destructive" className="ml-2 h-5 px-1">
+                    <Badge variant="destructive" className="ml-2 h-5 px-1 whitespace-nowrap">
                       {insights.filter(i => i.impact === 'high').length}
                     </Badge>
                   )}
@@ -1155,7 +1155,7 @@ export default function RecruiterIntelligenceHub() {
               {/* Tab-specific actions */}
               {activeTab === 'templates' && (
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-gray-800">
+                  <Badge variant="secondary" className="bg-gray-800 whitespace-nowrap">
                     {filteredTemplates.length} templates
                   </Badge>
                 </div>
@@ -1183,7 +1183,7 @@ export default function RecruiterIntelligenceHub() {
                       >
                         {category.icon}
                         {category.label}
-                        <Badge variant="secondary" className="ml-1 bg-gray-800/50">
+                        <Badge variant="secondary" className="ml-1 bg-gray-800/50 whitespace-nowrap">
                           {category.count}
                         </Badge>
                       </Button>
@@ -1282,20 +1282,6 @@ export default function RecruiterIntelligenceHub() {
                         className="h-full bg-gray-900/50 border-gray-800 hover:border-gray-700 cursor-pointer transition-all hover:shadow-lg hover:shadow-purple-500/10 relative overflow-hidden"
                         onClick={() => handleTemplateClick(template.id)}
                       >
-                        {/* Automation Level Indicator */}
-                        {template.automationLevel && (
-                          <div className="absolute top-0 right-0 w-24 h-24">
-                            <div className={cn(
-                              "absolute top-2 right-2 w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold",
-                              template.automationLevel >= 80 ? "bg-green-500/20 text-green-400" :
-                              template.automationLevel >= 60 ? "bg-blue-500/20 text-blue-400" :
-                              "bg-amber-500/20 text-amber-400"
-                            )}>
-                              {template.automationLevel}%
-                            </div>
-                          </div>
-                        )}
-                        
                         <CardHeader>
                           <div className="flex items-start justify-between mb-4">
                             <div className={cn(
@@ -1304,16 +1290,29 @@ export default function RecruiterIntelligenceHub() {
                             )}>
                               {template.icon}
                             </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <Badge variant="secondary" className="bg-gray-800">
+                            <div className="flex flex-col items-end gap-2 min-w-0">
+                              <Badge variant="secondary" className="bg-gray-800 whitespace-nowrap">
                                 {template.popularity}% used
                               </Badge>
                               {template.difficulty && (
                                 <Badge 
                                   variant="outline" 
-                                  className={cn("text-xs", getDifficultyColor(template.difficulty))}
+                                  className={cn("text-xs whitespace-nowrap", getDifficultyColor(template.difficulty))}
                                 >
                                   {template.difficulty}
+                                </Badge>
+                              )}
+                              {template.automationLevel && (
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "text-xs whitespace-nowrap",
+                                    template.automationLevel >= 80 ? "bg-green-500/20 text-green-400 border-green-500/50" :
+                                    template.automationLevel >= 60 ? "bg-blue-500/20 text-blue-400 border-blue-500/50" :
+                                    "bg-amber-500/20 text-amber-400 border-amber-500/50"
+                                  )}
+                                >
+                                  {template.automationLevel}% auto
                                 </Badge>
                               )}
                             </div>
@@ -1333,7 +1332,7 @@ export default function RecruiterIntelligenceHub() {
                                 <Badge 
                                   key={tag} 
                                   variant="outline" 
-                                  className="text-xs bg-gray-800/50 text-gray-400 border-gray-700"
+                                  className="text-xs bg-gray-800/50 text-gray-400 border-gray-700 whitespace-nowrap"
                                 >
                                   {tag}
                                 </Badge>
@@ -1341,7 +1340,7 @@ export default function RecruiterIntelligenceHub() {
                               {template.tags.length > 3 && (
                                 <Badge 
                                   variant="outline" 
-                                  className="text-xs bg-gray-800/50 text-gray-500 border-gray-700"
+                                  className="text-xs bg-gray-800/50 text-gray-500 border-gray-700 whitespace-nowrap"
                                 >
                                   +{template.tags.length - 3}
                                 </Badge>
@@ -1429,15 +1428,15 @@ export default function RecruiterIntelligenceHub() {
                                 {React.cloneElement(template.icon as React.ReactElement, { className: "h-5 w-5" })}
                               </div>
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <h4 className="font-medium text-gray-100">{template.title}</h4>
-                                  <Badge variant="secondary" className="text-xs bg-gray-800">
+                                  <Badge variant="secondary" className="text-xs bg-gray-800 whitespace-nowrap">
                                     {template.popularity}% used
                                   </Badge>
                                   {template.difficulty && (
                                     <Badge 
                                       variant="outline" 
-                                      className={cn("text-xs", getDifficultyColor(template.difficulty))}
+                                      className={cn("text-xs whitespace-nowrap", getDifficultyColor(template.difficulty))}
                                     >
                                       {template.difficulty}
                                     </Badge>
@@ -1445,9 +1444,14 @@ export default function RecruiterIntelligenceHub() {
                                   {template.automationLevel && (
                                     <Badge 
                                       variant="outline" 
-                                      className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30"
+                                      className={cn(
+                                        "text-xs whitespace-nowrap",
+                                        template.automationLevel >= 80 ? "bg-green-500/20 text-green-400 border-green-500/50" :
+                                        template.automationLevel >= 60 ? "bg-blue-500/20 text-blue-400 border-blue-500/50" :
+                                        "bg-amber-500/20 text-amber-400 border-amber-500/50"
+                                      )}
                                     >
-                                      {template.automationLevel}% automated
+                                      {template.automationLevel}% auto
                                     </Badge>
                                   )}
                                 </div>
@@ -1576,12 +1580,12 @@ export default function RecruiterIntelligenceHub() {
                                 <h3 className="font-semibold text-gray-100 mb-1">
                                   {insight.title}
                                 </h3>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   {insight.impact && (
                                     <Badge 
                                       variant="outline" 
                                       className={cn(
-                                        "text-xs",
+                                        "text-xs whitespace-nowrap",
                                         insight.impact === 'high' ? "text-red-400 border-red-400/50" :
                                         insight.impact === 'medium' ? "text-amber-400 border-amber-400/50" :
                                         "text-green-400 border-green-400/50"
@@ -1591,11 +1595,11 @@ export default function RecruiterIntelligenceHub() {
                                     </Badge>
                                   )}
                                   {insight.actionable && (
-                                    <Badge variant="outline" className="text-xs text-purple-400 border-purple-400/50">
+                                    <Badge variant="outline" className="text-xs text-purple-400 border-purple-400/50 whitespace-nowrap">
                                       Actionable
                                     </Badge>
                                   )}
-                                  <Badge variant="secondary" className="text-xs bg-gray-800">
+                                  <Badge variant="secondary" className="text-xs bg-gray-800 whitespace-nowrap">
                                     {insight.confidence}% confidence
                                   </Badge>
                                 </div>
@@ -1692,12 +1696,12 @@ export default function RecruiterIntelligenceHub() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-medium text-gray-100">{research.template}</h4>
                           <Badge 
                             variant="outline" 
                             className={cn(
-                              "text-xs",
+                              "text-xs whitespace-nowrap",
                               research.quality === 'high' && "text-green-400 border-green-400/50",
                               research.quality === 'medium' && "text-yellow-400 border-yellow-400/50",
                               research.quality === 'low' && "text-red-400 border-red-400/50"
@@ -1907,7 +1911,7 @@ export default function RecruiterIntelligenceHub() {
                       </div>
                       <div className="flex items-center gap-2">
                         {item.sharedWith && item.sharedWith.length > 0 && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs whitespace-nowrap">
                             <Users className="h-3 w-3 mr-1" />
                             Shared
                           </Badge>
@@ -1936,10 +1940,10 @@ export default function RecruiterIntelligenceHub() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-medium text-gray-100">{search.name}</h4>
                           {search.automated && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
                               <RefreshCw className="h-3 w-3 mr-1" />
                               Automated
                             </Badge>

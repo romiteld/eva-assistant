@@ -14,13 +14,16 @@ const CreateTaskSchema = z.object({
   tags: z.array(z.string()).default([]),
   estimated_hours: z.number().positive().optional(),
   parent_task_id: z.string().uuid().optional(),
-  metadata: z.record(z.any()).default({}),
+  metadata: z.record(z.string(), z.any()).default({}),
 });
 
 const UpdateTaskSchema = CreateTaskSchema.partial().extend({
   id: z.string().uuid(),
   completion_percentage: z.number().min(0).max(100).optional(),
   actual_hours: z.number().positive().optional(),
+  completed_at: z.string().datetime().optional(),
+  cancelled_at: z.string().datetime().optional(),
+  started_at: z.string().datetime().optional(),
 });
 
 const QuerySchema = z.object({
@@ -158,7 +161,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('GET /api/tasks error:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid query parameters', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid query parameters', details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -204,7 +207,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('POST /api/tasks error:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request data', details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -261,7 +264,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('PUT /api/tasks error:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request data', details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

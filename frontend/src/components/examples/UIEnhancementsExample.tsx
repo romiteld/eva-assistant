@@ -176,7 +176,7 @@ export function UIEnhancementsExample() {
       
       setTimeout(() => {
         toast.success({
-          id: toastId.id,
+          id: toastId as string,
           title: 'Request completed!'
         });
       }, 3000);

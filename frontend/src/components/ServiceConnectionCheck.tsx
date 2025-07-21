@@ -30,6 +30,8 @@ export function ServiceConnectionCheck({
 
   useEffect(() => {
     checkConnection();
+    // checkConnection is defined locally and depends on props that are passed to it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkEndpoint]);
 
   const checkConnection = async () => {

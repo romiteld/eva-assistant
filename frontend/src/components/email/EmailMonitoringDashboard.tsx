@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -101,7 +101,7 @@ export function EmailMonitoringDashboard() {
   const [chartData, setChartData] = useState<any[]>([]);
 
   // Fetch dashboard data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -154,7 +154,7 @@ export function EmailMonitoringDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, timeRange]);
 
   // Auto-refresh effect
   useEffect(() => {
@@ -164,7 +164,7 @@ export function EmailMonitoringDashboard() {
       const interval = setInterval(fetchData, 10000); // Refresh every 10 seconds
       return () => clearInterval(interval);
     }
-  }, [user, timeRange, autoRefresh]);
+  }, [fetchData, autoRefresh]);
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -189,7 +189,7 @@ export function EmailMonitoringDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, fetchData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

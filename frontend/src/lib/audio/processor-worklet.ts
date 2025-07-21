@@ -414,7 +414,7 @@ export class AudioProcessor {
   /**
    * Calibrate noise level (WebRTC only)
    */
-  async calibrateNoiseLevel(duration = 2000): Promise<void> {
+  async calibrateWebRTCNoiseLevel(duration = 2000): Promise<void> {
     if (this.useWebRTC && this.webrtcManager) {
       await this.webrtcManager.calibrateNoiseLevel(duration);
     }

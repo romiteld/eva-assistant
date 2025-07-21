@@ -20,8 +20,6 @@ import {
   CheckCircle2,
   HelpCircle,
   Chrome,
-  Firefox,
-  Safari,
   Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -131,9 +129,9 @@ export function MicrophonePermissionModal({
       case 'chrome':
         return <Chrome className="w-5 h-5" />;
       case 'firefox':
-        return <Firefox className="w-5 h-5" />;
+        return <Globe className="w-5 h-5" />;
       case 'safari':
-        return <Safari className="w-5 h-5" />;
+        return <Globe className="w-5 h-5" />;
       default:
         return <Globe className="w-5 h-5" />;
     }

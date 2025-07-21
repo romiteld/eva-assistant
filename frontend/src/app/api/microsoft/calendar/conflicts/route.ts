@@ -38,8 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Microsoft client
-    const microsoft = new Microsoft365Client();
-    await microsoft.initialize(creds.access_token, creds.refresh_token);
+    const microsoft = new Microsoft365Client(creds.access_token);
 
     // Get calendar events for the time period
     const startDate = new Date(start);
@@ -49,15 +48,18 @@ export async function POST(request: NextRequest) {
     const searchStart = new Date(startDate.getTime() - (2 * 60 * 60 * 1000)); // 2 hours before
     const searchEnd = new Date(endDate.getTime() + (2 * 60 * 60 * 1000)); // 2 hours after
 
-    const events = await microsoft.calendar.getEvents({
+    const response = await microsoft.getCalendarEvents({
       startDateTime: searchStart.toISOString(),
       endDateTime: searchEnd.toISOString(),
       top: 50,
       select: ['subject', 'start', 'end', 'showAs', 'isAllDay', 'organizer']
     });
 
+    // Extract events array from response
+    const events = response.value || [];
+
     // Filter for actual conflicts (overlapping events)
-    const conflicts = events.filter(event => {
+    const conflicts = events.filter((event: any) => {
       if (event.isAllDay) return false; // Skip all-day events
       if (event.showAs === 'free') return false; // Skip free time events
       
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      events: conflicts.map(event => ({
+      events: conflicts.map((event: any) => ({
         id: event.id,
         subject: event.subject,
         start: event.start,
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: 'Invalid request data', 
-        details: error.errors 
+        details: error.issues 
       }, { status: 400 });
     }
 

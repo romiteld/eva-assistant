@@ -575,7 +575,7 @@ export function AIContentCreator() {
                           <CardContent className="p-3 flex items-center justify-between">
                             <span className="text-sm">{prompt}</span>
                             <Button size="sm" variant="outline">
-                              <Image className="h-4 w-4 mr-2" />
+                              <Image className="h-4 w-4 mr-2" alt="Generate image icon" />
                               Generate
                             </Button>
                           </CardContent>

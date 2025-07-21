@@ -517,7 +517,7 @@ export const OptimizedSidebar = memo(({ isOpen, onClose, isCollapsed: controlled
                           globalIndex={globalIndex}
                           animationDelay={animationDelay}
                           tabIndex={focusedItemIndex === globalIndex ? 0 : -1}
-                          shouldReduceMotion={shouldReduceMotion}
+                          shouldReduceMotion={shouldReduceMotion ?? false}
                           itemRef={(el) => { itemRefs.current[globalIndex] = el }}
                         />
                       )

@@ -59,6 +59,8 @@ export function StreamMode({ sessionId, onStreamingChange, onNewSession }: Strea
     return () => {
       stopStream();
     };
+    // initializeRoom and stopStream are defined locally
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, user]);
 
   const initializeRoom = async () => {

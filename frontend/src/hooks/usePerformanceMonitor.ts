@@ -46,6 +46,45 @@ interface PerformanceAlert {
   timestamp: number
 }
 
+export function useAnimationPerformance(componentName: string) {
+  const [animationMetrics, setAnimationMetrics] = useState({
+    duration: 0,
+    fps: 0,
+    droppedFrames: 0,
+  })
+
+  const measureAnimation = useCallback((animationFn: () => void) => {
+    const startTime = performance.now()
+    let frameCount = 0
+    let lastFrame = startTime
+
+    const frame = () => {
+      const currentTime = performance.now()
+      frameCount++
+      
+      if (currentTime - lastFrame >= 16) { // 60fps threshold
+        const fps = 1000 / (currentTime - lastFrame)
+        lastFrame = currentTime
+        
+        setAnimationMetrics(prev => ({
+          ...prev,
+          fps: Math.round(fps),
+          duration: currentTime - startTime
+        }))
+      }
+      
+      if (currentTime - startTime < 1000) { // Measure for 1 second
+        requestAnimationFrame(frame)
+      }
+    }
+
+    animationFn()
+    requestAnimationFrame(frame)
+  }, [])
+
+  return { animationMetrics, measureAnimation }
+}
+
 export function usePerformanceMonitor() {
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [alerts, setAlerts] = useState<PerformanceAlert[]>([])
@@ -64,6 +103,8 @@ export function usePerformanceMonitor() {
     return () => {
       stopMonitoring()
     }
+    // startMonitoring and stopMonitoring are defined below and only need to run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const startMonitoring = useCallback(() => {
@@ -86,9 +127,11 @@ export function usePerformanceMonitor() {
             if (entry.entryType === 'largest-contentful-paint') {
               updateWebVital('LCP', entry.startTime)
             } else if (entry.entryType === 'first-input') {
-              updateWebVital('FID', entry.processingStart - entry.startTime)
+              const fidEntry = entry as PerformanceEventTiming
+              updateWebVital('FID', fidEntry.processingStart - fidEntry.startTime)
             } else if (entry.entryType === 'layout-shift') {
-              updateWebVital('CLS', entry.value)
+              const clsEntry = entry as any // Layout shift entries don't have a standard type
+              updateWebVital('CLS', clsEntry.value)
             }
           }
         })
@@ -114,78 +157,6 @@ export function usePerformanceMonitor() {
       performanceObserver.current = null
     }
   }, [])
-
-  const measureAndUpdate = useCallback(() => {
-    try {
-      const baseMetrics = measurePerformance()
-      
-      // Get network information
-      const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
-      const networkMetrics = {
-        connectionType: connection?.type || 'unknown',
-        downlink: connection?.downlink || 0,
-        effectiveType: connection?.effectiveType || 'unknown',
-        rtt: connection?.rtt || 0
-      }
-      
-      // Determine device type based on performance characteristics
-      const deviceType = getDeviceType(baseMetrics, networkMetrics)
-      
-      // Check for reduced motion preference
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      
-      const newPerformanceData: PerformanceData = {
-        ...baseMetrics,
-        networkMetrics,
-        userMetrics: {
-          deviceType,
-          isSlowConnection: networkMetrics.effectiveType === 'slow-2g' || networkMetrics.effectiveType === '2g',
-          prefersReducedMotion
-        }
-      }
-      
-      setPerformanceData(newPerformanceData)
-      
-      // Check for performance issues
-      checkPerformanceThresholds(newPerformanceData)
-      
-      // Check for memory leaks
-      if (memoryLeakDetector.current) {
-        memoryLeakDetector.current.checkMemoryUsage()
-      }
-      
-    } catch (error) {
-      console.error('Performance measurement failed:', error)
-    }
-  }, [])
-
-  const updateWebVital = useCallback((metric: string, value: number) => {
-    setPerformanceData(prev => {
-      if (!prev) return null
-      
-      return {
-        ...prev,
-        coreWebVitals: {
-          ...prev.coreWebVitals,
-          [metric]: value
-        }
-      }
-    })
-  }, [])
-
-  const getDeviceType = (metrics: any, network: any): 'desktop' | 'mobile' | 'lowEnd' => {
-    const memoryGB = (metrics.renderingMetrics.memoryUsage / 1024 / 1024 / 1024)
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-    const isSlowConnection = network.effectiveType === 'slow-2g' || network.effectiveType === '2g'
-    
-    if (isSlowConnection || memoryGB < 0.5 || (isMobile && network.downlink < 1.5)) {
-      return 'lowEnd'
-    } else if (isMobile) {
-      return 'mobile'
-    } else {
-      return 'desktop'
-    }
-  }
 
   const checkPerformanceThresholds = useCallback((data: PerformanceData) => {
     const benchmark = PERFORMANCE_BENCHMARKS[data.userMetrics.deviceType]
@@ -257,6 +228,78 @@ export function usePerformanceMonitor() {
       ...prev.filter(alert => Date.now() - alert.timestamp < 60000) // Keep alerts for 1 minute
     ])
   }, [])
+
+  const measureAndUpdate = useCallback(() => {
+    try {
+      const baseMetrics = measurePerformance()
+      
+      // Get network information
+      const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
+      const networkMetrics = {
+        connectionType: connection?.type || 'unknown',
+        downlink: connection?.downlink || 0,
+        effectiveType: connection?.effectiveType || 'unknown',
+        rtt: connection?.rtt || 0
+      }
+      
+      // Determine device type based on performance characteristics
+      const deviceType = getDeviceType(baseMetrics, networkMetrics)
+      
+      // Check for reduced motion preference
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      
+      const newPerformanceData: PerformanceData = {
+        ...baseMetrics,
+        networkMetrics,
+        userMetrics: {
+          deviceType,
+          isSlowConnection: networkMetrics.effectiveType === 'slow-2g' || networkMetrics.effectiveType === '2g',
+          prefersReducedMotion
+        }
+      }
+      
+      setPerformanceData(newPerformanceData)
+      
+      // Check for performance issues
+      checkPerformanceThresholds(newPerformanceData)
+      
+      // Check for memory leaks
+      if (memoryLeakDetector.current) {
+        memoryLeakDetector.current.checkMemoryUsage()
+      }
+      
+    } catch (error) {
+      console.error('Performance measurement failed:', error)
+    }
+  }, [checkPerformanceThresholds])
+
+  const updateWebVital = useCallback((metric: string, value: number) => {
+    setPerformanceData(prev => {
+      if (!prev) return null
+      
+      return {
+        ...prev,
+        coreWebVitals: {
+          ...prev.coreWebVitals,
+          [metric]: value
+        }
+      }
+    })
+  }, [])
+
+  const getDeviceType = (metrics: any, network: any): 'desktop' | 'mobile' | 'lowEnd' => {
+    const memoryGB = (metrics.renderingMetrics.memoryUsage / 1024 / 1024 / 1024)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    const isSlowConnection = network.effectiveType === 'slow-2g' || network.effectiveType === '2g'
+    
+    if (isSlowConnection || memoryGB < 0.5 || (isMobile && network.downlink < 1.5)) {
+      return 'lowEnd'
+    } else if (isMobile) {
+      return 'mobile'
+    } else {
+      return 'desktop'
+    }
+  }
 
   const clearAlerts = useCallback(() => {
     setAlerts([])

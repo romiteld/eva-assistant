@@ -25,19 +25,8 @@ export function SidebarPerformanceBenchmark({ isOpen, onClose }: BenchmarkProps)
   const [currentTest, setCurrentTest] = useState<'original' | 'optimized' | 'complete'>('original')
   const [showResults, setShowResults] = useState(false)
   
-  const { metrics: originalMetrics } = usePerformanceMonitor({
-    componentName: 'OriginalSidebar',
-    enableFrameRateMonitoring: true,
-    enableMemoryMonitoring: true,
-    logToConsole: false
-  })
-  
-  const { metrics: optimizedMetrics } = usePerformanceMonitor({
-    componentName: 'OptimizedSidebar',
-    enableFrameRateMonitoring: true,
-    enableMemoryMonitoring: true,
-    logToConsole: false
-  })
+  const originalMonitor = usePerformanceMonitor()
+  const optimizedMonitor = usePerformanceMonitor()
 
   const { animationMetrics, measureAnimation } = useAnimationPerformance('SidebarToggle')
 
@@ -58,31 +47,33 @@ export function SidebarPerformanceBenchmark({ isOpen, onClose }: BenchmarkProps)
       // Wait for components to stabilize
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      if (currentTest === 'original' && originalMetrics) {
+      if (currentTest === 'original' && originalMonitor.performanceData) {
+        const metrics = originalMonitor.performanceData.renderingMetrics
         const result: BenchmarkResult = {
           component: 'Original',
-          renderTime: originalMetrics.renderTime,
-          memoryUsage: originalMetrics.memoryUsage || 0,
-          frameRate: originalMetrics.frameRate || 0,
+          renderTime: metrics.renderTime,
+          memoryUsage: metrics.memoryUsage || 0,
+          frameRate: 60, // Default frame rate assumption
           score: calculateScore(
-            originalMetrics.renderTime,
-            originalMetrics.memoryUsage || 0,
-            originalMetrics.frameRate || 0
+            metrics.renderTime,
+            metrics.memoryUsage || 0,
+            60
           )
         }
         
         setBenchmarkResults(prev => [...prev, result])
         setCurrentTest('optimized')
-      } else if (currentTest === 'optimized' && optimizedMetrics) {
+      } else if (currentTest === 'optimized' && optimizedMonitor.performanceData) {
+        const metrics = optimizedMonitor.performanceData.renderingMetrics
         const result: BenchmarkResult = {
           component: 'Optimized',
-          renderTime: optimizedMetrics.renderTime,
-          memoryUsage: optimizedMetrics.memoryUsage || 0,
-          frameRate: optimizedMetrics.frameRate || 0,
+          renderTime: metrics.renderTime,
+          memoryUsage: metrics.memoryUsage || 0,
+          frameRate: 60, // Default frame rate assumption
           score: calculateScore(
-            optimizedMetrics.renderTime,
-            optimizedMetrics.memoryUsage || 0,
-            optimizedMetrics.frameRate || 0
+            metrics.renderTime,
+            metrics.memoryUsage || 0,
+            60
           )
         }
         
@@ -93,7 +84,7 @@ export function SidebarPerformanceBenchmark({ isOpen, onClose }: BenchmarkProps)
     }
 
     runBenchmark()
-  }, [currentTest, originalMetrics, optimizedMetrics])
+  }, [currentTest, originalMonitor.performanceData, optimizedMonitor.performanceData])
 
   // Bundle analysis
   const bundleAnalysis = analyzeBundleSize()
@@ -218,8 +209,8 @@ export function SidebarPerformanceBenchmark({ isOpen, onClose }: BenchmarkProps)
                 </div>
                 <div className="flex justify-between">
                   <span>Dropped Frames:</span>
-                  <span className={animationMetrics.dropped === 0 ? 'text-green-400' : 'text-yellow-400'}>
-                    {animationMetrics.dropped}
+                  <span className={animationMetrics.droppedFrames === 0 ? 'text-green-400' : 'text-yellow-400'}>
+                    {animationMetrics.droppedFrames}
                   </span>
                 </div>
               </div>

@@ -97,7 +97,7 @@ export function useWorkflowEngine(): UseWorkflowEngineReturn {
         });
 
         engine.on('step:completed', ({ workflow, step }) => {
-          const completedSteps = workflow.steps.filter(s => s.status === 'completed').length;
+          const completedSteps = workflow.steps.filter((s: { status: string }) => s.status === 'completed').length;
           const progress = Math.round((completedSteps / workflow.steps.length) * 100);
           
           setExecutions(prev => ({

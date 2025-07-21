@@ -5,6 +5,7 @@
  * with minimal disruption to existing users.
  */
 
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/browser';
 import { signInWithMicrosoftPKCE } from './microsoft-oauth';
 import { signInWithMicrosoftEdge } from './microsoft-edge-oauth';

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FirecrawlApp from '@mendable/firecrawl-js';
+import { z } from 'zod';
 
 interface CompanyResearch {
   company: {
@@ -123,23 +124,43 @@ export default function CompanyResearchPage() {
       // Step 2: Extract and analyze data from multiple sources
       const analysisPromises = searchResults.data.slice(0, 5).map(async (result) => {
         try {
-          const extracted = await firecrawl.scrape(result.url, {
+          const extracted = await firecrawl.scrapeUrl(result.url!, {
             formats: ['markdown'],
             extract: {
               prompt: `Extract key insights about: ${researchQuery}. Focus on recent developments, facts, figures, and expert opinions.`,
               schema: {
-                key_insights: ['string'],
-                facts_and_figures: ['string'],
-                expert_opinions: ['string'],
-                recent_developments: ['string']
-              }
+                "type": "object",
+                "properties": {
+                  "key_insights": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "facts_and_figures": {
+                    "type": "array", 
+                    "items": { "type": "string" }
+                  },
+                  "expert_opinions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "recent_developments": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "required": ["key_insights", "facts_and_figures", "expert_opinions", "recent_developments"]
+              } as any
             }
           });
-          return {
-            source: result.url,
-            title: result.title,
-            insights: extracted.extract
-          };
+          // Check if extraction was successful
+          if ('extract' in extracted && extracted.extract) {
+            return {
+              source: result.url,
+              title: result.title,
+              insights: extracted.extract
+            };
+          }
+          return null;
         } catch (error) {
           console.error('Error extracting from:', result.url, error);
           return null;
@@ -204,28 +225,50 @@ export default function CompanyResearchPage() {
       }
 
       // Extract structured data from the first result
-      const companyUrl = searchResults.data[0].url;
-      const extractedData = await firecrawl.scrape(companyUrl, {
+      const companyUrl = searchResults.data[0].url!;
+      const extractedData = await firecrawl.scrapeUrl(companyUrl, {
         formats: ['markdown'],
         extract: {
           schema: {
-            company: {
-              name: 'string',
-              industry: 'string', 
-              size: 'string',
-              founded: 'string',
-              headquarters: 'string',
-              description: 'string'
+            "type": "object",
+            "properties": {
+              "company": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "industry": { "type": "string" },
+                  "size": { "type": "string" },
+                  "founded": { "type": "string" },
+                  "headquarters": { "type": "string" },
+                  "description": { "type": "string" }
+                },
+                "required": ["name", "industry", "size", "founded", "headquarters", "description"]
+              },
+              "executives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "title": { "type": "string" }
+                  },
+                  "required": ["name", "title"]
+                }
+              },
+              "recentNews": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": { "type": "string" },
+                    "summary": { "type": "string" }
+                  },
+                  "required": ["title", "summary"]
+                }
+              }
             },
-            executives: [{
-              name: 'string',
-              title: 'string'
-            }],
-            recentNews: [{
-              title: 'string',
-              summary: 'string'
-            }]
-          },
+            "required": ["company", "executives", "recentNews"]
+          } as any,
           prompt: researchType === 'client' 
             ? 'Extract company information, key executives, and recent news that would be useful for a business meeting'
             : 'Extract company information, culture, and growth opportunities that would be useful for a job interview'
@@ -247,19 +290,19 @@ export default function CompanyResearchPage() {
 
       const mockResearch: CompanyResearch = {
         company: {
-          name: extractedData.extract?.company?.name || companyName,
+          name: ('extract' in extractedData && extractedData.extract?.company?.name) || companyName,
           website: companyUrl,
-          industry: extractedData.extract?.company?.industry || 'Technology',
-          size: extractedData.extract?.company?.size || '1000-5000 employees',
-          founded: extractedData.extract?.company?.founded || '2010',
-          headquarters: extractedData.extract?.company?.headquarters || 'San Francisco, CA',
-          description: extractedData.extract?.company?.description || 'A leading company in its industry'
+          industry: ('extract' in extractedData && extractedData.extract?.company?.industry) || 'Technology',
+          size: ('extract' in extractedData && extractedData.extract?.company?.size) || '1000-5000 employees',
+          founded: ('extract' in extractedData && extractedData.extract?.company?.founded) || '2010',
+          headquarters: ('extract' in extractedData && extractedData.extract?.company?.headquarters) || 'San Francisco, CA',
+          description: ('extract' in extractedData && extractedData.extract?.company?.description) || 'A leading company in its industry'
         },
-        executives: extractedData.extract?.executives || [
+        executives: ('extract' in extractedData && extractedData.extract?.executives) || [
           { name: 'John Smith', title: 'CEO', linkedin: 'https://linkedin.com' },
           { name: 'Jane Doe', title: 'CTO', linkedin: 'https://linkedin.com' }
         ],
-        recentNews: extractedData.extract?.recentNews || [
+        recentNews: ('extract' in extractedData && extractedData.extract?.recentNews) || [
           { 
             title: 'Company Announces Record Q4 Results',
             date: '2024-01-15',

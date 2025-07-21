@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withWebhookValidation, logWebhookEvent } from '@/middleware/webhook-validation';
 import { createClient } from '@/lib/supabase/server';
 
@@ -65,11 +65,12 @@ async function handleTwilioWebhook(request: NextRequest, body: any) {
         console.log('Unhandled Twilio event type:', body.EventType);
     }
     
-    return new Response('OK', { status: 200 });
+    return NextResponse.json({ message: 'OK' }, { status: 200 });
   } catch (error) {
     console.error('Twilio webhook error:', error);
-    await logWebhookEvent('twilio', body.EventType || 'unknown', 'error', body, error.message);
-    return new Response('Internal Server Error', { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await logWebhookEvent('twilio', body.EventType || 'unknown', 'error', body, errorMessage);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 

@@ -11,21 +11,22 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
   private queue = getZohoQueue();
   private cache = getZohoCache();
   
-  constructor(userId: string) {
-    super(userId);
+  constructor(encryptionKey: string, webhookToken: string) {
+    super(encryptionKey, webhookToken);
   }
   
   /**
    * Override makeApiCall to use queue system
    */
   async makeApiCall(
+    userId: string,
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     data?: any
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       this.queue.addRequest(
-        this.userId,
+        userId,
         endpoint,
         method,
         data,
@@ -41,56 +42,77 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
   /**
    * Get leads with caching
    */
-  async getLeads(params?: {
+  async getLeads(userId: string, params?: {
     page?: number;
-    per_page?: number;
-    sort_by?: string;
-    sort_order?: 'asc' | 'desc';
+    perPage?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    fields?: string[];
+    criteria?: string;
   }): Promise<{ data: ZohoLead[]; info: any }> {
     const cacheKey = `/Leads?${JSON.stringify(params || {})}`;
     
     return this.cache.getWithRevalidation(
       cacheKey,
-      () => super.getLeads(params)
+      () => super.getLeads(userId, params)
     );
   }
   
   /**
    * Get contacts with caching
    */
-  async getContacts(params?: {
+  async getContacts(userId: string, params?: {
     page?: number;
-    per_page?: number;
+    perPage?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    fields?: string[];
+    criteria?: string;
   }): Promise<{ data: ZohoContact[]; info: any }> {
     const cacheKey = `/Contacts?${JSON.stringify(params || {})}`;
     
     return this.cache.getWithRevalidation(
       cacheKey,
-      () => super.getContacts(params)
+      () => this.getContactsBase(userId, params)
     );
+  }
+
+  private async getContactsBase(userId: string, params?: any): Promise<{ data: ZohoContact[]; info: any }> {
+    // This method doesn't exist in base class, implement basic functionality
+    const response = await this.api.zohoCRMAPI(userId, '/Contacts');
+    return response.json();
   }
   
   /**
    * Get deals with caching
    */
-  async getDeals(params?: {
+  async getDeals(userId: string, params?: {
     page?: number;
-    per_page?: number;
-    stage?: string;
+    perPage?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    fields?: string[];
+    criteria?: string;
   }): Promise<{ data: ZohoDeal[]; info: any }> {
     const cacheKey = `/Deals?${JSON.stringify(params || {})}`;
     
     return this.cache.getWithRevalidation(
       cacheKey,
-      () => super.getDeals(params)
+      () => this.getDealsBase(userId, params)
     );
+  }
+
+  private async getDealsBase(userId: string, params?: any): Promise<{ data: ZohoDeal[]; info: any }> {
+    // This method doesn't exist in base class, implement basic functionality
+    const response = await this.api.zohoCRMAPI(userId, '/Deals');
+    return response.json();
   }
   
   /**
    * Create lead with cache invalidation
    */
-  async createLead(leadData: Partial<ZohoLead>): Promise<any> {
-    const result = await super.createLead(leadData);
+  async createLead(userId: string, leadData: ZohoLead): Promise<any> {
+    const result = await super.createLead(userId, leadData);
     
     // Invalidate lead caches
     await this.cache.invalidateModule('Leads');
@@ -101,8 +123,8 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
   /**
    * Create deal with cache invalidation
    */
-  async createDeal(dealData: Partial<ZohoDeal>): Promise<any> {
-    const result = await super.createDeal(dealData);
+  async createDeal(userId: string, dealData: ZohoDeal): Promise<any> {
+    const result = await super.createDeal(userId, dealData);
     
     // Invalidate deal caches
     await this.cache.invalidateModule('Deals');
@@ -114,6 +136,7 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
    * Bulk create with optimized batching
    */
   async bulkCreate<T>(
+    userId: string,
     module: string,
     records: T[],
     options?: { triggerWorkflow?: boolean }
@@ -124,6 +147,7 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
     
     for (const chunk of chunks) {
       const result = await this.makeApiCall(
+        userId,
         `/${module}`,
         'POST',
         {
@@ -144,18 +168,20 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
    * Smart search with caching
    */
   async searchRecords(
+    userId: string,
     module: string,
-    criteria: string,
-    params?: {
-      page?: number;
-      per_page?: number;
+    searchCriteria: {
+      word?: string;
+      email?: string;
+      phone?: string;
+      criteria?: string;
     }
   ): Promise<any> {
-    const cacheKey = `/${module}/search?criteria=${criteria}&${JSON.stringify(params || {})}`;
+    const cacheKey = `/${module}/search?${JSON.stringify(searchCriteria)}`;
     
     return this.cache.getWithRevalidation(
       cacheKey,
-      () => super.searchRecords(module, criteria, params)
+      () => super.searchRecords(userId, module, searchCriteria)
     );
   }
   
@@ -168,9 +194,10 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
     // Field metadata rarely changes, use 1 hour cache
     return this.cache.getWithRevalidation(
       cacheKey,
-      () => this.baseClient.getFields ? this.baseClient.getFields(module) : Promise.resolve({})
+      () => this.getModuleFields('default-user', module)
     );
   }
+
   
   /**
    * Determine priority based on endpoint
@@ -193,16 +220,6 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
     return 5; // Default priority
   }
   
-  /**
-   * Helper to chunk arrays
-   */
-  private chunkArray<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
-  }
   
   /**
    * Get queue status
@@ -221,8 +238,8 @@ export class QueuedZohoCRMIntegration extends ZohoCRMIntegration {
   /**
    * Warm up cache with common data
    */
-  async warmUpCache(modules: string[] = ['Leads', 'Contacts', 'Deals']) {
-    await this.cache.warmUp(this.baseClient.userId || 'default-user', modules);
+  async warmUpCache(userId: string, modules: string[] = ['Leads', 'Contacts', 'Deals']) {
+    await this.cache.warmUp(userId, modules);
   }
   
   /**

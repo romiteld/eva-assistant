@@ -9,6 +9,8 @@ export function useEmailTemplates(category?: string) {
 
   useEffect(() => {
     loadTemplates();
+    // loadTemplates is defined locally and only needs to update when category changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
   const loadTemplates = async () => {

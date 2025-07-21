@@ -51,12 +51,16 @@ export default function TeamsPage() {
 
   useEffect(() => {
     loadTeams();
+    // loadTeams is defined locally and only needs to run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (selectedTeam) {
       loadChannels(selectedTeam.id);
     }
+    // loadChannels is defined locally and changes on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeam]);
 
   const loadTeams = async () => {

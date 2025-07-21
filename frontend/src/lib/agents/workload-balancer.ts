@@ -8,7 +8,36 @@ export interface WorkloadTask {
   priority: number; // 0-1
   estimatedDuration?: number; // milliseconds
   requiredCapabilities?: string[];
-  data: any;
+  data: Record<string, unknown>;
+}
+
+export interface DatabaseAgent {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  current_load: number;
+  current_tasks: number;
+  max_concurrent_tasks: number;
+  success_rate: number;
+  capabilities?: string[];
+  specializations?: string[];
+  health_status: string;
+}
+
+export interface HealthMetrics {
+  cpuUsage: number;
+  memoryUsage: number;
+  responseTime?: number;
+  errorRate?: number;
+}
+
+export interface WorkloadStatsData {
+  totalAgents: number;
+  availableAgents: number;
+  averageLoad: number;
+  totalActiveTasks: number;
+  agentDetails: DatabaseAgent[];
 }
 
 export interface AgentWorkloadInfo {
@@ -108,7 +137,7 @@ export class WorkloadBalancer extends EventEmitter {
 
   // Calculate agent score based on strategy
   private async calculateAgentScore(
-    agent: any,
+    agent: DatabaseAgent,
     taskType?: string,
     requiredCapabilities?: string[]
   ): Promise<number> {
@@ -148,14 +177,14 @@ export class WorkloadBalancer extends EventEmitter {
           p_agent_id: agent.id,
           p_task_type: taskType || '',
           p_required_capabilities: requiredCapabilities || []
-        });
+        }) as { data: number | null; error: any };
         
         if (error) {
           console.error('Error calculating agent score:', error);
           return 0;
         }
         
-        return data || 0;
+        return data ?? 0;
     }
   }
 
@@ -358,15 +387,21 @@ export class WorkloadBalancer extends EventEmitter {
       if (error) throw error;
 
       // Prepare metrics data
-      const metrics = agents.map(agent => ({
+      const metrics = agents.map((agent: DatabaseAgent & {
+        total_tasks_completed?: number;
+        total_tasks_failed?: number;
+        cpu_usage?: number;
+        memory_usage?: number;
+        average_task_duration?: number;
+      }) => ({
         agent_id: agent.id,
         load_percentage: agent.current_load,
         active_tasks: agent.current_tasks,
-        completed_tasks: agent.total_tasks_completed,
-        failed_tasks: agent.total_tasks_failed,
-        cpu_usage: agent.cpu_usage,
-        memory_usage: agent.memory_usage,
-        average_response_time: agent.average_task_duration,
+        completed_tasks: (agent as any).total_tasks_completed || 0,
+        failed_tasks: (agent as any).total_tasks_failed || 0,
+        cpu_usage: (agent as any).cpu_usage || 0,
+        memory_usage: (agent as any).memory_usage || 0,
+        average_response_time: (agent as any).average_task_duration || 0,
         success_rate: agent.success_rate
       }));
 
@@ -409,7 +444,7 @@ export class WorkloadBalancer extends EventEmitter {
   }
 
   // Get workload statistics
-  async getWorkloadStats(): Promise<any> {
+  async getWorkloadStats(): Promise<WorkloadStatsData> {
     try {
       const { data, error } = await supabase
         .from('agent_workload_summary')
@@ -418,17 +453,18 @@ export class WorkloadBalancer extends EventEmitter {
       if (error) throw error;
 
       // Calculate aggregate stats
-      const totalAgents = data.length;
-      const availableAgents = data.filter(a => a.status === 'available').length;
-      const avgLoad = data.reduce((sum, a) => sum + a.current_load, 0) / totalAgents;
-      const totalTasks = data.reduce((sum, a) => sum + a.current_tasks, 0);
+      const totalAgents = data?.length || 0;
+      const availableAgents = data?.filter((a: any) => a.status === 'available').length || 0;
+      const avgLoad = totalAgents > 0 ? 
+        data.reduce((sum: number, a: any) => sum + (a.current_load || 0), 0) / totalAgents : 0;
+      const totalTasks = data?.reduce((sum: number, a: any) => sum + (a.current_tasks || 0), 0) || 0;
 
       return {
         totalAgents,
         availableAgents,
-        averageLoad: avgLoad,
+        averageLoad: isNaN(avgLoad) ? 0 : Math.round(avgLoad * 100) / 100,
         totalActiveTasks: totalTasks,
-        agentDetails: data
+        agentDetails: (data || []) as DatabaseAgent[]
       };
     } catch (error) {
       console.error('Error getting workload stats:', error);
@@ -437,7 +473,7 @@ export class WorkloadBalancer extends EventEmitter {
   }
 
   // Update agent health status
-  async updateAgentHealth(agentId: string, health: any): Promise<void> {
+  async updateAgentHealth(agentId: string, health: HealthMetrics): Promise<void> {
     try {
       const { error } = await supabase
         .from('agents')
@@ -458,7 +494,7 @@ export class WorkloadBalancer extends EventEmitter {
   }
 
   // Determine health status based on metrics
-  private determineHealthStatus(health: any): 'healthy' | 'degraded' | 'unhealthy' {
+  private determineHealthStatus(health: HealthMetrics): 'healthy' | 'degraded' | 'unhealthy' {
     if (health.cpuUsage > 90 || health.memoryUsage > 90) {
       return 'unhealthy';
     } else if (health.cpuUsage > 70 || health.memoryUsage > 70) {

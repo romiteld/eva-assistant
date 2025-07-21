@@ -32,6 +32,39 @@ interface HealthCheck {
   issues: string[];
 }
 
+interface RequestEvent {
+  success: boolean;
+  duration?: number;
+  error?: string;
+}
+
+interface ErrorEvent {
+  message?: string;
+  error?: string;
+  details?: unknown;
+}
+
+interface AgentRegistryEvent {
+  agent: {
+    id: string;
+    getId(): string;
+  };
+}
+
+interface AgentUnregisteredEvent {
+  agentId: string;
+}
+
+interface MessageDeliveryEvent {
+  agentId: string;
+  messageId?: string;
+}
+
+interface DeliveryFailureEvent {
+  agentId: string;
+  error: ErrorEvent;
+}
+
 export class AgentMonitor extends EventEmitter {
   private static instance: AgentMonitor;
   private registry: AgentRegistry;
@@ -82,25 +115,25 @@ export class AgentMonitor extends EventEmitter {
 
   private setupEventListeners(): void {
     // Listen to registry events
-    this.registry.on('agent-registered', (event) => {
+    this.registry.on('agent-registered', (event: AgentRegistryEvent) => {
       this.initializeAgentMetrics(event.agent.id);
     });
     
-    this.registry.on('agent-unregistered', (event) => {
+    this.registry.on('agent-unregistered', (event: AgentUnregisteredEvent) => {
       this.agentMetrics.delete(event.agentId);
       this.healthChecks.delete(event.agentId);
     });
     
-    this.registry.on('agent-offline', (event) => {
+    this.registry.on('agent-offline', (event: AgentUnregisteredEvent) => {
       this.updateHealthCheck(event.agentId, 'unhealthy', ['Agent offline']);
     });
     
     // Listen to message bus events
-    this.messageBus.on('message-delivered', (event) => {
+    this.messageBus.on('message-delivered', (event: MessageDeliveryEvent) => {
       this.recordMessageDelivery(event.agentId);
     });
     
-    this.messageBus.on('delivery-failed', (event) => {
+    this.messageBus.on('delivery-failed', (event: DeliveryFailureEvent) => {
       this.recordDeliveryFailure(event.agentId, event.error);
     });
     
@@ -115,11 +148,11 @@ export class AgentMonitor extends EventEmitter {
     const agent = this.registry.getAgent(agentId);
     if (!agent) return;
     
-    agent.on('request-processed', (event) => {
+    agent.on('request-processed', (event: RequestEvent) => {
       this.recordRequestMetrics(agentId, event);
     });
     
-    agent.on('error', (event) => {
+    agent.on('error', (event: ErrorEvent) => {
       this.recordError(agentId, event);
     });
     
@@ -148,7 +181,7 @@ export class AgentMonitor extends EventEmitter {
     });
   }
 
-  private recordRequestMetrics(agentId: string, event: any): void {
+  private recordRequestMetrics(agentId: string, event: RequestEvent): void {
     const metrics = this.agentMetrics.get(agentId);
     if (!metrics) return;
     
@@ -176,7 +209,7 @@ export class AgentMonitor extends EventEmitter {
     }
   }
 
-  private recordDeliveryFailure(agentId: string, error: any): void {
+  private recordDeliveryFailure(agentId: string, error: ErrorEvent): void {
     const metrics = this.agentMetrics.get(agentId);
     if (metrics) {
       metrics.errorCount++;
@@ -185,7 +218,7 @@ export class AgentMonitor extends EventEmitter {
     this.updateHealthCheck(agentId, 'degraded', [`Message delivery failed: ${error.message}`]);
   }
 
-  private recordError(agentId: string, error: any): void {
+  private recordError(agentId: string, error: ErrorEvent): void {
     const metrics = this.agentMetrics.get(agentId);
     if (metrics) {
       metrics.errorCount++;
@@ -268,7 +301,10 @@ export class AgentMonitor extends EventEmitter {
     // Calculate rates and throughput
     for (const [agentId, metrics] of this.agentMetrics) {
       // Simple throughput calculation (requests per minute)
-      metrics.throughput = (metrics.requestCount / ((now - this.startTime) / 60000));
+      const timeElapsed = (now - this.startTime) / 60000;
+      metrics.throughput = timeElapsed > 0 
+        ? metrics.requestCount / timeElapsed 
+        : 0;
       
       // Error rate
       metrics.errorRate = metrics.requestCount > 0 
@@ -359,8 +395,8 @@ export class AgentMonitor extends EventEmitter {
       totalErrors,
       avgResponseTime: totalRequests > 0 ? totalDuration / totalRequests : 0,
       systemUptime: Date.now() - this.startTime,
-      memoryUsage: process.memoryUsage?.().heapUsed,
-      cpuUsage: process.cpuUsage?.().user,
+      memoryUsage: typeof process !== 'undefined' && process.memoryUsage ? process.memoryUsage().heapUsed : undefined,
+      cpuUsage: typeof process !== 'undefined' && process.cpuUsage ? process.cpuUsage().user : undefined,
     };
   }
 

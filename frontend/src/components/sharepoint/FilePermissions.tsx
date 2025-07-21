@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { 
   X, 
@@ -51,11 +51,7 @@ export default function FilePermissions({
   const [linkExpiration, setLinkExpiration] = useState('')
   const [linkPassword, setLinkPassword] = useState('')
 
-  useEffect(() => {
-    loadPermissions()
-  }, [])
-
-  const loadPermissions = async () => {
+  const loadPermissions = useCallback(async () => {
     try {
       setLoading(true)
       const perms = await service.getItemPermissions(driveId, item.id)
@@ -66,7 +62,11 @@ export default function FilePermissions({
     } finally {
       setLoading(false)
     }
-  }
+  }, [service, driveId, item.id])
+
+  useEffect(() => {
+    loadPermissions()
+  }, [loadPermissions])
 
   const handleGrantPermission = async () => {
     if (!emails.trim()) return

@@ -109,7 +109,7 @@ async function handlePost(request: AuthenticatedRequest) {
 export const POST = withAuthAndRateLimit(handlePost, 'ai');
 
 // Streaming endpoint for real-time responses
-async function handleGet(request: AuthenticatedRequest) {
+async function handleGet(request: AuthenticatedRequest): Promise<NextResponse> {
   try {
     // Check if this is a WebSocket upgrade request
     const upgrade = request.headers.get('upgrade');
@@ -159,7 +159,7 @@ async function handleGet(request: AuthenticatedRequest) {
       },
     });
 
-    return new Response(stream, {
+    return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -179,42 +179,40 @@ async function handleGet(request: AuthenticatedRequest) {
 export const GET = withAuthAndRateLimit(handleGet, 'ai');
 
 // Handle WebSocket upgrade for Gemini Live API
-async function handleWebSocketUpgrade(request: AuthenticatedRequest): Promise<Response> {
+async function handleWebSocketUpgrade(request: AuthenticatedRequest): Promise<NextResponse> {
   try {
     // Extract authentication from query params or headers
     const searchParams = request.nextUrl.searchParams;
     const authToken = searchParams.get('token') || request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!authToken) {
-      return new Response('Unauthorized', { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Use authenticated user from request
     const user = request.user;
     if (!user) {
-      return new Response('Unauthorized', { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get Gemini API key
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return new Response('Gemini API key not configured', { status: 500 });
+      return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
     // Return a response indicating WebSocket upgrade should be handled by the platform
     // In Next.js App Router, we need to use a custom server or middleware for actual WebSocket handling
-    return new Response(null, {
-      status: 101,
+    return NextResponse.json({ error: 'WebSocket upgrade not supported in this environment' }, { 
+      status: 501,
       headers: {
-        'Upgrade': 'websocket',
-        'Connection': 'Upgrade',
         'X-Gemini-Proxy': 'true',
         'X-User-Id': user.id,
       },
     });
   } catch (error) {
     console.error('WebSocket upgrade error:', error);
-    return new Response('Internal server error', { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

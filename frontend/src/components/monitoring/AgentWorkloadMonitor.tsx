@@ -140,13 +140,26 @@ export default function AgentWorkloadMonitor() {
       )
       .subscribe();
 
+    interface TaskAssignedEvent {
+      taskId: string;
+      agentId: string;
+      agentName: string;
+    }
+
+    interface RebalanceCompleteEvent {
+      tasksReassigned: number;
+      fromAgents: string[];
+      toAgents: string[];
+      duration: number;
+    }
+
     // Listen to workload balancer events
-    const handleTaskAssigned = (data: any) => {
+    const handleTaskAssigned = (data: TaskAssignedEvent) => {
       console.log('Task assigned:', data);
       fetchData();
     };
 
-    const handleRebalanceComplete = (data: any) => {
+    const handleRebalanceComplete = (data: RebalanceCompleteEvent) => {
       console.log('Rebalance complete:', data);
       setRebalancing(false);
       fetchData();
@@ -345,7 +358,7 @@ export default function AgentWorkloadMonitor() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Avg Load</p>
-                  <p className="text-2xl font-bold">{stats.averageLoad.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold">{(stats.averageLoad && !isNaN(stats.averageLoad) ? stats.averageLoad.toFixed(1) : '0')}%</p>
                 </div>
                 <Activity className="h-8 w-8 text-blue-500" />
               </div>
@@ -432,7 +445,7 @@ export default function AgentWorkloadMonitor() {
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <span>{agent.current_tasks}/{agent.max_concurrent_tasks} tasks</span>
-                    <span>{agent.success_rate.toFixed(1)}% success</span>
+                    <span>{(agent.success_rate && !isNaN(agent.success_rate) ? agent.success_rate.toFixed(1) : '0')}% success</span>
                     <span>{agent.tasks_last_hour} tasks/hr</span>
                     {agent.avg_duration_last_hour > 0 && (
                       <span>~{formatDuration(agent.avg_duration_last_hour)}</span>
@@ -444,25 +457,25 @@ export default function AgentWorkloadMonitor() {
                   <div>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-gray-600">Workload</span>
-                      <span>{agent.current_load.toFixed(1)}%</span>
+                      <span>{(agent.current_load && !isNaN(agent.current_load) ? agent.current_load.toFixed(1) : '0')}%</span>
                     </div>
-                    <Progress value={agent.current_load} className="h-2" />
+                    <Progress value={agent.current_load && !isNaN(agent.current_load) ? agent.current_load : 0} className="h-2" />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-gray-600">CPU</span>
-                      <span>{agent.cpu_usage.toFixed(1)}%</span>
+                      <span>{(agent.cpu_usage && !isNaN(agent.cpu_usage) ? agent.cpu_usage.toFixed(1) : '0')}%</span>
                     </div>
-                    <Progress value={agent.cpu_usage} className="h-2" />
+                    <Progress value={agent.cpu_usage && !isNaN(agent.cpu_usage) ? agent.cpu_usage : 0} className="h-2" />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-gray-600">Memory</span>
-                      <span>{agent.memory_usage.toFixed(1)}%</span>
+                      <span>{(agent.memory_usage && !isNaN(agent.memory_usage) ? agent.memory_usage.toFixed(1) : '0')}%</span>
                     </div>
-                    <Progress value={agent.memory_usage} className="h-2" />
+                    <Progress value={agent.memory_usage && !isNaN(agent.memory_usage) ? agent.memory_usage : 0} className="h-2" />
                   </div>
                 </div>
               </div>

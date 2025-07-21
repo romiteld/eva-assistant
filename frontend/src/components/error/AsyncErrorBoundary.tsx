@@ -67,7 +67,7 @@ class AsyncErrorBoundary extends Component<Props, State> {
       }
     )
 
-    this.setState({ errorId })
+    this.setState({ errorId: errorId || null })
 
     // Call custom error handler if provided
     if (this.props.onError) {

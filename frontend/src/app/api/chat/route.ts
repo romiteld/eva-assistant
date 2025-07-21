@@ -1,7 +1,7 @@
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { createClient } from '@/lib/supabase/server';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withAuthAndRateLimit } from '@/middleware/api-security';
 import { AuthenticatedRequest } from '@/middleware/auth';
 
@@ -15,7 +15,7 @@ async function handlePost(req: AuthenticatedRequest) {
 
     // Validate messages
     if (!messages || !Array.isArray(messages)) {
-      return new Response('Invalid request: messages array required', { status: 400 });
+      return NextResponse.json({ error: 'Invalid request: messages array required' }, { status: 400 });
     }
 
     // Create the Gemini model
@@ -43,26 +43,22 @@ Be professional, helpful, and concise in your responses.`,
     });
 
     // Return the streaming response
-    return result.toDataStreamResponse();
+    // The AI SDK returns a Response object, but Next.js expects NextResponse
+    // Since NextResponse extends Response, we can safely cast it
+    return result.toDataStreamResponse() as unknown as NextResponse;
   } catch (error) {
     console.error('Chat API error:', error);
     
     // Return more detailed error in development
     if (process.env.NODE_ENV === 'development') {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Chat API error', 
-          message: error instanceof Error ? error.message : 'Unknown error',
-          details: error 
-        }), 
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return NextResponse.json({ 
+        error: 'Chat API error', 
+        message: error instanceof Error ? error.message : 'Unknown error',
+        details: error 
+      }, { status: 500 });
     }
     
-    return new Response('An error occurred', { status: 500 });
+    return NextResponse.json({ error: 'An error occurred' }, { status: 500 });
   }
 }
 

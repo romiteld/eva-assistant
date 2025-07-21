@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { createTwilioService, SendSMSOptions, MessageDetails } from '@/lib/services/twilio'
 import { supabase } from '@/lib/supabase/browser'
 import { useToast } from '@/hooks/use-toast'

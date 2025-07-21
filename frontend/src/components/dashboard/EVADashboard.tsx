@@ -842,7 +842,7 @@ export default function EVADashboard() {
                     <span className="text-sm">Schedule</span>
                   </button>
                   <button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg p-4 flex flex-col items-center space-y-2 transition-all transform hover:scale-105">
-                    <Image className="w-6 h-6" />
+                    <Image className="w-6 h-6" alt="Generate image icon" />
                     <span className="text-sm">Generate Image</span>
                   </button>
                 </div>
