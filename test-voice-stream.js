@@ -7,9 +7,14 @@
 
 const https = require('https');
 
-// Configuration
-const SUPABASE_URL = 'https://ztakznzshlvqobzbuewb.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0YWt6bnpzaGx2cW9iemJ1ZXdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjA1NDQ3ODcsImV4cCI6MjAzNjEyMDc4N30.MbgkuO5gJsxsK3SLVR1HTFnXb-rCYgBGLvhIGLn6Nv8'; // Replace with actual anon key
+// Configuration - Load from environment variables
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ztakznzshlvqobzbuewb.supabase.co';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_ANON_KEY) {
+  console.error('ERROR: NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is required');
+  process.exit(1);
+}
 
 function makeRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
