@@ -375,14 +375,36 @@ You can call multiple tools in a single response.`;
       mimeType: string;
       fileName?: string;
     }>
-  ): Promise<{ response: string; tools?: ToolCall[] }> {
-    const response = await this.processInput(command, { attachments });
-    const lastTurn = this.context.conversationHistory[this.context.conversationHistory.length - 1];
-    
-    return {
-      response,
-      tools: lastTurn?.toolCalls
-    };
+  ): Promise<{ 
+    response: string; 
+    toolExecutions?: Array<{
+      toolName: string;
+      status: 'success' | 'error';
+      result: any;
+    }>;
+  }> {
+    try {
+      const response = await this.processInput(command, { attachments });
+      const lastTurn = this.context.conversationHistory[this.context.conversationHistory.length - 1];
+      
+      // Transform tool calls to tool executions format
+      const toolExecutions = lastTurn?.toolCalls?.map(toolCall => ({
+        toolName: toolCall.name,
+        status: (toolCall.result?.error ? 'error' : 'success') as 'success' | 'error',
+        result: toolCall.result
+      })) || [];
+      
+      return {
+        response,
+        toolExecutions
+      };
+    } catch (error) {
+      console.error('Eva Brain voice command error:', error);
+      return {
+        response: 'I apologize, but I encountered an error processing your request. Please try again.',
+        toolExecutions: []
+      };
+    }
   }
 
   // Public methods

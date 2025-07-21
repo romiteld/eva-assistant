@@ -62,21 +62,13 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
       this.sessionId = crypto.randomUUID();
       this.evaBrain = new EvaBrain(this.sessionId);
       
-      // Set up Realtime channel for communication
-      this.channel = supabase.channel(`voice_${this.sessionId}`)
-        .on('broadcast', { event: 'control' }, (payload) => {
-          this.handleControlMessage(payload);
-        })
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log('[VoiceStreaming] Channel subscribed');
-            this.emit('connected', this.sessionId);
-            this.startAudioCapture();
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('[VoiceStreaming] Channel error');
-            this.emit('error', new Error('Failed to subscribe to channel'));
-          }
-        });
+      // Skip Realtime channel setup - not essential for voice streaming
+      // Directly start audio capture instead
+      console.log('[VoiceStreaming] Session started, initializing audio capture');
+      this.emit('connected', this.sessionId);
+      
+      // Start audio capture directly
+      await this.startAudioCapture();
 
       return this.sessionId;
     } catch (error) {
@@ -272,8 +264,13 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
     }
   }
 
-  // Process queued transcripts sequentially
-  private async processNextInQueue(): Promise<void> {
+  // Process queued transcripts sequentially with optional attachments
+  private async processNextInQueue(attachments?: Array<{
+    type: 'image' | 'document';
+    content: string;
+    mimeType: string;
+    fileName?: string;
+  }>): Promise<void> {
     if (this.isProcessingResponse || this.processingQueue.length === 0) return;
     
     this.isProcessingResponse = true;
@@ -282,8 +279,8 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
     try {
       this.emit('processingStart');
       
-      // Process with Eva Brain
-      const response = await this.evaBrain!.processVoiceCommand(transcript);
+      // Process with Eva Brain including attachments
+      const response = await this.evaBrain!.processVoiceCommand(transcript, attachments);
       
       if (response.response) {
         this.emit('response', response.response);
@@ -397,11 +394,7 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
     });
   }
 
-  // Handle control messages from channel
-  private handleControlMessage(payload: any): void {
-    console.log('[VoiceStreaming] Control message:', payload);
-    // Handle remote control messages if needed
-  }
+  // Note: Realtime control messages removed for simplicity
 
   // Convert blob to base64
   private async blobToBase64(blob: Blob): Promise<string> {
@@ -414,6 +407,28 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+  }
+
+  // Process transcript with attachments
+  async processTranscriptWithAttachments(
+    transcript: string,
+    attachments?: Array<{
+      type: 'image' | 'document';
+      content: string;
+      mimeType: string;
+      fileName?: string;
+    }>
+  ): Promise<void> {
+    if (!this.sessionId) return;
+
+    // Add to processing queue with attachments
+    this.processingQueue.push({
+      transcript,
+      timestamp: Date.now()
+    });
+
+    // Process with attachments
+    await this.processNextInQueue(attachments);
   }
 
   // Set VAD configuration
@@ -452,10 +467,8 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
       this.audioContext = null;
     }
     
-    if (this.channel) {
-      await this.channel.unsubscribe();
-      this.channel = null;
-    }
+    // Channel cleanup no longer needed since we removed Realtime dependency
+    this.channel = null;
     
     this.mediaRecorder = null;
     this.analyser = null;
@@ -472,7 +485,7 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
   getState(): VoiceStreamState {
     return {
       sessionId: this.sessionId || '',
-      isConnected: !!this.channel,
+      isConnected: !!this.sessionId, // Connected if we have an active session
       isListening: this.lastAudioLevel > this.speechThreshold,
       isSpeaking: false, // Updated via events
       isProcessing: this.isProcessingResponse

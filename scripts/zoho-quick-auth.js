@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const CLIENT_ID = '1000.GEK1C9AW7F6ROW9K6WT60NJ60FWN5U';
-const CLIENT_SECRET = '4e695305c1b73fc9d169808ec70e0d9f1d6a610e4e';
+const CLIENT_ID = process.env.ZOHO_CLIENT_ID || 'your-zoho-client-id';
+const CLIENT_SECRET = process.env.ZOHO_CLIENT_SECRET || 'your-zoho-client-secret';
 const REDIRECT_URI = 'http://localhost:3000/api/zoho/callback';
 const SCOPE = 'ZohoCRM.modules.ALL,ZohoCRM.users.READ,ZohoCRM.settings.fields.ALL,ZohoCRM.settings.related_lists.ALL,ZohoCRM.notifications.ALL';
 

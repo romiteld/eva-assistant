@@ -96,20 +96,26 @@ Deno.serve(async (req) => {
           formData.append('language', language);
         }
 
-        // Call OpenAI Whisper API - try environment variable first, then hardcoded
-        let openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+        // Call OpenAI Whisper API - use environment variable only
+        const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
         console.log('OpenAI API key from env present:', !!openaiApiKey);
-        console.log('OpenAI API key from env length:', openaiApiKey?.length || 0);
-        
-        // Fallback to hardcoded key if env var not available
-        if (!openaiApiKey) {
-          openaiApiKey = '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';
-          console.log('Using fallback OpenAI API key, length:', openaiApiKey?.length || 0);
-        }
+        console.log('OpenAI API key length:', openaiApiKey?.length || 0);
+        console.log('OpenAI API key prefix:', openaiApiKey?.substring(0, 10) || 'none');
         
         if (!openaiApiKey) {
-          throw new Error('OpenAI API key not configured');
+          console.error('OpenAI API key not configured in environment variables');
+          throw new Error('OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.');
         }
+
+        // Validate OpenAI API key format
+        if (!openaiApiKey.startsWith('sk-')) {
+          console.error('OpenAI API key does not have the correct format. Expected format: sk-...');
+          throw new Error('OpenAI API key must start with "sk-". Please check your API key format.');
+        }
+
+        console.log('Making OpenAI API request to:', 'https://api.openai.com/v1/audio/transcriptions');
+        console.log('Audio blob size:', audioBlob.size);
+        console.log('Form data fields:', Array.from(formData.keys()));
 
         const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
           method: 'POST',
@@ -119,9 +125,14 @@ Deno.serve(async (req) => {
           body: formData,
         });
 
+        console.log('OpenAI API response status:', response.status);
+        console.log('OpenAI API response headers:', Object.fromEntries(response.headers.entries()));
+
         if (!response.ok) {
           const error = await response.text();
-          console.error('OpenAI API error:', error);
+          console.error('OpenAI API error response body:', error);
+          console.error('OpenAI API error status:', response.status);
+          console.error('OpenAI API error status text:', response.statusText);
           throw new Error(`Transcription failed: ${response.statusText}`);
         }
 
