@@ -404,6 +404,7 @@ export function EVAVoiceInterface() {
         attribute float size;
         attribute float phase;
         attribute vec3 velocity;
+        attribute vec3 color;
         
         varying vec3 vColor;
         varying float vAudioLevel;

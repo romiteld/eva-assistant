@@ -171,18 +171,16 @@ export async function signInWithMicrosoftPKCE() {
   console.log("[Microsoft OAuth] Encoded state being sent:", encodedState);
 
   // Construct the OAuth URL with PKCE
-  // Per 2025 requirements: use response_type="code id_token" and include nonce
   const params = new URLSearchParams({
     client_id: clientId,
-    response_type: "code id_token", // Updated for SPA compliance
+    response_type: "code", // Use authorization code flow only
     redirect_uri: redirectUri,
-    response_mode: "fragment", // Use fragment for SPAs to avoid CORS issues
+    response_mode: "query", // Use query for standard OAuth flow
     scope: scope,
     state: encodedState,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
     prompt: "select_account", // Allow user to select account
-    nonce: state.nonce, // Include nonce for replay attack prevention
   });
 
   const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params.toString()}`;
