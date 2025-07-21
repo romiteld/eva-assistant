@@ -31,10 +31,10 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
   private evaBrain: EvaBrain | null = null;
   private audioCache: AudioCacheService;
   private vadEnabled = true;
-  private chunkDuration = 3000; // ms - longer chunks for better transcription
-  private silenceThreshold = 0.01; // Lower threshold to ignore more background noise
-  private speechThreshold = 0.08; // Higher threshold to require clearer speech
-  private silenceDuration = 1200; // ms - longer pause before processing
+  private chunkDuration = 5000; // ms - increased for complete phrases
+  private silenceThreshold = 0.005; // Lower to capture softer speech
+  private speechThreshold = 0.02; // Much lower to detect all speech levels
+  private silenceDuration = 2500; // ms - wait 2.5 seconds of silence before processing
 
   constructor() {
     super();
@@ -214,7 +214,7 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
 
   // Process audio chunk with transcription
   private async processAudioChunk(audioBlob: Blob): Promise<void> {
-    if (!this.sessionId || audioBlob.size < 5000) return; // Skip small chunks - need substantial audio
+    if (!this.sessionId || audioBlob.size < 1000) return; // Lower threshold to capture more audio
 
     try {
       // Convert blob to base64
@@ -249,22 +249,31 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
       }
 
       const data = await response.json();
-      if (data.transcript && data.transcript.trim() && data.transcript.trim().length > 2) {
-        // Filter out very short transcriptions (like "you", "the", etc.)
+      if (data.transcript && data.transcript.trim()) {
         const transcript = data.transcript.trim();
         const currentTime = Date.now();
         
-        console.log('[VoiceStreaming] Transcript received:', transcript);
+        console.log('[VoiceStreaming] Raw transcript received:', transcript);
         
-        // Avoid duplicate processing of similar transcripts within 2 seconds
+        // Common false positives from Whisper when there's silence or noise
+        const falsePositives = ['you', 'You', 'Thank you', 'Thank you.', 'Thank you for watching.', 
+                               'Thanks for watching', 'the', 'The', '.', '..', '...', 'Bye.', 
+                               'Bye', 'Goodbye', 'Please subscribe', 'Like and subscribe'];
+        
+        // Check if it's a false positive
+        const isFalsePositive = falsePositives.includes(transcript) || 
+                               transcript.toLowerCase().includes('thank you for watching') ||
+                               transcript.toLowerCase().includes('subscribe');
+        
+        // Avoid duplicate processing of similar transcripts within 3 seconds
         const isDuplicate = transcript === this.lastTranscript && 
-                           (currentTime - this.lastTranscriptTime) < 2000;
+                           (currentTime - this.lastTranscriptTime) < 3000;
         
-        if (!isDuplicate) {
-          this.emit('transcript', transcript);
-          
-          // Only process meaningful transcripts (more than just single words)
-          if (transcript.length > 5 || transcript.split(' ').length > 1) {
+        if (!isDuplicate && !isFalsePositive && transcript.length > 2) {
+          // Only emit transcript if it's meaningful
+          if (transcript.length > 4 || transcript.split(' ').length > 1) {
+            this.emit('transcript', transcript);
+            
             // Add to processing queue
             this.processingQueue.push({
               transcript: transcript,
@@ -277,7 +286,8 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
             this.processNextInQueue();
           }
         } else {
-          console.log('[VoiceStreaming] Ignoring duplicate transcript:', transcript);
+          console.log('[VoiceStreaming] Filtered transcript:', transcript, 
+                     { isDuplicate, isFalsePositive, length: transcript.length });
         }
       }
     } catch (error) {
