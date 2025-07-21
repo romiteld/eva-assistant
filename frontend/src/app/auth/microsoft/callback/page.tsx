@@ -10,9 +10,14 @@ export default function MicrosoftCallbackPage() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
+    // Prevent double execution
+    if (isProcessing) return;
+    
     async function handleCallback() {
+      setIsProcessing(true);
       // Handle both query and fragment parameters (2025 SPA requirements)
       let code = searchParams.get("code");
       let state = searchParams.get("state");
@@ -112,7 +117,7 @@ export default function MicrosoftCallbackPage() {
     }
 
     handleCallback();
-  }, [router, searchParams]);
+  }, []); // Remove dependencies to prevent re-execution
 
   if (error) {
     return (

@@ -4,25 +4,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Play, Pause, Volume2 } from 'lucide-react';
 
-// ElevenLabs voice options
-const VOICES = {
-  rachel: 'Rachel',
-  domi: 'Domi',
-  bella: 'Bella',
-  antoni: 'Antoni',
-  elli: 'Elli',
-  josh: 'Josh',
-  arnold: 'Arnold',
-  adam: 'Adam',
-  sam: 'Sam',
-};
+// Your custom ElevenLabs voice
+const VOICE_ID = 'exsUS4vynmxd379XN4yO';
+const VOICE_NAME = 'Eva';
 
 export default function VoiceTestPage() {
   const [text, setText] = useState('Hello! This is a test of the ElevenLabs text-to-speech integration with Supabase Edge Functions.');
-  const [voiceId, setVoiceId] = useState('rachel');
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -45,9 +34,12 @@ export default function VoiceTestPage() {
       
       // Call the Edge Function
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/elevenlabs-tts?text=${encodeURIComponent(text)}&voiceId=${voiceId}`,
+        `${supabaseUrl}/functions/v1/elevenlabs-tts?text=${encodeURIComponent(text)}&voiceId=${VOICE_ID}`,
         {
           method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
         }
       );
 
@@ -112,23 +104,11 @@ export default function VoiceTestPage() {
             />
           </div>
 
-          {/* Voice Selection */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Select voice
-            </label>
-            <Select value={voiceId} onValueChange={setVoiceId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(VOICES).map(([id, name]) => (
-                  <SelectItem key={id} value={id}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Voice Info */}
+          <div className="p-3 bg-gray-50 rounded-md">
+            <p className="text-sm text-gray-600">
+              Using voice: <span className="font-medium">{VOICE_NAME}</span>
+            </p>
           </div>
 
           {/* Error Display */}
@@ -193,7 +173,7 @@ export default function VoiceTestPage() {
               {JSON.stringify({
                 supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
                 edgeFunctionUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-                selectedVoice: voiceId,
+                selectedVoice: VOICE_ID,
                 textLength: text.length,
               }, null, 2)}
             </pre>

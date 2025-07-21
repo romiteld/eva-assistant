@@ -44,6 +44,7 @@ const nextConfig = {
         'wss://*.supabase.co',
         'https://www.googleapis.com',
         'https://generativelanguage.googleapis.com',
+        'https://api.openai.com',
         'https://api.zoom.us',
         'https://zoom.us',
         'https://login.microsoftonline.com',

@@ -175,14 +175,15 @@ describe('AI Agent Integration Tests', () => {
     it('should verify Edge Functions exist', async () => {
       const edgeFunctions = [
         'ai-agents',
+        'agent-orchestrator',
         'process-document',
         'rag-query',
-        'realtime-stream',
-        'websocket-handler'
+        'voice-stream',
+        'websocket-relay'
       ];
 
       // This is a structural test - verifying the functions are defined
-      expect(edgeFunctions.length).toBe(5);
+      expect(edgeFunctions.length).toBe(6);
     });
   });
 

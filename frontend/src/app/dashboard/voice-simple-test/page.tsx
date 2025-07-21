@@ -26,8 +26,14 @@ export default function SimpleVoiceTest() {
 
       // Test 2: Try to generate audio directly
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       const audioResponse = await fetch(
-        `${supabaseUrl}/functions/v1/elevenlabs-tts?text=Hello world&voiceId=rachel`
+        `${supabaseUrl}/functions/v1/elevenlabs-tts?text=Hello world&voiceId=exsUS4vynmxd379XN4yO`,
+        {
+          headers: {
+            'Authorization': `Bearer ${anonKey}`,
+          },
+        }
       );
 
       if (!audioResponse.ok) {

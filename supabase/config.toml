@@ -103,6 +103,12 @@ file_size_limit = "50MiB"
 # allowed_mime_types = ["image/png", "image/jpeg"]
 # objects_path = "./images"
 
+[storage.buckets.audio]
+public = false
+file_size_limit = "50MiB"
+allowed_mime_types = ["audio/mp3", "audio/mpeg", "audio/webm", "audio/wav"]
+objects_path = "./audio"
+
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
@@ -293,7 +299,8 @@ enabled = false
 enabled = true
 # Configure one of the supported request policies: `oneshot`, `per_worker`.
 # Use `oneshot` for hot reload, or `per_worker` for load testing.
-policy = "oneshot"
+# Note: `per_worker` is required for background tasks with EdgeRuntime.waitUntil
+policy = "per_worker"
 # Port to attach the Chrome inspector for debugging edge functions.
 inspector_port = 8083
 # The Deno major version to use.

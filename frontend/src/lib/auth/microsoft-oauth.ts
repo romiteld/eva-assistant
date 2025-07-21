@@ -200,6 +200,16 @@ export async function signInWithMicrosoftPKCE() {
 export async function handleMicrosoftCallback(code: string, state: string) {
   console.log("[Microsoft OAuth Callback] Starting enhanced PKCE retrieval...");
   
+  // Check if this code has already been processed
+  const processedKey = `oauth_processed_${code}`;
+  if (sessionStorage.getItem(processedKey)) {
+    console.warn("[Microsoft OAuth Callback] Authorization code already processed");
+    throw new Error("Authorization code has already been used");
+  }
+  
+  // Mark code as processed immediately
+  sessionStorage.setItem(processedKey, Date.now().toString());
+  
   // Try to retrieve from multiple storage locations with enhanced fallback
   let codeVerifier: string | null = null;
   let savedState: string | null = null;
@@ -442,36 +452,24 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     }
   }
 
-  // Try server-side exchange first (more secure)
+  // Skip server-side exchange - using SPA configuration
+  console.log("[Microsoft OAuth] Using client-side token exchange for SPA");
+  
+  // Clean up old processed codes (older than 5 minutes)
   try {
-    const tokenResponse = await fetch("/api/auth/microsoft/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        code,
-        codeVerifier,
-        // CRITICAL: Use the EXACT same redirect URI that was used during authorization
-        // This must match what was sent in signInWithMicrosoftPKCE
-        redirectUri: `${window.location.origin}/auth/microsoft/callback`,
-      }),
+    const now = Date.now();
+    const keys = Object.keys(sessionStorage);
+    keys.forEach(key => {
+      if (key.startsWith('oauth_processed_')) {
+        const timestamp = parseInt(sessionStorage.getItem(key) || '0');
+        if (now - timestamp > 5 * 60 * 1000) {
+          sessionStorage.removeItem(key);
+        }
+      }
     });
-
-    if (tokenResponse.ok) {
-      const tokenData = await tokenResponse.json();
-      return tokenData;
-    }
-
-    // If server-side fails, log the error
-    const errorData = await tokenResponse.json();
-    console.warn("[Microsoft OAuth] Server-side token exchange failed:", errorData.error);
-  } catch (error) {
-    console.warn("[Microsoft OAuth] Server-side token exchange error:", error);
+  } catch (e) {
+    console.warn("Failed to clean up old processed codes:", e);
   }
-
-  // Fallback to client-side exchange for SPAs
-  console.log("[Microsoft OAuth] Using client-side token exchange");
   
   const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || process.env.NEXT_PUBLIC_ENTRA_CLIENT_ID;
   const tenantId = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID || process.env.NEXT_PUBLIC_ENTRA_TENANT_ID;

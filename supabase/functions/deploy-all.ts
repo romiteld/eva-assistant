@@ -18,15 +18,14 @@ const DEPLOYMENT_CONFIG = {
 const EDGE_FUNCTIONS = [
   'agent-orchestrator',
   'ai-agents',
-  'gemini-websocket',
+  'error-logger',
   'process-document',
   'queue-processor',
   'rag-query',
-  'realtime-stream',
   'setup-storage',
   'twilio-ivr',
   'twilio-webhook',
-  'websocket-handler',
+  'voice-stream',
   'websocket-relay',
 ]
 

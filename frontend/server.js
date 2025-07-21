@@ -41,33 +41,13 @@ const socketUsers = new Map();
 const userPresence = new Map();
 
 app.prepare().then(() => {
-  // Initialize Gemini WebSocket proxy
-  let geminiProxy;
-  
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
-    const { pathname } = parsedUrl;
-
-    // Handle WebSocket upgrade requests for Gemini
-    if (pathname === '/api/gemini/ws' && req.headers.upgrade === 'websocket') {
-      // The WebSocket proxy will handle this
-      return;
-    }
-
     handle(req, res, parsedUrl);
   });
 
   // Handle upgrade requests separately to avoid Next.js interference
   server.on('upgrade', (request, socket, head) => {
-    const parsedUrl = parse(request.url, true);
-    const { pathname } = parsedUrl;
-
-    // Skip if it's a Gemini WebSocket request - handled by the proxy
-    if (pathname === '/api/gemini/ws' && geminiProxy) {
-      return;
-    }
-
-    // Handle other WebSocket upgrades here if needed
     // For now, just close the socket for unhandled upgrades
     socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
   });
@@ -293,30 +273,16 @@ app.prepare().then(() => {
     });
   });
 
-  // Initialize Gemini WebSocket proxy after server creation
-  try {
-    const { initializeGeminiWebSocketProxy } = require('./src/app/api/gemini/websocket-proxy.js');
-    geminiProxy = initializeGeminiWebSocketProxy(server);
-    console.log('> Gemini WebSocket proxy initialized at /api/gemini/ws');
-  } catch (error) {
-    console.error('Failed to initialize Gemini WebSocket proxy:', error);
-    console.log('> Gemini WebSocket will be handled by Next.js API routes');
-  }
+  // Gemini WebSocket proxy removed - we're using Gemini REST API instead
 
   server.listen(port, hostname, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log('> WebSocket server initialized');
-    if (geminiProxy) {
-      console.log('> Gemini WebSocket proxy ready');
-    }
   });
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
     console.log('SIGTERM signal received: closing HTTP server');
-    if (geminiProxy) {
-      geminiProxy.close();
-    }
     server.close(() => {
       console.log('HTTP server closed');
     });

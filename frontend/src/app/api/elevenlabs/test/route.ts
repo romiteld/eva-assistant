@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     // Test parameters
     const testText = "Hello! This is a test of the ElevenLabs integration.";
-    const voiceId = "rachel";
+    const voiceId = "exsUS4vynmxd379XN4yO"; // Your provided voice ID
 
     // Call the Edge Function
     const edgeFunctionUrl = `${supabaseUrl}/functions/v1/elevenlabs-tts?text=${encodeURIComponent(testText)}&voiceId=${voiceId}`;

@@ -35,7 +35,9 @@ import {
   GitBranch,
   Database,
   Video,
-  Building2
+  Building2,
+  PhoneCall,
+  History
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -92,7 +94,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed: controlledCollapsed, onC
     {
       label: "AI Tools",
       items: [
-        { icon: Video, label: "Talk to EVA", href: "/dashboard/eva-voice" },
+        { icon: Mic, label: "Talk to Eva", href: "/dashboard/talk-to-eva" },
+        { icon: History, label: "Voice History", href: "/dashboard/voice-history" },
         { icon: BrainCircuit, label: "Agent Orchestrator", href: "/dashboard/orchestrator" },
         { icon: Sparkles, label: "Content Studio", href: "/dashboard/content-studio" },
         { icon: Brain, label: "Firecrawl", href: "/dashboard/firecrawl" },

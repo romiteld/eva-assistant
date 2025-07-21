@@ -19,15 +19,14 @@ const TEST_CONFIG = {
 const EDGE_FUNCTIONS = [
   'agent-orchestrator',
   'ai-agents',
-  'gemini-websocket',
+  'error-logger',
   'process-document',
   'queue-processor',
   'rag-query',
-  'realtime-stream',
   'setup-storage',
   'twilio-ivr',
   'twilio-webhook',
-  'websocket-handler',
+  'voice-stream',
   'websocket-relay',
 ]
 
@@ -292,9 +291,10 @@ class EdgeFunctionTestRunner {
         payload: { query: 'test' },
         userId: TEST_CONFIG.testUserId,
       },
-      'gemini-websocket': {
-        // WebSocket test data
-        message: 'test connection',
+      'error-logger': {
+        error: 'test-error',
+        context: { test: true },
+        userId: TEST_CONFIG.testUserId,
       },
       'process-document': {
         document: 'test document content',
@@ -307,8 +307,9 @@ class EdgeFunctionTestRunner {
         query: 'test query',
         userId: TEST_CONFIG.testUserId,
       },
-      'realtime-stream': {
-        channel: 'test-channel',
+      'voice-stream': {
+        action: 'transcribe',
+        audio: 'test-audio-data',
         userId: TEST_CONFIG.testUserId,
       },
       'setup-storage': {
@@ -323,10 +324,6 @@ class EdgeFunctionTestRunner {
         CallSid: 'test-webhook-call',
         From: '+1234567890',
         To: '+1234567890',
-      },
-      'websocket-handler': {
-        action: 'connect',
-        userId: TEST_CONFIG.testUserId,
       },
       'websocket-relay': {
         channel: 'test-relay',
