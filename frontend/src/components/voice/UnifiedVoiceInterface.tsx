@@ -178,7 +178,7 @@ export function UnifiedVoiceInterface({
               <div className="space-y-0.5">
                 <Label>Streaming Mode</Label>
                 <p className="text-xs text-muted-foreground">
-                  Play audio as it's generated for lower latency
+                  Play audio as it&apos;s generated for lower latency
                 </p>
               </div>
               <Switch

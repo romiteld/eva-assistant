@@ -179,7 +179,7 @@ export function ElevenLabsVoiceDemo() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Streaming mode plays audio as it's generated for lower latency
+                  Streaming mode plays audio as it&apos;s generated for lower latency
                 </p>
               </div>
 

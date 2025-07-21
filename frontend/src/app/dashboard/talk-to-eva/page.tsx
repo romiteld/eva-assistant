@@ -41,16 +41,77 @@ interface VoiceState {
   status: 'connected' | 'disconnected' | 'connecting'
 }
 
+interface ToolExecution {
+  name: string
+  status: 'success' | 'error'
+  result: any
+}
+
 interface Conversation {
   id: string
-  type: 'user' | 'assistant'
+  type: 'user' | 'assistant' | 'tool'
   content: string
   timestamp: number
+  toolExecution?: ToolExecution
 }
 
 // Simple ChatMessage component
 function ChatMessage({ message, isLatest }: { message: Conversation, isLatest: boolean }) {
   const isUser = message.type === 'user'
+  const isTool = message.type === 'tool'
+  
+  // Tool icons mapping
+  const toolIcons: Record<string, any> = {
+    search_web: Search,
+    navigate_dashboard: Navigation,
+    execute_workflow: Zap,
+    query_data: Database,
+    create_task: CheckCircle
+  }
+  
+  if (isTool && message.toolExecution) {
+    const Icon = toolIcons[message.toolExecution.name] || Command
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex justify-center mb-4"
+      >
+        <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl px-4 py-3 max-w-md">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              message.toolExecution.status === 'success' 
+                ? 'bg-green-500/20' 
+                : 'bg-red-500/20'
+            }`}>
+              <Icon className={`w-4 h-4 ${
+                message.toolExecution.status === 'success'
+                  ? 'text-green-400'
+                  : 'text-red-400'
+              }`} />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-purple-300">
+                  {message.toolExecution.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  message.toolExecution.status === 'success'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {message.toolExecution.status}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">{message.content}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
   
   return (
     <motion.div
@@ -196,6 +257,29 @@ export default function TalkToEvaPage() {
       setVoice(prev => ({ ...prev, isConnected: false, status: 'disconnected' }))
     }
 
+    const handleFunctionCall = (data: { name: string; status: 'success' | 'error'; result: any }) => {
+      console.log('[VoiceStreaming] Function call:', data)
+      // Add tool execution to conversation
+      const toolMessage = `${data.name === 'search_web' ? 'Searching the web...' :
+        data.name === 'navigate_dashboard' ? 'Navigating to page...' :
+        data.name === 'execute_workflow' ? 'Executing workflow...' :
+        data.name === 'query_data' ? 'Querying data...' :
+        data.name === 'create_task' ? 'Creating task...' :
+        'Processing tool...'}`
+      
+      setConversations(prev => [...prev, {
+        id: crypto.randomUUID(),
+        type: 'tool',
+        content: toolMessage,
+        timestamp: Date.now(),
+        toolExecution: {
+          name: data.name,
+          status: data.status,
+          result: data.result
+        }
+      }])
+    }
+
     // Add event listeners
     supabaseVoiceStreaming.on('connected', handleConnected)
     supabaseVoiceStreaming.on('disconnected', handleDisconnected)
@@ -207,6 +291,7 @@ export default function TalkToEvaPage() {
     supabaseVoiceStreaming.on('processingStart', handleProcessingStart)
     supabaseVoiceStreaming.on('processingEnd', handleProcessingEnd)
     supabaseVoiceStreaming.on('audioData', handleAudioData)
+    supabaseVoiceStreaming.on('functionCall', handleFunctionCall)
     supabaseVoiceStreaming.on('error', handleError)
 
     return () => {
@@ -221,6 +306,7 @@ export default function TalkToEvaPage() {
       supabaseVoiceStreaming.removeListener('processingStart', handleProcessingStart)
       supabaseVoiceStreaming.removeListener('processingEnd', handleProcessingEnd)
       supabaseVoiceStreaming.removeListener('audioData', handleAudioData)
+      supabaseVoiceStreaming.removeListener('functionCall', handleFunctionCall)
       supabaseVoiceStreaming.removeListener('error', handleError)
     }
   }, [])
@@ -360,7 +446,12 @@ export default function TalkToEvaPage() {
                   {/* Audio visualizer */}
                   {audioLevels && (
                     <div className="h-16 bg-white/5 rounded-lg p-2">
-                      <AudioVisualizer audioData={audioLevels} isListening={voice.isListening} />
+                      <AudioVisualizer 
+                        frequencyData={audioLevels} 
+                        waveformData={null}
+                        isActive={voice.isListening || voice.isSpeaking}
+                        mode={voice.isListening ? 'input' : 'output'}
+                      />
                     </div>
                   )}
                   
@@ -437,7 +528,7 @@ export default function TalkToEvaPage() {
                         exit={{ opacity: 0, scale: 0.9 }}
                         className="bg-white/10 rounded-lg px-4 py-2 text-sm text-gray-300 max-w-md truncate"
                       >
-                        "{lastTranscript}"
+                        &quot;{lastTranscript}&quot;
                       </motion.div>
                     )}
                   </AnimatePresence>

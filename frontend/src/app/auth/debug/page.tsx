@@ -105,11 +105,11 @@ export default function AuthDebugPage() {
         <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h3 className="font-semibold text-yellow-800 mb-2">Troubleshooting Tips:</h3>
           <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
-            <li>If you see "State mismatch" errors, click "Clear OAuth Storage" and try again</li>
+            <li>If you see &quot;State mismatch&quot; errors, click &quot;Clear OAuth Storage&quot; and try again</li>
             <li>Make sure cookies and local storage are enabled in your browser</li>
-            <li>Check that you're not in incognito/private mode</li>
+            <li>Check that you&apos;re not in incognito/private mode</li>
             <li>If using an ad blocker, try disabling it temporarily</li>
-            <li>The "isLocal" field shows if you're in development mode</li>
+            <li>The &quot;isLocal&quot; field shows if you&apos;re in development mode</li>
           </ul>
         </div>
       </div>
