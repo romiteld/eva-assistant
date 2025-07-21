@@ -18,7 +18,6 @@ import {
 import { VoiceType } from '@/types/voice'
 
 // Lazy load heavy AI components
-const GeminiLiveChat = lazy(() => import('./GeminiLiveChat'))
 const VoiceProcessingEngine = lazy(() => import('./VoiceProcessingEngine'))
 const AIModelSelector = lazy(() => import('./AIModelSelector'))
 const VoiceSettings = lazy(() => import('../voice/VoiceSettings').then(module => ({ default: module.VoiceSettings })))
@@ -327,10 +326,10 @@ export default function VoiceAgentOptimized({ className = "" }: VoiceAgentProps)
               ))}
             </div>
 
-            {/* Live Chat Component */}
-            <Suspense fallback={<VoiceLoader name="Live Chat" />}>
-              <GeminiLiveChat />
-            </Suspense>
+            {/* Live Chat Component - Temporarily disabled */}
+            <div className="p-8 text-center text-gray-500">
+              <p>Live Chat component temporarily unavailable</p>
+            </div>
           </motion.div>
         </AnimatePresence>
       )}

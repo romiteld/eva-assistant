@@ -5,6 +5,8 @@ import { firecrawl } from '@/lib/firecrawl/client';
 import { geminiHelpers } from '@/lib/gemini/client';
 import { ragHelpers } from '@/lib/supabase/auth';
 
+// Gemini text processing enabled for A2A agents
+
 // Agent types
 export interface Agent {
   id: string;

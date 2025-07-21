@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, realtimeHelpers } from '@/lib/supabase/browser';
-import { GeminiLiveClient } from '@/lib/gemini/client';
+// import { GeminiLiveClient } from '@/lib/gemini/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

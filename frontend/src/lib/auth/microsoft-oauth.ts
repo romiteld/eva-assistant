@@ -88,8 +88,15 @@ export async function signInWithMicrosoftPKCE() {
     );
   }
 
-  // Use environment variable for redirect URI, fallback to current origin for local development
-  const redirectUri = process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`;
+  // Use environment variable for redirect URI, but override for local development
+  let redirectUri = process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`;
+  
+  // If we're in local development but have a production redirect URI, use the local one
+  if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
+      redirectUri && !redirectUri.includes('localhost')) {
+    redirectUri = `${window.location.origin}/auth/microsoft/callback`;
+    console.log("[Microsoft OAuth] Using local redirect URI for development:", redirectUri);
+  }
   const scope =
     "openid email profile offline_access https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Contacts.ReadWrite https://graph.microsoft.com/Files.ReadWrite.All";
 
@@ -308,15 +315,37 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     const cookieState = getCookie("oauth_state");
     console.log("[Microsoft OAuth Callback] Cookie state:", cookieState);
     
+    // Check window storage
+    let windowState: string | null = null;
+    if (typeof window !== 'undefined' && (window as any).__oauthStorage) {
+      windowState = (window as any).__oauthStorage.oauth_state;
+      console.log("[Microsoft OAuth Callback] Window state:", windowState);
+    }
+    
+    // Try timestamped storage
+    const timestamp = sessionStorage.getItem("oauth_storage_timestamp") || 
+                     localStorage.getItem("oauth_storage_timestamp") || 
+                     getCookie("oauth_storage_timestamp");
+    let timestampedState: string | null = null;
+    if (timestamp) {
+      timestampedState = sessionStorage.getItem(`oauth_state_${timestamp}`) || 
+                        localStorage.getItem(`oauth_state_${timestamp}`);
+      console.log("[Microsoft OAuth Callback] Timestamped state:", timestampedState);
+    }
+    
     // Also check if state might be URL encoded
     const decodedState = decodeURIComponent(state);
     const decodedSavedState = savedState ? decodeURIComponent(savedState) : null;
     
-    if (cookieState && (state === cookieState || decodedState === cookieState)) {
-      console.log("[Microsoft OAuth Callback] Recovered state from cookies");
-      savedState = cookieState;
-    } else if (savedState && (state === decodedSavedState || decodedState === savedState)) {
-      console.log("[Microsoft OAuth Callback] State matched after URL decoding");
+    // Try to match with any of the stored states
+    const validStates = [savedState, cookieState, windowState, timestampedState].filter(Boolean);
+    const stateMatched = validStates.some(validState => 
+      state === validState || decodedState === validState || 
+      (validState && state === decodeURIComponent(validState))
+    );
+    
+    if (stateMatched) {
+      console.log("[Microsoft OAuth Callback] State matched with one of the stored values");
     } else {
       // Try to parse the state to check if it's valid even without matching
       try {
@@ -324,22 +353,36 @@ export async function handleMicrosoftCallback(code: string, state: string) {
         if (stateData.provider === "azure" && stateData.timestamp && stateData.nonce) {
           console.warn("[Microsoft OAuth Callback] State structure is valid but doesn't match saved state");
           console.warn("[Microsoft OAuth Callback] This might be due to storage being cleared or blocked");
-          // In development, we might want to continue despite the mismatch
-          // In production, this should fail for security
-          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.warn("[Microsoft OAuth Callback] Development mode - continuing despite state mismatch");
+          
+          // Check if state is recent (within 10 minutes)
+          const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+          if (stateData.timestamp > tenMinutesAgo) {
+            console.warn("[Microsoft OAuth Callback] State is recent, likely a storage issue");
+            // In development or if state is valid and recent, continue
+            if (window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.includes('vercel.app')) {
+              console.warn("[Microsoft OAuth Callback] Non-production environment - continuing despite state mismatch");
+            } else {
+              // In production, if we have a valid recent state, it's likely a storage issue
+              // Log detailed info for debugging
+              console.error("[Microsoft OAuth Callback] Production state mismatch - storage details:");
+              console.error("- SessionStorage keys:", Object.keys(sessionStorage));
+              console.error("- LocalStorage keys:", Object.keys(localStorage));
+              console.error("- Document cookies:", document.cookie);
+              console.error("- Window storage exists:", !!(window as any).__oauthStorage);
+              throw new Error("State mismatch - possible CSRF attack. Try clearing your browser storage and cookies, then login again.");
+            }
           } else {
-            throw new Error("State mismatch - possible CSRF attack");
+            throw new Error("OAuth state has expired - please try logging in again");
           }
         } else {
           throw new Error("Invalid state structure");
         }
       } catch (parseError) {
         console.error("[Microsoft OAuth Callback] Failed to parse state:", parseError);
-        console.error("[Microsoft OAuth Callback] State validation failed");
-        console.error("[Microsoft OAuth Callback] All sessionStorage:", Object.keys(sessionStorage));
-        console.error("[Microsoft OAuth Callback] All localStorage:", Object.keys(localStorage));
-        throw new Error("State mismatch - possible CSRF attack");
+        console.error("[Microsoft OAuth Callback] State validation failed completely");
+        throw new Error("State mismatch - possible CSRF attack. Try clearing your browser storage and cookies, then login again.");
       }
     }
   }

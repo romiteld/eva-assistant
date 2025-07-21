@@ -51,11 +51,46 @@ export interface VoiceConfig {
 }
 
 export enum VoiceType {
+  // Gemini voices
   PUCK = 'Puck',
   CHARON = 'Charon',
   KORE = 'Kore',
   FENRIR = 'Fenrir',
   AOEDE = 'Aoede',
+  
+  // ElevenLabs voices
+  ELEVENLABS_ADAM = 'elevenlabs:adam',
+  ELEVENLABS_ANTONI = 'elevenlabs:antoni',
+  ELEVENLABS_ARNOLD = 'elevenlabs:arnold',
+  ELEVENLABS_BELLA = 'elevenlabs:bella',
+  ELEVENLABS_DOMI = 'elevenlabs:domi',
+  ELEVENLABS_ELLI = 'elevenlabs:elli',
+  ELEVENLABS_EMILY = 'elevenlabs:emily',
+  ELEVENLABS_ETHAN = 'elevenlabs:ethan',
+  ELEVENLABS_FREYA = 'elevenlabs:freya',
+  ELEVENLABS_GIGI = 'elevenlabs:gigi',
+  ELEVENLABS_GIOVANNI = 'elevenlabs:giovanni',
+  ELEVENLABS_GLINDA = 'elevenlabs:glinda',
+  ELEVENLABS_GRACE = 'elevenlabs:grace',
+  ELEVENLABS_HARRY = 'elevenlabs:harry',
+  ELEVENLABS_JAMES = 'elevenlabs:james',
+  ELEVENLABS_JEREMY = 'elevenlabs:jeremy',
+  ELEVENLABS_JESSIE = 'elevenlabs:jessie',
+  ELEVENLABS_JOSEPH = 'elevenlabs:joseph',
+  ELEVENLABS_JOSH = 'elevenlabs:josh',
+  ELEVENLABS_LIAM = 'elevenlabs:liam',
+  ELEVENLABS_MATILDA = 'elevenlabs:matilda',
+  ELEVENLABS_MATTHEW = 'elevenlabs:matthew',
+  ELEVENLABS_MICHAEL = 'elevenlabs:michael',
+  ELEVENLABS_MIMI = 'elevenlabs:mimi',
+  ELEVENLABS_NICOLE = 'elevenlabs:nicole',
+  ELEVENLABS_PATRICK = 'elevenlabs:patrick',
+  ELEVENLABS_RACHEL = 'elevenlabs:rachel',
+  ELEVENLABS_RYAN = 'elevenlabs:ryan',
+  ELEVENLABS_SAM = 'elevenlabs:sam',
+  ELEVENLABS_SARAH = 'elevenlabs:sarah',
+  ELEVENLABS_SERENA = 'elevenlabs:serena',
+  ELEVENLABS_THOMAS = 'elevenlabs:thomas',
 }
 
 export enum ResponseModality {
@@ -316,4 +351,58 @@ export interface GeminiLiveResponse {
   toolCallCancellation?: {
     ids: string[];
   };
+}
+
+// ElevenLabs specific types
+export interface ElevenLabsVoiceConfig {
+  voiceId: string;
+  modelId?: string;
+  voiceSettings?: {
+    stability?: number;
+    similarityBoost?: number;
+    style?: number;
+    useSpeakerBoost?: boolean;
+  };
+  streamingLatencyOptimization?: number;
+}
+
+export interface ElevenLabsStreamConfig {
+  enabled: boolean;
+  chunkSize?: number;
+  flushInterval?: number;
+  optimizeStreamingLatency?: number;
+}
+
+export interface ElevenLabsVoice {
+  voice_id: string;
+  name: string;
+  preview_url?: string;
+  category?: string;
+  labels?: Record<string, string>;
+  description?: string;
+  samples?: string[];
+}
+
+export interface ElevenLabsModel {
+  model_id: string;
+  name: string;
+  description?: string;
+  can_be_finetuned?: boolean;
+  max_characters?: number;
+  languages?: Array<{
+    language_id: string;
+    name: string;
+  }>;
+}
+
+export enum VoiceProvider {
+  GEMINI = 'gemini',
+  ELEVENLABS = 'elevenlabs',
+}
+
+export interface UnifiedVoiceConfig {
+  provider: VoiceProvider;
+  geminiConfig?: VoiceConfig;
+  elevenLabsConfig?: ElevenLabsVoiceConfig;
+  streamingConfig?: ElevenLabsStreamConfig;
 }

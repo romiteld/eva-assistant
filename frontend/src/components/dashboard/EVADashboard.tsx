@@ -9,7 +9,7 @@ import {
 import { useSupabase, useAuth } from '@/app/providers';
 import { supabase, realtimeHelpers } from '@/lib/supabase/browser';
 import { authHelpers, ragHelpers } from '@/lib/supabase/auth';
-import { GeminiLiveClient, geminiHelpers } from '@/lib/gemini/client';
+// // import { GeminiLiveClient, geminiHelpers } from '@/lib/gemini/client'; // Temporarily disabled
 import FirecrawlTools from './FirecrawlTools';
 import ChatInterface from '@/components/ChatInterface';
 import CandidatesTable from '@/components/tables/CandidatesTable';
@@ -18,6 +18,9 @@ import { useCleanup, useLimitedArray, useMediaStream } from '@/hooks/useCleanup'
 
 // Enhanced EVA Dashboard with Real Integrations and Memory Leak Fixes
 export default function EVADashboard() {
+  // Feature flag - disable Gemini functionality temporarily
+  const GEMINI_ENABLED = false;
+  
   // Get authenticated user
   const { user, signOut } = useAuth();
   
@@ -39,7 +42,7 @@ export default function EVADashboard() {
   const animationRef = useRef<number>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const geminiLiveRef = useRef<GeminiLiveClient | null>(null);
+  // const geminiLiveRef = useRef<GeminiLiveClient | null>(null); // Temporarily disabled
   const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
@@ -91,7 +94,9 @@ export default function EVADashboard() {
     let isSubscribed = true;
     
     // Initialize Gemini Live Client
-    geminiLiveRef.current = new GeminiLiveClient(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+    if (GEMINI_ENABLED) {
+      // geminiLiveRef.current = new GeminiLiveClient(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+    }
     
     // Connect to Supabase WebSocket
     const connectWebSocket = async () => {
@@ -155,7 +160,7 @@ export default function EVADashboard() {
       if (workflowsChannel) {
         workflowsChannel.unsubscribe();
       }
-      if (geminiLiveRef.current) {
+      if (GEMINI_ENABLED && geminiLiveRef.current) {
         geminiLiveRef.current.disconnect();
         geminiLiveRef.current = null;
       }
@@ -240,7 +245,7 @@ export default function EVADashboard() {
       // Start listening
       try {
         // Connect to Gemini Live
-        if (geminiLiveRef.current) {
+        if (GEMINI_ENABLED && geminiLiveRef.current) {
           geminiLiveRef.current.connect();
           
           // Set up message handler with safe update
@@ -262,7 +267,7 @@ export default function EVADashboard() {
           mediaRecorderRef.current = recorder;
           
           recorder.ondataavailable = async (event) => {
-            if (event.data.size > 0 && geminiLiveRef.current) {
+            if (event.data.size > 0 && GEMINI_ENABLED && geminiLiveRef.current) {
               const arrayBuffer = await event.data.arrayBuffer();
               geminiLiveRef.current.sendAudio(arrayBuffer);
             }
@@ -285,7 +290,7 @@ export default function EVADashboard() {
         mediaRecorderRef.current.stop();
         mediaRecorderRef.current = null;
       }
-      if (geminiLiveRef.current) {
+      if (GEMINI_ENABLED && geminiLiveRef.current) {
         geminiLiveRef.current.disconnect();
       }
       setIsListening(false);
@@ -345,7 +350,7 @@ export default function EVADashboard() {
         setIsScreenSharing(true);
         
         // Send to Gemini Live API
-        if (geminiLiveRef.current) {
+        if (GEMINI_ENABLED && geminiLiveRef.current) {
           geminiLiveRef.current.sendScreenShare(stream);
         }
         
@@ -389,7 +394,7 @@ export default function EVADashboard() {
         setIsCameraActive(true);
         
         // Send to Gemini Live API with proper cleanup
-        if (geminiLiveRef.current && stream) {
+        if (GEMINI_ENABLED && geminiLiveRef.current && stream) {
           const video = videoRef.current;
           if (video) {
             const canvas = document.createElement('canvas');
@@ -402,7 +407,7 @@ export default function EVADashboard() {
                 ctx.drawImage(video, 0, 0);
                 
                 canvas.toBlob(safeUpdate((blob) => {
-                  if (blob && geminiLiveRef.current) {
+                  if (blob && GEMINI_ENABLED && geminiLiveRef.current) {
                     blob.arrayBuffer().then((buffer) => {
                       geminiLiveRef.current?.sendVideo(buffer);
                     });
