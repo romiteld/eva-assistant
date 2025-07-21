@@ -235,10 +235,13 @@ export function ElevenLabsPlayer({
       <audio ref={audioRef} className="hidden" />
 
       {/* Visualizer */}
-      {showVisualizer && state === PlayerState.PLAYING && (
+      {showVisualizer && (
         <div className="h-32 bg-gradient-to-b from-background to-muted/20 rounded-lg overflow-hidden">
           <AudioVisualizer
             frequencyData={frequencyData}
+            waveformData={null}
+            isActive={state === PlayerState.PLAYING}
+            type="frequency"
             className="w-full h-full"
           />
         </div>

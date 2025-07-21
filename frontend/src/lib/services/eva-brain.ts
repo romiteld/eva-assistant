@@ -278,42 +278,57 @@ export class EvaBrain extends EventEmitter {
     try {
       // Check if API key is configured
       if (!process.env.NEXT_PUBLIC_FIRECRAWL_API_KEY) {
-        console.warn('Firecrawl API key not configured, using fallback search');
-        return this.fallbackSearch(args);
+        console.warn('Firecrawl API key not configured, using alternative search');
+        return this.alternativeWebSearch(args);
       }
 
-      // Detect financial data queries
-      const queryLower = args.query.toLowerCase();
-      const isFinancialQuery = /\b(price|stock|crypto|bitcoin|btc|ethereum|eth|xrp|market|trading)\b/.test(queryLower);
-      
-      if (isFinancialQuery) {
-        // Delegate financial queries to specialized agent
-        return await this.delegateFinancialSearch(args);
-      }
-
-      // Regular web search using Firecrawl
       const results = [];
       const limit = args.limit || 5;
       
       try {
-        for await (const result of firecrawl.searchStream(args.query, { limit })) {
+        // Use Firecrawl search with advanced options
+        const searchOptions = {
+          limit,
+          scrapeOptions: {
+            formats: ['markdown', 'links', 'html'] as ('markdown' | 'html' | 'links')[],
+            onlyMainContent: true,
+            waitFor: 2000,
+            timeout: 10000
+          }
+        };
+        
+        // Perform the search
+        for await (const result of firecrawl.searchStream(args.query, searchOptions)) {
+          // Extract the most relevant content
+          const content = result.markdown || result.content || result.html || '';
+          
           results.push({
-            title: result.title || 'No title',
+            title: result.title || this.extractTitle(result),
             url: result.url || '',
-            content: result.content?.substring(0, 500) + '...' || 'No content available'
+            content: this.formatSearchContent(content, 500),
+            source: 'Firecrawl'
           });
         }
+        
+        // If no results, try alternative search strategies
+        if (results.length === 0) {
+          // Try scraping specific sites for the query
+          const alternativeResults = await this.performTargetedSearch(args.query, limit);
+          results.push(...alternativeResults);
+        }
+        
       } catch (firecrawlError) {
         console.error('Firecrawl search error:', firecrawlError);
-        // Fallback to basic search
-        return this.fallbackSearch(args);
+        // Fallback to alternative search
+        return this.alternativeWebSearch(args);
       }
       
       if (results.length === 0) {
         return [{
           title: 'No results found',
           url: '',
-          content: `I couldn't find any results for "${args.query}". Try rephrasing your search or being more specific.`
+          content: `I couldn't find any results for "${args.query}". Let me try a different approach...`,
+          source: 'Eva'
         }];
       }
       
@@ -323,62 +338,226 @@ export class EvaBrain extends EventEmitter {
       return [{
         title: 'Search Error',
         url: '',
-        content: `I encountered an error while searching. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        content: `I encountered an error while searching. Let me try an alternative method...`,
+        source: 'Eva'
       }];
     }
   }
 
-  // Fallback search implementation
-  private async fallbackSearch(args: { query: string; limit?: number }) {
-    // For now, return a helpful message
-    // In production, this could use an alternative search API
-    return [{
-      title: 'Search Capability Limited',
-      url: '',
-      content: `I'm currently unable to perform web searches. For real-time information like cryptocurrency prices, financial data, or current news, please check trusted sources directly. I can help with many other tasks like creating tasks, managing emails, and analyzing documents.`
-    }];
-  }
-
-  // Delegate financial searches to specialized handling
-  private async delegateFinancialSearch(args: { query: string; limit?: number }) {
-    const queryLower = args.query.toLowerCase();
+  // Alternative web search using different strategies
+  private async alternativeWebSearch(args: { query: string; limit?: number }) {
+    const results = [];
     
-    // Extract cryptocurrency symbols
-    const cryptoSymbols = {
-      'bitcoin': 'BTC',
-      'btc': 'BTC',
-      'ethereum': 'ETH',
-      'eth': 'ETH',
-      'xrp': 'XRP',
-      'ripple': 'XRP',
-      'cardano': 'ADA',
-      'solana': 'SOL',
-      'dogecoin': 'DOGE'
+    // Strategy 1: Try direct URL scraping for known queries
+    if (args.query.toLowerCase().includes('xrp') || args.query.toLowerCase().includes('crypto')) {
+      try {
+        const cryptoResult = await this.scrapeCryptoData(args.query);
+        if (cryptoResult) results.push(cryptoResult);
+      } catch (error) {
+        console.error('Crypto scraping error:', error);
+      }
+    }
+    
+    // Strategy 2: Use Firecrawl scrape for specific sites
+    const searchUrls = [
+      `https://www.google.com/search?q=${encodeURIComponent(args.query)}`,
+      `https://duckduckgo.com/?q=${encodeURIComponent(args.query)}`,
+    ];
+    
+    for (const url of searchUrls.slice(0, 1)) {
+      try {
+        const scrapeResult = await firecrawl.scrapeStream(url, {
+          formats: ['markdown', 'links'],
+          onlyMainContent: true,
+          waitFor: 2000
+        }).next();
+        
+        if (scrapeResult.value) {
+          const links = scrapeResult.value.links || [];
+          for (const link of links.slice(0, args.limit || 5)) {
+            if (link.url && !link.url.includes('google.com') && !link.url.includes('duckduckgo.com')) {
+              results.push({
+                title: link.text || 'Result',
+                url: link.url,
+                content: 'Click to view full content',
+                source: 'Web'
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Scrape error:', error);
+      }
+    }
+    
+    if (results.length === 0) {
+      return [{
+        title: 'Search Results Limited',
+        url: '',
+        content: `I can help you search for "${args.query}" but need the Firecrawl API key configured for best results. You can still: 1) Create tasks to research this topic, 2) Set up monitoring for updates, 3) Ask me to analyze any documents you have about this topic.`,
+        source: 'Eva'
+      }];
+    }
+    
+    return results;
+  }
+  
+  // Extract title from search result
+  private extractTitle(result: any): string {
+    if (result.title) return result.title;
+    if (result.ogTitle) return result.ogTitle;
+    if (result.metadata?.title) return result.metadata.title;
+    if (result.url) {
+      // Extract domain as title
+      try {
+        const url = new URL(result.url);
+        return url.hostname.replace('www.', '');
+      } catch {
+        return 'Untitled';
+      }
+    }
+    return 'Untitled';
+  }
+  
+  // Format search content
+  private formatSearchContent(content: string, maxLength: number): string {
+    if (!content) return 'No content available';
+    
+    // Remove excessive whitespace and clean up
+    const cleaned = content
+      .replace(/\s+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    
+    if (cleaned.length <= maxLength) return cleaned;
+    
+    // Smart truncate at sentence boundary
+    const truncated = cleaned.substring(0, maxLength);
+    const lastPeriod = truncated.lastIndexOf('.');
+    const lastSpace = truncated.lastIndexOf(' ');
+    
+    if (lastPeriod > maxLength * 0.8) {
+      return truncated.substring(0, lastPeriod + 1);
+    } else if (lastSpace > maxLength * 0.9) {
+      return truncated.substring(0, lastSpace) + '...';
+    }
+    
+    return truncated + '...';
+  }
+  
+  // Perform targeted search on specific sites
+  private async performTargetedSearch(query: string, limit: number): Promise<any[]> {
+    const results = [];
+    const queryLower = query.toLowerCase();
+    
+    // Financial queries
+    if (/\b(price|crypto|stock|xrp|bitcoin|ethereum)\b/.test(queryLower)) {
+      const sites = [
+        { url: 'https://coinmarketcap.com/search/', param: 'q' },
+        { url: 'https://www.coingecko.com/en/search?query=', param: '' }
+      ];
+      
+      for (const site of sites) {
+        try {
+          const searchUrl = `${site.url}${site.param ? site.param + '=' : ''}${encodeURIComponent(query)}`;
+          const scrapeGen = firecrawl.scrapeStream(searchUrl, {
+            formats: ['markdown'],
+            onlyMainContent: true,
+            timeout: 5000
+          });
+          
+          const result = await scrapeGen.next();
+          if (result.value && result.value.markdown) {
+            results.push({
+              title: `${query} - Financial Data`,
+              url: searchUrl,
+              content: this.formatSearchContent(result.value.markdown, 500),
+              source: 'Targeted Search'
+            });
+          }
+        } catch (error) {
+          console.error('Targeted search error:', error);
+        }
+      }
+    }
+    
+    // News queries
+    if (/\b(news|latest|today|current|update)\b/.test(queryLower)) {
+      try {
+        const newsUrl = `https://news.google.com/search?q=${encodeURIComponent(query)}`;
+        const scrapeGen = firecrawl.scrapeStream(newsUrl, {
+          formats: ['markdown', 'links'],
+          onlyMainContent: true
+        });
+        
+        const result = await scrapeGen.next();
+        if (result.value) {
+          results.push({
+            title: `Latest News: ${query}`,
+            url: newsUrl,
+            content: this.formatSearchContent(result.value.markdown || '', 300),
+            source: 'Google News'
+          });
+        }
+      } catch (error) {
+        console.error('News search error:', error);
+      }
+    }
+    
+    return results.slice(0, limit);
+  }
+  
+  // Scrape crypto data specifically
+  private async scrapeCryptoData(query: string): Promise<any> {
+    const cryptoMap: Record<string, string> = {
+      'xrp': 'ripple',
+      'btc': 'bitcoin',
+      'bitcoin': 'bitcoin',
+      'eth': 'ethereum',
+      'ethereum': 'ethereum'
     };
     
-    let detectedCrypto = null;
-    for (const [key, symbol] of Object.entries(cryptoSymbols)) {
+    const queryLower = query.toLowerCase();
+    let cryptoId = '';
+    
+    for (const [key, value] of Object.entries(cryptoMap)) {
       if (queryLower.includes(key)) {
-        detectedCrypto = symbol;
+        cryptoId = value;
         break;
       }
     }
     
-    if (detectedCrypto) {
-      return [{
-        title: `${detectedCrypto} Price Information`,
-        url: `https://www.coingecko.com/en/coins/${detectedCrypto.toLowerCase()}`,
-        content: `For real-time ${detectedCrypto} price information, I recommend checking CoinGecko, Binance, or CoinMarketCap. Due to the volatile nature of cryptocurrency prices, it's best to check these sources directly for the most accurate, up-to-date pricing.`
-      }];
+    if (!cryptoId) return null;
+    
+    try {
+      const url = `https://www.coingecko.com/en/coins/${cryptoId}`;
+      const scrapeGen = firecrawl.scrapeStream(url, {
+        formats: ['markdown'],
+        onlyMainContent: true,
+        waitFor: 2000
+      });
+      
+      const result = await scrapeGen.next();
+      if (result.value && result.value.markdown) {
+        // Extract price info from markdown
+        const content = result.value.markdown;
+        const priceMatch = content.match(/\$[\d,]+\.?\d*/);
+        const price = priceMatch ? priceMatch[0] : 'Check website';
+        
+        return {
+          title: `${cryptoId.toUpperCase()} Current Price`,
+          url: url,
+          content: `Current price: ${price}\n\nFor real-time data and charts, visit: ${url}\n\nNote: Cryptocurrency prices are highly volatile. Always check multiple sources.`,
+          source: 'CoinGecko'
+        };
+      }
+    } catch (error) {
+      console.error('Crypto scraping error:', error);
     }
     
-    // General financial query response
-    return [{
-      title: 'Financial Information Request',
-      url: '',
-      content: `For real-time financial data including stock prices, crypto prices, and market information, please check trusted financial platforms like Bloomberg, Yahoo Finance, CoinGecko, or your preferred trading platform. I can help you create tasks to track these or set up monitoring for specific financial events.`
-    }];
+    return null;
   }
+
 
   private async navigateDashboard(args: { page: string }) {
     if (typeof window !== 'undefined') {

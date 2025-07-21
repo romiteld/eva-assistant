@@ -14,7 +14,16 @@ interface VoiceSettingsProps {
   isConnected: boolean;
 }
 
-const voiceDescriptions: Record<VoiceType, { description: string; personality: string }> = {
+// Only show Gemini voices for selection
+const geminiVoices = [
+  VoiceType.PUCK,
+  VoiceType.CHARON,
+  VoiceType.KORE,
+  VoiceType.FENRIR,
+  VoiceType.AOEDE,
+];
+
+const voiceDescriptions: Record<string, { description: string; personality: string }> = {
   [VoiceType.PUCK]: {
     description: 'A warm, friendly voice with a slight British accent',
     personality: 'Professional, helpful, and approachable',
@@ -56,7 +65,7 @@ export function VoiceSettings({ selectedVoice, onVoiceChange, isConnected }: Voi
         <div className="space-y-4">
           <Label>Select Voice</Label>
           <RadioGroup value={selectedVoice} onValueChange={(value) => onVoiceChange(value as VoiceType)}>
-            {Object.values(VoiceType).map((voice: VoiceType) => (
+            {geminiVoices.map((voice) => (
               <div key={voice} className="mb-4">
                 <div className="flex items-start space-x-3">
                   <RadioGroupItem value={voice} id={voice} className="mt-1" />

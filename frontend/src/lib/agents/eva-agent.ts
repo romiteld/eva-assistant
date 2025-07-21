@@ -47,7 +47,7 @@ export class EvaVoiceAgent extends EventEmitter implements Agent {
     });
   }
 
-  async execute(task: EvaAgentTask): Promise<AgentResult> {
+  async execute(task: AgentTask): Promise<AgentResult> {
     if (this.isProcessing) {
       return {
         taskId: task.id,
@@ -112,7 +112,7 @@ export class EvaVoiceAgent extends EventEmitter implements Agent {
   }
 
   // Process voice command with transcription and AI understanding
-  private async processVoiceCommand(task: EvaAgentTask): Promise<any> {
+  private async processVoiceCommand(task: AgentTask): Promise<any> {
     let transcript = task.voiceTranscript;
 
     // If no transcript provided but audio data exists, transcribe it

@@ -360,7 +360,7 @@ export function Eva3DSphere({ audioData, isListening, isSpeaking, className }: E
           />
           <ChromaticAberration
             blendFunction={BlendFunction.NORMAL}
-            offset={[0.0005, 0.0012]}
+            offset={new THREE.Vector2(0.0005, 0.0012)}
           />
         </EffectComposer>
       </Canvas>
