@@ -1,7 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini clients
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!)
+// Initialize Gemini client with available API key
+const geminiApiKey =
+  process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY
+
+if (!geminiApiKey) {
+  throw new Error('GEMINI API key is not configured')
+}
+
+const genAI = new GoogleGenerativeAI(geminiApiKey)
 
 // Model configurations
 export const models = {
