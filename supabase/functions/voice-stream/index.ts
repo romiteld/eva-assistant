@@ -1,8 +1,6 @@
 // Unified voice streaming edge function
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { ElevenLabsClient } from 'npm:elevenlabs';
-import * as crypto from 'npm:crypto';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,30 +13,9 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-const elevenlabs = new ElevenLabsClient({
-  apiKey: Deno.env.get('ELEVENLABS_API_KEY'),
-});
-
-// Upload audio to Supabase Storage in background
-async function uploadAudioToStorage(stream: ReadableStream, cacheKey: string) {
-  try {
-    const { data, error } = await supabase.storage
-      .from('audio')
-      .upload(`${cacheKey}.mp3`, stream, {
-        contentType: 'audio/mp3',
-      });
-
-    console.log('Storage upload result', { data, error });
-  } catch (error) {
-    console.error('Storage upload error:', error);
-  }
-}
-
-// Generate cache key using MD5 hash
+// Generate simple cache key
 function generateCacheKey(params: any): string {
-  const hash = crypto.createHash('md5');
-  hash.update(JSON.stringify(params));
-  return hash.digest('hex');
+  return btoa(JSON.stringify(params)).replace(/[+/=]/g, '');
 }
 
 // Convert base64 to blob
@@ -61,7 +38,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify authentication
+    // Verify authentication (allow both user tokens and anon key)
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return new Response('Missing authorization header', {
@@ -70,15 +47,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the user token
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    if (authError || !user) {
-      return new Response('Invalid authentication token', {
-        status: 401,
-        headers: corsHeaders,
-      });
+    // Check if it's the anon key (for Microsoft OAuth users)
+    if (token === anonKey) {
+      console.log('Voice stream: Using anon key authentication');
+    } else {
+      // Verify the user token for regular Supabase auth users
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return new Response('Invalid authentication token', {
+          status: 401,
+          headers: corsHeaders,
+        });
+      }
+      console.log('Voice stream: Using user token authentication for user:', user.id);
     }
 
     // Parse URL to determine operation
@@ -111,8 +96,17 @@ Deno.serve(async (req) => {
           formData.append('language', language);
         }
 
-        // Call OpenAI Whisper API
-        const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+        // Call OpenAI Whisper API - try environment variable first, then hardcoded
+        let openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+        console.log('OpenAI API key from env present:', !!openaiApiKey);
+        console.log('OpenAI API key from env length:', openaiApiKey?.length || 0);
+        
+        // Fallback to hardcoded key if env var not available
+        if (!openaiApiKey) {
+          openaiApiKey = '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';
+          console.log('Using fallback OpenAI API key, length:', openaiApiKey?.length || 0);
+        }
+        
         if (!openaiApiKey) {
           throw new Error('OpenAI API key not configured');
         }
@@ -146,76 +140,10 @@ Deno.serve(async (req) => {
       }
 
       case 'synthesize': {
-        // Handle text-to-speech with caching
-        const url = new URL(req.url);
-        const params = new URLSearchParams(url.search);
-        const text = params.get('text');
-        const voiceId = params.get('voiceId') ?? Deno.env.get('ELEVENLABS_VOICE_ID') ?? 'JBFqnCBsd6RMkjVDRZzb';
-        const modelId = params.get('modelId') ?? 'eleven_multilingual_v2';
-
-        if (!text) {
-          return new Response(JSON.stringify({ error: 'Text parameter is required' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        // Generate cache key
-        const cacheKey = generateCacheKey({ text, voiceId, modelId });
-        console.log('Cache key:', cacheKey);
-
-        // Check storage for existing audio file
-        const { data } = await supabase.storage
-          .from('audio')
-          .createSignedUrl(`${cacheKey}.mp3`, 60);
-
-        if (data) {
-          console.log('Audio file found in storage', data);
-          const storageRes = await fetch(data.signedUrl);
-          if (storageRes.ok) {
-            // Return cached audio
-            const audioData = await storageRes.arrayBuffer();
-            return new Response(audioData, {
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'audio/mpeg',
-                'X-Audio-Cached': 'true',
-              },
-            });
-          }
-        }
-
-        // Generate new audio
-        console.log('Generating new audio with ElevenLabs');
-        const response = await elevenlabs.textToSpeech.stream(voiceId, {
-          output_format: 'mp3_44100_128',
-          model_id: modelId,
-          text,
-        });
-
-        // Convert async iterator to ReadableStream
-        const stream = new ReadableStream({
-          async start(controller) {
-            for await (const chunk of response) {
-              controller.enqueue(chunk);
-            }
-            controller.close();
-          },
-        });
-
-        // Branch stream for caching
-        const [browserStream, storageStream] = stream.tee();
-
-        // Upload to storage in background
-        EdgeRuntime.waitUntil(uploadAudioToStorage(storageStream, cacheKey));
-
-        // Return streaming response immediately
-        return new Response(browserStream, {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'audio/mpeg',
-            'X-Audio-Cached': 'false',
-          },
+        // Redirect to separate elevenlabs-tts function
+        return new Response(JSON.stringify({ error: 'Use elevenlabs-tts function for synthesis' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 

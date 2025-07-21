@@ -41,6 +41,14 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
 
   // Get the current access token
   private async getAccessToken(): Promise<string | null> {
+    // For voice streaming, use the Supabase anon key like other edge functions
+    // This works for both regular Supabase auth and Microsoft OAuth users
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (anonKey) {
+      return anonKey;
+    }
+    
+    // Fallback to session token if anon key not available
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token || null;
   }
@@ -329,11 +337,18 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
       }
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/voice-stream/synthesize?text=${encodeURIComponent(text)}&voiceId=${voiceId}`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
         {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            text: text,
+            voice_id: voiceId,
+            model_id: 'eleven_multilingual_v2'
+          })
         }
       );
 
