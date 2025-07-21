@@ -37,9 +37,9 @@ return new Response(browserStream);
 ```
 
 ### Multi-Agent System
-- **Eva Brain** (`lib/services/eva-brain.ts`): Primary AI using Gemini Pro/Flash with tool calling
+- **Eva Brain** (`lib/services/eva-brain.ts`): Master AI Orchestrator using Gemini Pro 2.5/Flash 2.5 with advanced tool calling
 - **Agent Orchestrator** (Supabase function): A2A communication hub
-- **Specialized Agents**: Document processing, error logging, queue processing
+- **Specialized Agents**: Document processing, error logging, queue processing, deep thinking, lead generation, content creation
 
 ### Microsoft Integration Architecture
 - **Authentication**: Entra ID OAuth 2.0 PKCE (SPA configuration)
@@ -109,8 +109,8 @@ if (token === anonKey) {
 ### Required API Keys
 - `OPENAI_API_KEY`: Whisper transcription (stored in Supabase secrets with fallback hardcoded)
 - `ELEVENLABS_API_KEY`: Text-to-speech synthesis
-- `GOOGLE_GENERATIVE_AI_API_KEY`: Gemini AI models
-- `NEXT_PUBLIC_FIRECRAWL_API_KEY`: Web search capabilities
+- `GOOGLE_GENERATIVE_AI_API_KEY`: Gemini AI models (Pro 2.5/Flash 2.5)
+- `NEXT_PUBLIC_FIRECRAWL_API_KEY`: Advanced web search and scraping capabilities
 
 ### Supabase Configuration
 - Project ID: `ztakznzshlvqobzbuewb`
@@ -156,9 +156,46 @@ if (token === anonKey) {
   - Added OpenAI API key fallback handling in edge function
 - **Status**: ✅ Fixed in voice-stream function version 6
 
+## Eva Brain Capabilities (July 2025)
+
+### Master Orchestrator Features
+- **Universal Web Search**: Search ANY topic using Firecrawl API with advanced scraping
+- **Multi-Tool Orchestration**: Coordinate multiple tools in parallel for complex tasks
+- **Deep Thinking**: Analyze complex problems with multi-agent reasoning
+- **Email Management**: Read/write emails via Microsoft Graph API
+- **Task Management**: Create, update, and track tasks with full lifecycle control
+- **Real-time Monitoring**: Set up monitors for any topic with continuous updates
+- **Document Analysis**: Process PDFs, images, and documents with vision capabilities
+- **Smart Navigation**: Navigate dashboard and execute workflows via voice
+
+### Tool Calling System (9 Tools)
+1. **search_web**: Universal search with Firecrawl API (markdown, links, HTML extraction)
+2. **navigate_dashboard**: Voice-controlled navigation
+3. **execute_workflow**: Master orchestration for specialized agents
+4. **query_data**: Database queries across all tables
+5. **create_task**: Task creation with full details
+6. **update_task**: Task updates and status management
+7. **read_emails**: Email retrieval from any folder
+8. **write_email**: Email composition and drafts
+9. **monitor_updates**: Real-time monitoring setup
+
+### Advanced Search Implementation
+- **Firecrawl Integration**: Full API with search, scrape, crawl, map, and extract
+- **Fallback Strategies**: Alternative search when API unavailable
+- **Targeted Scraping**: Specialized handling for crypto, news, financial data
+- **Smart Content Extraction**: Intelligent formatting and relevance filtering
+
+### Testing Resources
+- **Interactive Search Test**: `src/test/eva-search-test.html`
+- **Full Test Suite**: `src/test/eva-full-test.js`
+- **Quick Start Guide**: `src/test/eva-quickstart.md`
+- **Live Testing Guide**: `src/test/eva-live-test.md`
+
 ## Production Considerations
 - Voice sessions auto-cleanup after 30 days
 - Audio cache uses LRU eviction policy
 - Error logging centralized in Supabase
 - Real-time metrics via Supabase Realtime
 - Microsoft Graph API respects user M365 license limits
+- Firecrawl API rate limits apply for web search
+- Multi-modal processing ready for vision and document analysis
