@@ -25,6 +25,8 @@ import { supabase } from '@/lib/supabase/browser'
 import type { User } from '@supabase/supabase-js'
 import { supabaseVoiceStreaming } from '@/lib/services/supabase-voice-streaming'
 import { cn } from '@/lib/utils'
+import { chatFileUploadService, ChatUploadedFile } from '@/lib/services/chat-file-upload'
+import { FileUploadZone } from '@/components/voice/FileUploadZone'
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -76,6 +78,8 @@ export default function TalkToEvaPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [audioLevel, setAudioLevel] = useState(0)
   const [isCalibrating, setIsCalibrating] = useState(false)
+  const [pendingAttachments, setPendingAttachments] = useState<ChatUploadedFile[]>([])
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const audioVisualizerRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
@@ -380,6 +384,24 @@ export default function TalkToEvaPage() {
         timestamp: Date.now(),
         status: 'sent'
       }])
+      
+      // Process with attachments if any
+      if (pendingAttachments.length > 0) {
+        const attachmentsForProcessing = pendingAttachments.map(file => ({
+          type: file.fileType as 'image' | 'document',
+          content: file.base64 || file.content || '',
+          mimeType: file.mimeType,
+          fileName: file.fileName
+        }))
+        
+        supabaseVoiceStreaming.processTranscriptWithAttachments(
+          transcript,
+          attachmentsForProcessing
+        )
+        
+        // Clear attachments after processing
+        setPendingAttachments([])
+      }
     }
 
     const handleResponse = (response: string) => {
@@ -503,16 +525,29 @@ export default function TalkToEvaPage() {
       setVoice(prev => ({ ...prev, status: 'connecting' }))
       await supabaseVoiceStreaming.startSession(user.id)
       
-      // Apply optimized VAD configuration
-      supabaseVoiceStreaming.setChunkDuration(2000)
-      supabaseVoiceStreaming.setVADConfig({
-        silenceThreshold: 0.01,
-        speechThreshold: 0.015,
-        silenceDuration: 4000,
-      })
+      // Apply optimized VAD configuration with runtime guards
+      if (typeof supabaseVoiceStreaming.setChunkDuration === 'function') {
+        supabaseVoiceStreaming.setChunkDuration(2000)
+      } else {
+        console.warn('setChunkDuration method not available in SupabaseVoiceStreamingService')
+      }
+      
+      if (typeof supabaseVoiceStreaming.setVADConfig === 'function') {
+        supabaseVoiceStreaming.setVADConfig({
+          silenceThreshold: 0.01,
+          speechThreshold: 0.015,
+          silenceDuration: 4000,
+        })
+      } else {
+        console.warn('setVADConfig method not available in SupabaseVoiceStreamingService')
+      }
       
       // Calibrate microphone for optimal VAD
-      await supabaseVoiceStreaming.calibrateMicrophone()
+      if (typeof supabaseVoiceStreaming.calibrateMicrophone === 'function') {
+        await supabaseVoiceStreaming.calibrateMicrophone()
+      } else {
+        console.warn('calibrateMicrophone method not available in SupabaseVoiceStreamingService')
+      }
     } catch (error) {
       console.error('Failed to connect:', error)
       setVoice(prev => ({ ...prev, status: 'error' }))
@@ -532,15 +567,52 @@ export default function TalkToEvaPage() {
   // Handle file attachment
   const handleFileAttach = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file || !voice.isConnected) return
+    if (!file || !voice.isConnected || !voice.sessionId) return
 
-    // For now, just show a message - in a real implementation, you'd process the file
-    setMessages(prev => [...prev, {
-      id: crypto.randomUUID(),
-      type: 'system',
-      content: `File attached: ${file.name}`,
-      timestamp: Date.now()
-    }])
+    setIsUploadingFile(true)
+    try {
+      const uploadedFile = await chatFileUploadService.uploadChatFile(
+        file,
+        voice.sessionId,
+        (progress) => {
+          // Optional: Add progress tracking
+          console.log(`Upload progress: ${progress}%`)
+        }
+      )
+      
+      setPendingAttachments(prev => [...prev, uploadedFile])
+      
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        type: 'system',
+        content: `File attached: ${file.name}`,
+        timestamp: Date.now()
+      }])
+    } catch (error) {
+      console.error('File upload failed:', error)
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        type: 'system',
+        content: `Failed to attach file: ${(error as Error).message}`,
+        timestamp: Date.now()
+      }])
+    } finally {
+      setIsUploadingFile(false)
+      // Reset the input
+      if (event.target) {
+        event.target.value = ''
+      }
+    }
+  }
+  
+  // Handle file removal
+  const handleFileRemove = async (fileId: string) => {
+    try {
+      await chatFileUploadService.deleteChatFile(fileId)
+      setPendingAttachments(prev => prev.filter(f => f.id !== fileId))
+    } catch (error) {
+      console.error('Failed to remove file:', error)
+    }
   }
 
   if (isLoading) {
@@ -749,6 +821,20 @@ export default function TalkToEvaPage() {
         </div>
       </motion.div>
 
+      {/* File Upload Zone */}
+      {voice.isConnected && voice.sessionId && (
+        <div className="px-4 py-2 border-t border-gray-800">
+          <FileUploadZone
+            sessionId={voice.sessionId}
+            onFilesUploaded={(files) => setPendingAttachments(prev => [...prev, ...files])}
+            onFileRemove={handleFileRemove}
+            uploadedFiles={pendingAttachments}
+            disabled={!voice.isConnected || isUploadingFile}
+            className="max-w-3xl mx-auto"
+          />
+        </div>
+      )}
+
       {/* Voice Indicator with 3D animation */}
       {voice.isConnected && (
         <motion.div 
@@ -831,6 +917,25 @@ export default function TalkToEvaPage() {
                    voice.isSpeaking ? 'Eva is responding' :
                    'Say something to start'}
                 </p>
+              </motion.div>
+              
+              {/* File Attachment Button */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="mt-4"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => document.getElementById('file-attach')?.click()}
+                  disabled={isUploadingFile || voice.isProcessing}
+                  className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/50"
+                >
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  {isUploadingFile ? 'Uploading...' : 'Attach File'}
+                </Button>
               </motion.div>
             </div>
           </div>

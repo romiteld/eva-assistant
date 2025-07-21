@@ -6,7 +6,7 @@ import { Document } from 'https://esm.sh/langchain/document'
 import { RecursiveCharacterTextSplitter } from 'https://esm.sh/langchain/text_splitter'
 import * as pdfParse from 'https://esm.sh/pdf-parse@1.1.1'
 import * as mammoth from 'https://esm.sh/mammoth@1.6.0'
-import * as xlsx from 'https://esm.sh/xlsx@0.20.1'
+import * as xlsx from 'https://esm.sh/xlsx@0.20.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
