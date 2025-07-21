@@ -98,10 +98,8 @@ export async function signInWithMicrosoftPKCE() {
     console.log("[Microsoft OAuth] Using local redirect URI for development:", redirectUri);
   }
   
-  // Ensure the redirect URI points to the API route
-  if (!redirectUri.includes('/api/auth/microsoft/callback')) {
-    redirectUri = redirectUri.replace('/auth/microsoft/callback', '/api/auth/microsoft/callback');
-  }
+  // Keep the redirect URI as configured (don't force /api/ prefix)
+  // This allows the redirect URI to match what's registered in Azure AD
   
   console.log("[Microsoft OAuth] Using redirect URI:", redirectUri);
   const scope =

@@ -31,10 +31,10 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
   private evaBrain: EvaBrain | null = null;
   private audioCache: AudioCacheService;
   private vadEnabled = true;
-  private chunkDuration = 5000; // ms - increased for complete phrases
-  private silenceThreshold = 0.005; // Lower to capture softer speech
-  private speechThreshold = 0.02; // Much lower to detect all speech levels
-  private silenceDuration = 2500; // ms - wait 2.5 seconds of silence before processing
+  private chunkDuration = 2000; // ms - send audio every 2 seconds for faster response
+  private silenceThreshold = 0.01; // Raised to avoid treating low-level noise as speech
+  private speechThreshold = 0.015; // Slightly higher threshold to prevent early triggers
+  private silenceDuration = 4000; // ms - wait 4 seconds of silence before ending speech
 
   constructor() {
     super();
@@ -474,6 +474,78 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
     if (config.silenceThreshold !== undefined) this.silenceThreshold = config.silenceThreshold;
     if (config.speechThreshold !== undefined) this.speechThreshold = config.speechThreshold;
     if (config.silenceDuration !== undefined) this.silenceDuration = config.silenceDuration;
+  }
+
+  // Set chunk duration for audio recording
+  setChunkDuration(milliseconds: number): void {
+    if (milliseconds > 0 && milliseconds <= 10000) { // Max 10 seconds for safety
+      this.chunkDuration = milliseconds;
+      console.log('[VoiceStreaming] Chunk duration set to:', milliseconds, 'ms');
+    }
+  }
+
+  // Calibrate microphone to adjust VAD thresholds based on ambient noise
+  async calibrateMicrophone(durationMs = 2000): Promise<void> {
+    if (!this.analyser || !this.audioContext) {
+      throw new Error('Audio not initialized. Start session first.');
+    }
+
+    console.log('[VoiceStreaming] Starting microphone calibration for', durationMs, 'ms');
+    
+    return new Promise((resolve) => {
+      const samples: number[] = [];
+      const startTime = Date.now();
+      const bufferLength = this.analyser!.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const collectSamples = () => {
+        this.analyser!.getByteFrequencyData(dataArray);
+        
+        // Calculate RMS
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i] * dataArray[i];
+        }
+        const rms = Math.sqrt(sum / bufferLength) / 255;
+        
+        if (rms > 0) {
+          samples.push(rms);
+        }
+        
+        if (Date.now() - startTime < durationMs) {
+          requestAnimationFrame(collectSamples);
+        } else {
+          // Calculate average and standard deviation
+          if (samples.length > 0) {
+            const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
+            const variance = samples.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / samples.length;
+            const stdDev = Math.sqrt(variance);
+            
+            // Set thresholds based on noise floor
+            // Silence threshold = average + 1 standard deviation
+            // Speech threshold = average + 2.5 standard deviations
+            const newSilenceThreshold = Math.max(0.005, avg + stdDev);
+            const newSpeechThreshold = Math.max(0.01, avg + (2.5 * stdDev));
+            
+            this.silenceThreshold = Math.min(newSilenceThreshold, 0.02); // Cap at reasonable levels
+            this.speechThreshold = Math.min(newSpeechThreshold, 0.03);
+            
+            console.log('[VoiceStreaming] Calibration complete:', {
+              noiseFloor: avg.toFixed(4),
+              stdDev: stdDev.toFixed(4),
+              silenceThreshold: this.silenceThreshold.toFixed(4),
+              speechThreshold: this.speechThreshold.toFixed(4)
+            });
+          } else {
+            console.warn('[VoiceStreaming] No samples collected during calibration');
+          }
+          
+          resolve();
+        }
+      };
+      
+      collectSamples();
+    });
   }
 
   // End streaming session

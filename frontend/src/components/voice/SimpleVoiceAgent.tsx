@@ -112,6 +112,17 @@ export default function SimpleVoiceAgent({
   const startVoice = useCallback(async () => {
     try {
       await supabaseVoiceStreaming.startSession(userId);
+      
+      // Apply optimized VAD configuration for faster response
+      supabaseVoiceStreaming.setChunkDuration(2000);
+      supabaseVoiceStreaming.setVADConfig({
+        silenceThreshold: 0.01,
+        speechThreshold: 0.015,
+        silenceDuration: 4000,
+      });
+      
+      // Calibrate microphone for optimal VAD
+      await supabaseVoiceStreaming.calibrateMicrophone();
     } catch (err) {
       console.error('failed to start voice session', err);
       onError?.(err as Error);
