@@ -31,9 +31,6 @@ import { supabase } from '@/lib/supabase/browser'
 import type { User } from '@supabase/supabase-js'
 import { useVoiceSession } from '@/hooks/useVoiceSession'
 import { AudioVisualizer } from '@/components/voice/AudioVisualizer'
-import { ChatMessage } from '@/components/voice/ChatMessage'
-import { VoiceHistoryList } from '@/components/voice/VoiceHistoryList'
-import { CommandPalette } from '@/components/voice/CommandPalette'
 
 interface VoiceState {
   sessionId: string | null
@@ -48,6 +45,40 @@ interface Conversation {
   type: 'user' | 'assistant'
   content: string
   timestamp: number
+}
+
+// Simple ChatMessage component
+function ChatMessage({ message, isLatest }: { message: Conversation, isLatest: boolean }) {
+  const isUser = message.type === 'user'
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
+    >
+      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+        isUser 
+          ? 'bg-purple-600 text-white' 
+          : 'bg-white/10 text-gray-100 border border-white/20'
+      }`}>
+        <div className="flex items-start gap-3">
+          {!isUser && (
+            <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Brain className="w-3 h-3 text-purple-400" />
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+            <div className="flex items-center gap-2 mt-2 text-xs opacity-60">
+              <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
 }
 
 export default function TalkToEvaPage() {
@@ -549,7 +580,10 @@ export default function TalkToEvaPage() {
               </div>
               
               <div className="flex-1 overflow-y-auto p-6">
-                <VoiceHistoryList onSessionSelect={() => setShowHistory(false)} />
+                <div className="text-center text-gray-400 py-8">
+                  <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>Voice history will appear here</p>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -557,10 +591,40 @@ export default function TalkToEvaPage() {
       </AnimatePresence>
 
       {/* Command palette */}
-      <CommandPalette 
-        open={commandPalette} 
-        onOpenChange={setCommandPalette}
-      />
+      <AnimatePresence>
+        {commandPalette && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setCommandPalette(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-800 rounded-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white">Quick Commands</h3>
+                <button
+                  onClick={() => setCommandPalette(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                <div className="p-3 bg-white/5 rounded-lg">
+                  <p className="text-white text-sm">Voice commands available when connected</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
