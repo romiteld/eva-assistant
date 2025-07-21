@@ -32,7 +32,7 @@ function generateHash(input: string): string {
 function generateCacheKey(request: TTSRequest): string {
   const cacheString = JSON.stringify({
     text: request.text,
-    voice_id: request.voice_id || 'pNInz6obpgDQGcFmaJgB', // Default voice
+    voice_id: request.voice_id || 'exsUS4vynmxd379XN4yO', // Default voice
     model_id: request.model_id || 'eleven_monolingual_v1',
     voice_settings: request.voice_settings
   });
@@ -112,7 +112,7 @@ async function uploadAudioToStorage(
 
 // Generate TTS audio using ElevenLabs API
 async function generateTTS(request: TTSRequest): Promise<ReadableStream<Uint8Array>> {
-  const voiceId = request.voice_id || 'pNInz6obpgDQGcFmaJgB'; // Default voice
+  const voiceId = request.voice_id || 'exsUS4vynmxd379XN4yO'; // Default voice
   const modelId = request.model_id || 'eleven_monolingual_v1';
   
   const requestBody = {
@@ -230,9 +230,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Parse request body
-    const requestData: TTSRequest = await req.json();
-    
     // Validate required fields
     if (!requestData.text || requestData.text.trim().length === 0) {
       return new Response(

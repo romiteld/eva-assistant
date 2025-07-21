@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     
     const { code, codeVerifier, redirectUri } = await request.json();
 
-    if (!code || !codeVerifier) {
+    if (!code || !codeVerifier || !redirectUri) {
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Missing required parameters: code, codeVerifier, and redirectUri are all required' },
         { status: 400 }
       );
     }
@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
       client_id: clientId,
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: redirectUri || `${process.env.NEXT_PUBLIC_APP_URL}/auth/microsoft/callback`,
+      // CRITICAL: The redirect URI must exactly match what was used during authorization
+      // Since the client passes the exact URI used, we must use it as-is
+      redirect_uri: redirectUri,
       code_verifier: codeVerifier,
     });
 

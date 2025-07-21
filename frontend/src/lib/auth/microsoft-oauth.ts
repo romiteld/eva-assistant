@@ -452,7 +452,9 @@ export async function handleMicrosoftCallback(code: string, state: string) {
       body: JSON.stringify({
         code,
         codeVerifier,
-        redirectUri: process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`,
+        // CRITICAL: Use the EXACT same redirect URI that was used during authorization
+        // This must match what was sent in signInWithMicrosoftPKCE
+        redirectUri: `${window.location.origin}/auth/microsoft/callback`,
       }),
     });
 
@@ -483,7 +485,8 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     client_id: clientId,
     grant_type: 'authorization_code',
     code: code,
-    redirect_uri: process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`,
+    // CRITICAL: Use the EXACT same redirect URI that was used during authorization
+    redirect_uri: `${window.location.origin}/auth/microsoft/callback`,
     code_verifier: codeVerifier,
   });
 
