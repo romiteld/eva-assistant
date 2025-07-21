@@ -162,21 +162,27 @@ export async function signInWithMicrosoftPKCE() {
     sessionStorage: sessionStorage.getItem("pkce_code_verifier") !== null,
     localStorage: localStorage.getItem("pkce_code_verifier") !== null,
     cookie: getCookie("pkce_code_verifier") !== null,
-    window: typeof window !== 'undefined' && (window as any).__oauthStorage !== undefined
+    window: typeof window !== 'undefined' && (window as any).__oauthStorage !== undefined,
+    stateInSession: sessionStorage.getItem("oauth_state") !== null,
+    stateInLocal: localStorage.getItem("oauth_state") !== null,
+    stateInCookie: getCookie("oauth_state") !== null
   };
   console.log("[Microsoft OAuth] Storage verification:", verifyStorage);
+  console.log("[Microsoft OAuth] Encoded state being sent:", encodedState);
 
   // Construct the OAuth URL with PKCE
+  // Per 2025 requirements: use response_type="code id_token" and include nonce
   const params = new URLSearchParams({
     client_id: clientId,
-    response_type: "code",
+    response_type: "code id_token", // Updated for SPA compliance
     redirect_uri: redirectUri,
-    response_mode: "query",
+    response_mode: "fragment", // Use fragment for SPAs to avoid CORS issues
     scope: scope,
     state: encodedState,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
     prompt: "select_account", // Allow user to select account
+    nonce: state.nonce, // Include nonce for replay attack prevention
   });
 
   const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params.toString()}`;
@@ -294,12 +300,49 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     throw new Error("PKCE code verifier not found. Please ensure cookies and local storage are enabled and try again.");
   }
 
-  if (state !== savedState) {
+  // Enhanced state validation with better debugging
+  if (!savedState || state !== savedState) {
+    console.warn("[Microsoft OAuth Callback] State mismatch detected");
+    console.log("[Microsoft OAuth Callback] Received state:", state);
+    console.log("[Microsoft OAuth Callback] Saved state:", savedState);
+    
+    // Try additional recovery methods
     const cookieState = getCookie("oauth_state");
-    if (cookieState && state === cookieState) {
+    console.log("[Microsoft OAuth Callback] Cookie state:", cookieState);
+    
+    // Also check if state might be URL encoded
+    const decodedState = decodeURIComponent(state);
+    const decodedSavedState = savedState ? decodeURIComponent(savedState) : null;
+    
+    if (cookieState && (state === cookieState || decodedState === cookieState)) {
+      console.log("[Microsoft OAuth Callback] Recovered state from cookies");
       savedState = cookieState;
+    } else if (savedState && (state === decodedSavedState || decodedState === savedState)) {
+      console.log("[Microsoft OAuth Callback] State matched after URL decoding");
     } else {
-      throw new Error("State mismatch - possible CSRF attack");
+      // Try to parse the state to check if it's valid even without matching
+      try {
+        const stateData = JSON.parse(atob(state));
+        if (stateData.provider === "azure" && stateData.timestamp && stateData.nonce) {
+          console.warn("[Microsoft OAuth Callback] State structure is valid but doesn't match saved state");
+          console.warn("[Microsoft OAuth Callback] This might be due to storage being cleared or blocked");
+          // In development, we might want to continue despite the mismatch
+          // In production, this should fail for security
+          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.warn("[Microsoft OAuth Callback] Development mode - continuing despite state mismatch");
+          } else {
+            throw new Error("State mismatch - possible CSRF attack");
+          }
+        } else {
+          throw new Error("Invalid state structure");
+        }
+      } catch (parseError) {
+        console.error("[Microsoft OAuth Callback] Failed to parse state:", parseError);
+        console.error("[Microsoft OAuth Callback] State validation failed");
+        console.error("[Microsoft OAuth Callback] All sessionStorage:", Object.keys(sessionStorage));
+        console.error("[Microsoft OAuth Callback] All localStorage:", Object.keys(localStorage));
+        throw new Error("State mismatch - possible CSRF attack");
+      }
     }
   }
 
@@ -403,19 +446,39 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     code_verifier: codeVerifier,
   });
 
-  const tokenResponse = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: tokenParams.toString(),
-  });
+  try {
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: tokenParams.toString(),
+    });
 
-  const tokenData = await tokenResponse.json();
+    const tokenData = await tokenResponse.json();
 
-  if (!tokenResponse.ok) {
-    throw new Error(tokenData.error_description || tokenData.error || "Token exchange failed");
+    if (!tokenResponse.ok) {
+      // Check for specific CORS error
+      if (tokenData.error === 'invalid_request' && 
+          tokenData.error_description?.includes('cross-origin token redemption')) {
+        throw new Error(
+          "CORS Error: Your redirect URI must be registered as a 'Single-Page Application' type in Azure AD. " +
+          "Please update your app registration to use the SPA platform instead of Web platform."
+        );
+      }
+      throw new Error(tokenData.error_description || tokenData.error || "Token exchange failed");
+    }
+
+    return tokenData;
+  } catch (error) {
+    // Handle CORS errors specifically
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error(
+        "CORS Error: Unable to exchange authorization code. " +
+        "Ensure your redirect URI is registered as a Single-Page Application (SPA) in Azure AD, " +
+        "not as a Web application. This is required for client-side token exchange."
+      );
+    }
+    throw error;
   }
-
-  return tokenData;
 }

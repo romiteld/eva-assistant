@@ -13,10 +13,22 @@ export default function MicrosoftCallbackPage() {
 
   useEffect(() => {
     async function handleCallback() {
-      const code = searchParams.get("code");
-      const state = searchParams.get("state");
-      const error = searchParams.get("error");
-      const errorDescription = searchParams.get("error_description");
+      // Handle both query and fragment parameters (2025 SPA requirements)
+      let code = searchParams.get("code");
+      let state = searchParams.get("state");
+      let error = searchParams.get("error");
+      let errorDescription = searchParams.get("error_description");
+      let idToken = searchParams.get("id_token");
+      
+      // If not in query params, check fragment (response_mode=fragment)
+      if (!code && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        code = hashParams.get("code");
+        state = hashParams.get("state");
+        error = hashParams.get("error");
+        errorDescription = hashParams.get("error_description");
+        idToken = hashParams.get("id_token");
+      }
 
       if (error) {
         setError(`OAuth error: ${errorDescription || error}`);
