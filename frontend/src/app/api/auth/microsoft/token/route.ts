@@ -3,7 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/auth/microsoft/token
- * Exchange authorization code for tokens - server-side only to protect client secret
+ * Exchange authorization code for tokens using PKCE flow
+ * 
+ * IMPORTANT: This endpoint is designed for SPAs (Single-page applications)
+ * which are public clients. Do NOT include client_secret in the token exchange.
+ * 
+ * If you see error AADSTS700025, it means your Azure AD app is configured
+ * as a SPA/public client and you cannot use client secrets.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -52,10 +58,11 @@ export async function POST(request: NextRequest) {
     // Azure AD app configured as SPA = public client, Web = confidential client
     // If codeVerifier is present, we're using PKCE flow (public client)
     // AADSTS700025 error means the app is configured as public/SPA
-    if (clientSecret && !codeVerifier) {
-      // Only add client_secret for confidential clients without PKCE
-      tokenParams.append('client_secret', clientSecret);
-    }
+    // Since we're using PKCE with a SPA, NEVER include client_secret
+    // if (clientSecret && !codeVerifier) {
+    //   // Only add client_secret for confidential clients without PKCE
+    //   tokenParams.append('client_secret', clientSecret);
+    // }
 
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
