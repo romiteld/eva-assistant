@@ -26,13 +26,15 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
   private lastAudioLevel = 0;
   private processingQueue: Array<{ transcript: string; timestamp: number }> = [];
   private isProcessingResponse = false;
+  private lastTranscript = '';
+  private lastTranscriptTime = 0;
   private evaBrain: EvaBrain | null = null;
   private audioCache: AudioCacheService;
   private vadEnabled = true;
-  private chunkDuration = 1500; // ms
-  private silenceThreshold = 0.02;
-  private speechThreshold = 0.05;
-  private silenceDuration = 800; // ms
+  private chunkDuration = 3000; // ms - longer chunks for better transcription
+  private silenceThreshold = 0.01; // Lower threshold to ignore more background noise
+  private speechThreshold = 0.08; // Higher threshold to require clearer speech
+  private silenceDuration = 1200; // ms - longer pause before processing
 
   constructor() {
     super();
@@ -212,7 +214,7 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
 
   // Process audio chunk with transcription
   private async processAudioChunk(audioBlob: Blob): Promise<void> {
-    if (!this.sessionId || audioBlob.size < 1000) return; // Skip very small chunks
+    if (!this.sessionId || audioBlob.size < 5000) return; // Skip small chunks - need substantial audio
 
     try {
       // Convert blob to base64
@@ -247,16 +249,36 @@ export class SupabaseVoiceStreamingService extends EventEmitter {
       }
 
       const data = await response.json();
-      if (data.transcript && data.transcript.trim()) {
-        this.emit('transcript', data.transcript);
+      if (data.transcript && data.transcript.trim() && data.transcript.trim().length > 2) {
+        // Filter out very short transcriptions (like "you", "the", etc.)
+        const transcript = data.transcript.trim();
+        const currentTime = Date.now();
         
-        // Add to processing queue
-        this.processingQueue.push({
-          transcript: data.transcript,
-          timestamp: Date.now()
-        });
+        console.log('[VoiceStreaming] Transcript received:', transcript);
         
-        this.processNextInQueue();
+        // Avoid duplicate processing of similar transcripts within 2 seconds
+        const isDuplicate = transcript === this.lastTranscript && 
+                           (currentTime - this.lastTranscriptTime) < 2000;
+        
+        if (!isDuplicate) {
+          this.emit('transcript', transcript);
+          
+          // Only process meaningful transcripts (more than just single words)
+          if (transcript.length > 5 || transcript.split(' ').length > 1) {
+            // Add to processing queue
+            this.processingQueue.push({
+              transcript: transcript,
+              timestamp: currentTime
+            });
+            
+            this.lastTranscript = transcript;
+            this.lastTranscriptTime = currentTime;
+            
+            this.processNextInQueue();
+          }
+        } else {
+          console.log('[VoiceStreaming] Ignoring duplicate transcript:', transcript);
+        }
       }
     } catch (error) {
       console.error('[VoiceStreaming] Audio processing error:', error);
