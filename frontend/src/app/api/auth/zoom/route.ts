@@ -4,11 +4,19 @@ import { createClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 const ZOOM_AUTH_URL = 'https://zoom.us/oauth/authorize';
-const ZOOM_CLIENT_ID = process.env.ZOOM_CLIENT_ID!;
-const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 'http://localhost:3000/api/auth/zoom/callback';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check for required environment variables
+    const ZOOM_CLIENT_ID = process.env.ZOOM_CLIENT_ID;
+    const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 'http://localhost:3000/api/auth/zoom/callback';
+    
+    if (!ZOOM_CLIENT_ID) {
+      console.error('ZOOM_CLIENT_ID environment variable is not set');
+      return NextResponse.redirect(
+        new URL('/dashboard/interview-center?error=zoom_not_configured', request.url)
+      );
+    }
     // Check if user is authenticated
     const supabase = createClient();
     const { data: { user }, error } = await supabase.auth.getUser();

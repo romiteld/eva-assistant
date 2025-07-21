@@ -88,15 +88,22 @@ export async function signInWithMicrosoftPKCE() {
     );
   }
 
-  // Use environment variable for redirect URI, but override for local development
-  let redirectUri = process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`;
+  // Use environment variable for redirect URI, but ensure it points to the API route
+  let redirectUri = process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/api/auth/microsoft/callback`;
   
   // If we're in local development but have a production redirect URI, use the local one
   if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
       redirectUri && !redirectUri.includes('localhost')) {
-    redirectUri = `${window.location.origin}/auth/microsoft/callback`;
+    redirectUri = `${window.location.origin}/api/auth/microsoft/callback`;
     console.log("[Microsoft OAuth] Using local redirect URI for development:", redirectUri);
   }
+  
+  // Ensure the redirect URI points to the API route
+  if (!redirectUri.includes('/api/auth/microsoft/callback')) {
+    redirectUri = redirectUri.replace('/auth/microsoft/callback', '/api/auth/microsoft/callback');
+  }
+  
+  console.log("[Microsoft OAuth] Using redirect URI:", redirectUri);
   const scope =
     "openid email profile offline_access https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Contacts.ReadWrite https://graph.microsoft.com/Files.ReadWrite.All";
 
@@ -177,7 +184,7 @@ export async function signInWithMicrosoftPKCE() {
   console.log("[Microsoft OAuth] Storage verification:", verifyStorage);
   console.log("[Microsoft OAuth] Encoded state being sent:", encodedState);
 
-  // Construct the OAuth URL with PKCE
+  // Construct the OAuth URL (v1.0 endpoints don't support PKCE, but we'll keep for future v2.0 compatibility)
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: "code", // Use authorization code flow only
@@ -185,6 +192,7 @@ export async function signInWithMicrosoftPKCE() {
     response_mode: "query", // Use query for standard OAuth flow
     scope: scope,
     state: encodedState,
+    // PKCE parameters - may not be supported in v1.0 but harmless
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
     prompt: "select_account", // Allow user to select account
@@ -201,10 +209,10 @@ export async function handleMicrosoftCallback(code: string, state: string) {
   console.log("[Microsoft OAuth Callback] Starting enhanced PKCE retrieval...");
   
   // Check if this code has already been processed
-  const processedKey = `oauth_processed_${code}`;
+  const processedKey = `microsoft_oauth_processed_${code}`;
   if (sessionStorage.getItem(processedKey)) {
-    console.warn("[Microsoft OAuth Callback] Authorization code already processed");
-    throw new Error("Authorization code has already been used");
+    console.log("[Microsoft OAuth Callback] Authorization code already processed, skipping...");
+    return { alreadyProcessed: true } as any;
   }
   
   // Mark code as processed immediately
@@ -478,13 +486,23 @@ export async function handleMicrosoftCallback(code: string, state: string) {
     throw new Error("Microsoft OAuth configuration missing");
   }
 
-  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  // Use environment variable for redirect URI, but override for local development
+  let redirectUri = process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI || `${window.location.origin}/auth/microsoft/callback`;
+  
+  // If we're in local development but have a production redirect URI, use the local one
+  if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
+      redirectUri && !redirectUri.includes('localhost')) {
+    redirectUri = `${window.location.origin}/auth/microsoft/callback`;
+    console.log("[Microsoft OAuth Callback] Using local redirect URI for development:", redirectUri);
+  }
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/token`;
   const tokenParams = new URLSearchParams({
     client_id: clientId,
     grant_type: 'authorization_code',
     code: code,
     // CRITICAL: Use the EXACT same redirect URI that was used during authorization
-    redirect_uri: `${window.location.origin}/auth/microsoft/callback`,
+    redirect_uri: redirectUri,
     code_verifier: codeVerifier,
   });
 

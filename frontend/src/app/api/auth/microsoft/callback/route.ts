@@ -5,8 +5,9 @@ import { withRateLimit } from '@/middleware/rate-limit';
 // Microsoft OAuth configuration - Use environment variables
 const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID || process.env.ENTRA_TENANT_ID;
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID || process.env.ENTRA_CLIENT_ID;
+const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET || process.env.ENTRA_CLIENT_SECRET;
 
-if (!MICROSOFT_TENANT_ID || !MICROSOFT_CLIENT_ID) {
+if (!MICROSOFT_TENANT_ID || !MICROSOFT_CLIENT_ID || !MICROSOFT_CLIENT_SECRET) {
   console.error('Microsoft OAuth configuration missing. Please set environment variables.');
 }
 
@@ -44,16 +45,19 @@ export const GET = withRateLimit(async (request: NextRequest) => {
       stateData.codeVerifier = cookieVerifier;
     }
     
-    // Exchange code for tokens with Microsoft
+    // Exchange code for tokens with Microsoft using v2.0 endpoint
     const tokenUrl = `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/oauth2/v2.0/token`;
     
-    // For public clients (SPAs), don't include client_secret
+    // Server-side flow includes client_secret
+    const redirectUri = process.env.MICROSOFT_REDIRECT_URI || `${request.nextUrl.origin}/api/auth/microsoft/callback`;
+    
     const tokenParams = new URLSearchParams({
       client_id: MICROSOFT_CLIENT_ID!,
+      client_secret: MICROSOFT_CLIENT_SECRET!,
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: `${request.nextUrl.origin}/api/auth/microsoft/callback`,
-      code_verifier: stateData.codeVerifier || codeVerifier,
+      redirect_uri: redirectUri,
+      scope: 'openid email profile offline_access https://graph.microsoft.com/User.Read',
     });
 
     const tokenResponse = await fetch(tokenUrl, {

@@ -43,18 +43,13 @@ export function useTokenManager() {
       },
       zoom: {
         tokenUrl: '/api/oauth/refresh',
-        clientId: process.env.ZOOM_CLIENT_ID || '',
+        clientId: process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID || '',
         clientSecret: '', // Empty - handled server-side
-        accountId: process.env.ZOOM_ACCOUNT_ID || ''
-      },
-      salesforce: {
-        tokenUrl: '/api/oauth/refresh',
-        clientId: process.env.SALESFORCE_CLIENT_ID || '',
-        clientSecret: '' // Empty - handled server-side
+        accountId: process.env.NEXT_PUBLIC_ZOOM_ACCOUNT_ID || ''
       },
       zoho: {
         tokenUrl: '/api/oauth/refresh',
-        clientId: process.env.ZOHO_CLIENT_ID || '',
+        clientId: process.env.NEXT_PUBLIC_ZOHO_CLIENT_ID || '',
         clientSecret: '' // Empty - handled server-side
       }
     }

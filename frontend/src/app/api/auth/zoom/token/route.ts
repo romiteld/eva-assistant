@@ -15,8 +15,15 @@ export async function POST(request: NextRequest) {
     const clientSecret = process.env.ZOOM_CLIENT_SECRET
 
     if (!clientId || !clientSecret) {
+      console.error('Zoom OAuth environment variables missing:', {
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret
+      })
       return NextResponse.json(
-        { error: 'Zoom OAuth not configured' },
+        { 
+          error: 'Zoom OAuth not configured',
+          details: 'Server environment variables ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET are required'
+        },
         { status: 500 }
       )
     }

@@ -83,11 +83,13 @@ async function verifyWebhookSignature(
   const webhookToken = process.env.ZOHO_WEBHOOK_TOKEN;
   if (!webhookToken) {
     console.warn('ZOHO_WEBHOOK_TOKEN not configured');
-    return true; // Allow in development
+    // Only allow in development mode
+    return process.env.NODE_ENV === 'development';
   }
   
-  const signature = headers['x-zoho-webhook-signature'];
+  const signature = headers['x-zoho-webhook-signature'] || headers['x-zoho-signature'];
   if (!signature) {
+    console.warn('No Zoho webhook signature found in headers');
     return false;
   }
   
@@ -96,7 +98,11 @@ async function verifyWebhookSignature(
   hmac.update(body);
   const expectedSignature = hmac.digest('hex');
   
-  return signature === expectedSignature;
+  // Compare signatures using constant-time comparison
+  return crypto.timingSafeEqual(
+    Buffer.from(signature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
 }
 
 /**

@@ -27,11 +27,11 @@ async function handlePost(request: AuthenticatedRequest) {
     }
 
     // Get LinkedIn credentials from environment
-    const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
+    const clientId = process.env.LINKEDIN_CLIENT_ID;
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      console.error('LinkedIn credentials not configured');
+      console.error('LinkedIn credentials not configured. Please set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in server environment variables.');
       return NextResponse.json({ error: 'LinkedIn integration not configured' }, { status: 500 });
     }
 

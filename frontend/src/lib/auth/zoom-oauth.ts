@@ -277,7 +277,7 @@ export class ZoomOAuthService {
 // Default configuration
 export const defaultZoomConfig: ZoomOAuthConfig = {
   clientId: process.env.NEXT_PUBLIC_ZOOM_CLIENT_ID || '',
-  redirectUri: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/zoom/callback`,
+  redirectUri: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/zoom/callback`,
   scopes: [
     'meeting:write',
     'meeting:read',

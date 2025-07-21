@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       {
         linkedin: {
           tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
-          clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!,
+          clientId: process.env.LINKEDIN_CLIENT_ID!,
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET!
         },
         // Add other providers as needed
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
           clientSecret: process.env.SALESFORCE_CLIENT_SECRET || ''
         },
         zoho: {
-          tokenUrl: 'https://accounts.zoho.com/oauth/v2/token',
+          tokenUrl: '/api/oauth/refresh',
           clientId: process.env.ZOHO_CLIENT_ID || '',
           clientSecret: process.env.ZOHO_CLIENT_SECRET || ''
         }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       {
         linkedin: {
           tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
-          clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!,
+          clientId: process.env.LINKEDIN_CLIENT_ID!,
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET!
         },
         // Add other providers as needed
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
           clientSecret: process.env.SALESFORCE_CLIENT_SECRET || ''
         },
         zoho: {
-          tokenUrl: 'https://accounts.zoho.com/oauth/v2/token',
+          tokenUrl: '/api/oauth/refresh',
           clientId: process.env.ZOHO_CLIENT_ID || '',
           clientSecret: process.env.ZOHO_CLIENT_SECRET || ''
         }

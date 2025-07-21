@@ -19,8 +19,8 @@ export class ZohoCRMIntegration {
       {
         zoho: {
           tokenUrl: '/api/oauth/refresh',
-          clientId: process.env.ZOHO_CLIENT_ID || '',
-          clientSecret: '' // Empty - handled server-side
+          clientId: process.env.NEXT_PUBLIC_ZOHO_CLIENT_ID || '',
+          clientSecret: '' // Never expose client secret in frontend
         }
       }
     );

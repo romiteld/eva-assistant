@@ -1,9 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
-import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Brain,
   Mic,
@@ -25,11 +23,6 @@ import { supabase } from '@/lib/supabase/browser'
 import type { User } from '@supabase/supabase-js'
 import { supabaseVoiceStreaming } from '@/lib/services/supabase-voice-streaming'
 import { cn } from '@/lib/utils'
-
-// Register GSAP plugins
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-}
 
 interface VoiceState {
   sessionId: string | null
@@ -79,70 +72,8 @@ export default function TalkToEvaPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const audioVisualizerRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
-  const headerRef = useRef<HTMLDivElement>(null)
-  const messagesRef = useRef<HTMLDivElement>(null)
-  const voiceIndicatorRef = useRef<HTMLDivElement>(null)
-  const orbitRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  
-  // Motion values for 3D effects
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
-  const rotateX = useTransform(mouseY, [-300, 300], [30, -30])
-  const rotateY = useTransform(mouseX, [-300, 300], [-30, 30])
-  const springRotateX = useSpring(rotateX, { stiffness: 300, damping: 30 })
-  const springRotateY = useSpring(rotateY, { stiffness: 300, damping: 30 })
 
-  // Handle mouse movement for 3D effects
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const centerX = window.innerWidth / 2
-      const centerY = window.innerHeight / 2
-      mouseX.set(e.clientX - centerX)
-      mouseY.set(e.clientY - centerY)
-    }
-    
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
-  
-  // GSAP animations
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    const ctx = gsap.context(() => {
-      // Header animation
-      if (headerRef.current) {
-        gsap.from(headerRef.current, {
-          y: -100,
-          opacity: 0,
-          duration: 1,
-          ease: 'power3.out'
-        })
-      }
-      
-      // Voice indicator 3D rotation
-      if (voiceIndicatorRef.current) {
-        gsap.set(voiceIndicatorRef.current, {
-          transformPerspective: 1000,
-          transformStyle: 'preserve-3d'
-        })
-      }
-      
-      // Orbit animation
-      if (orbitRef.current) {
-        gsap.to(orbitRef.current, {
-          rotation: 360,
-          duration: 20,
-          repeat: -1,
-          ease: 'none'
-        })
-      }
-    })
-    
-    return () => ctx.revert()
-  }, [])
-  
   // Scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -167,166 +98,45 @@ export default function TalkToEvaPage() {
     getUser()
   }, [])
 
-  // Advanced audio visualization with particles
+  // Audio visualization
   useEffect(() => {
     if (!audioVisualizerRef.current) return
 
     const canvas = audioVisualizerRef.current
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    
-    // Particle system
-    const particles: Array<{
-      x: number
-      y: number
-      vx: number
-      vy: number
-      size: number
-      life: number
-      color: string
-    }> = []
-    
-    const createParticle = (x: number, y: number) => {
-      const angle = Math.random() * Math.PI * 2
-      const velocity = 0.5 + Math.random() * 2
-      particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * velocity,
-        vy: Math.sin(angle) * velocity,
-        size: 2 + Math.random() * 3,
-        life: 1,
-        color: voice.isListening ? '#22c55e' : '#a855f7'
-      })
-    }
 
     const draw = () => {
-      ctx.fillStyle = 'rgba(17, 24, 39, 0.1)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
       
       const centerX = canvas.width / 2
       const centerY = canvas.height / 2
       const baseRadius = 40
-      const maxRadius = 80
+      const maxRadius = 60
       
       // Draw animated circles based on audio level
       const radius = baseRadius + (audioLevel * (maxRadius - baseRadius))
       
-      // Create particles when audio level is high
-      if (audioLevel > 0.3 && particles.length < 50) {
-        for (let i = 0; i < 3; i++) {
-          const angle = Math.random() * Math.PI * 2
-          const r = radius + Math.random() * 20
-          createParticle(
-            centerX + Math.cos(angle) * r,
-            centerY + Math.sin(angle) * r
-          )
-        }
-      }
+      // Outer glow
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius + 20, 0, Math.PI * 2)
+      const gradient = ctx.createRadialGradient(centerX, centerY, radius, centerX, centerY, radius + 20)
+      gradient.addColorStop(0, voice.isListening ? 'rgba(34, 197, 94, 0.2)' : 'rgba(168, 85, 247, 0.2)')
+      gradient.addColorStop(1, 'transparent')
+      ctx.fillStyle = gradient
+      ctx.fill()
       
-      // Update and draw particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]
-        p.x += p.vx
-        p.y += p.vy
-        p.life -= 0.02
-        p.vy += 0.05 // gravity
-        
-        if (p.life <= 0) {
-          particles.splice(i, 1)
-          continue
-        }
-        
-        ctx.save()
-        ctx.globalAlpha = p.life
-        ctx.fillStyle = p.color
-        ctx.shadowBlur = 10
-        ctx.shadowColor = p.color
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.restore()
-      }
-      
-      // Draw main orb with 3D effect
-      const time = Date.now() * 0.001
-      
-      // Outer glow layers
-      for (let i = 3; i > 0; i--) {
-        ctx.beginPath()
-        ctx.arc(centerX, centerY, radius + i * 15, 0, Math.PI * 2)
-        const gradient = ctx.createRadialGradient(
-          centerX, centerY, radius,
-          centerX, centerY, radius + i * 15
-        )
-        const alpha = 0.1 / i
-        gradient.addColorStop(0, voice.isListening 
-          ? `rgba(34, 197, 94, ${alpha})` 
-          : `rgba(168, 85, 247, ${alpha})`)
-        gradient.addColorStop(1, 'transparent')
-        ctx.fillStyle = gradient
-        ctx.fill()
-      }
-      
-      // Main sphere with gradient
-      const mainGradient = ctx.createRadialGradient(
-        centerX - radius * 0.3, 
-        centerY - radius * 0.3, 
-        0,
-        centerX, 
-        centerY, 
-        radius
-      )
-      mainGradient.addColorStop(0, voice.isListening ? '#86efac' : '#e9d5ff')
-      mainGradient.addColorStop(0.5, voice.isListening ? '#22c55e' : '#a855f7')
-      mainGradient.addColorStop(1, voice.isListening ? '#14532d' : '#581c87')
-      
+      // Main circle
       ctx.beginPath()
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-      ctx.fillStyle = mainGradient
+      ctx.fillStyle = voice.isListening ? '#22c55e' : '#a855f7'
       ctx.fill()
       
-      // Inner light reflection
+      // Inner circle
       ctx.beginPath()
-      ctx.arc(
-        centerX - radius * 0.3, 
-        centerY - radius * 0.3, 
-        radius * 0.3, 
-        0, 
-        Math.PI * 2
-      )
-      const innerGradient = ctx.createRadialGradient(
-        centerX - radius * 0.3,
-        centerY - radius * 0.3,
-        0,
-        centerX - radius * 0.3,
-        centerY - radius * 0.3,
-        radius * 0.3
-      )
-      innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)')
-      innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
-      ctx.fillStyle = innerGradient
+      ctx.arc(centerX, centerY, radius * 0.7, 0, Math.PI * 2)
+      ctx.fillStyle = voice.isListening ? '#16a34a' : '#9333ea'
       ctx.fill()
-      
-      // Orbiting rings
-      ctx.save()
-      ctx.translate(centerX, centerY)
-      ctx.rotate(time * 0.5)
-      
-      for (let i = 0; i < 3; i++) {
-        ctx.save()
-        ctx.rotate((Math.PI * 2 / 3) * i + time)
-        ctx.beginPath()
-        ctx.ellipse(0, 0, radius + 30, radius * 0.3, 0, 0, Math.PI * 2)
-        ctx.strokeStyle = voice.isListening 
-          ? `rgba(34, 197, 94, ${0.3 - i * 0.1})` 
-          : `rgba(168, 85, 247, ${0.3 - i * 0.1})`
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.restore()
-      }
-      
-      ctx.restore()
       
       animationFrameRef.current = requestAnimationFrame(draw)
     }
@@ -553,27 +363,12 @@ export default function TalkToEvaPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950">
-      {/* Header with 3D effect */}
-      <motion.div 
-        ref={headerRef}
-        className="flex items-center justify-between px-6 py-4 border-b border-gray-800 backdrop-blur-lg"
-        style={{
-          transformStyle: 'preserve-3d',
-          transform: 'translateZ(0)'
-        }}
-      >
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
         <div className="flex items-center gap-3">
-          <motion.div 
-            className="p-2 bg-purple-500/20 rounded-lg"
-            whileHover={{ 
-              scale: 1.1, 
-              rotateZ: 360,
-              transition: { duration: 0.6 }
-            }}
-            whileTap={{ scale: 0.95 }}
-          >
+          <div className="p-2 bg-purple-500/20 rounded-lg">
             <Brain className="w-5 h-5 text-purple-400" />
-          </motion.div>
+          </div>
           <div>
             <h1 className="text-lg font-semibold text-white">Eva Voice Assistant</h1>
             <p className="text-xs text-gray-400">
@@ -613,34 +408,14 @@ export default function TalkToEvaPage() {
             </Button>
           )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Messages Area with parallax effect */}
-      <motion.div 
-        ref={messagesRef}
-        className="flex-1 overflow-y-auto px-4 py-6"
-        style={{
-          perspective: 1000,
-          transformStyle: 'preserve-3d'
-        }}
-      >
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 && (
-            <motion.div 
-              className="text-center py-12"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, type: 'spring' }}
-            >
-              <motion.div
-                animate={{ 
-                  rotateY: 360,
-                  transition: { duration: 4, repeat: Infinity, ease: 'linear' }
-                }}
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                <Brain className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              </motion.div>
+            <div className="text-center py-12">
+              <Brain className="w-12 h-12 text-gray-600 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-300 mb-2">
                 {voice.isConnected ? 'Start speaking to Eva' : 'Connect to start'}
               </h3>
@@ -649,54 +424,28 @@ export default function TalkToEvaPage() {
                   ? 'Eva is listening for your voice commands' 
                   : 'Click the connect button to begin your conversation'}
               </p>
-            </motion.div>
+            </div>
           )}
           
           {messages.map((message) => (
             <motion.div
               key={message.id}
-              initial={{ 
-                opacity: 0, 
-                y: 20,
-                scale: 0.8,
-                rotateX: -15
-              }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                scale: 1,
-                rotateX: 0
-              }}
-              transition={{ 
-                duration: 0.4,
-                type: 'spring',
-                stiffness: 100
-              }}
-              whileHover={{
-                scale: 1.02,
-                transition: { duration: 0.2 }
-              }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
               className={cn(
                 "flex gap-3",
                 message.type === 'user' && "flex-row-reverse"
               )}
-              style={{ transformStyle: 'preserve-3d' }}
             >
               {/* Avatar */}
-              <motion.div 
-                className={cn(
-                  "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-                  message.type === 'user' ? 'bg-blue-500/20' :
-                  message.type === 'assistant' ? 'bg-purple-500/20' :
-                  message.type === 'tool' ? 'bg-orange-500/20' :
-                  'bg-gray-500/20'
-                )}
-                whileHover={{ 
-                  rotate: 360,
-                  scale: 1.2,
-                  transition: { duration: 0.6 }
-                }}
-              >
+              <div className={cn(
+                "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+                message.type === 'user' ? 'bg-blue-500/20' :
+                message.type === 'assistant' ? 'bg-purple-500/20' :
+                message.type === 'tool' ? 'bg-orange-500/20' :
+                'bg-gray-500/20'
+              )}>
                 {message.type === 'user' ? (
                   <Mic className="w-4 h-4 text-blue-400" />
                 ) : message.type === 'assistant' ? (
@@ -706,7 +455,7 @@ export default function TalkToEvaPage() {
                 ) : (
                   <AlertCircle className="w-4 h-4 text-gray-400" />
                 )}
-              </motion.div>
+              </div>
               
               {/* Message Content */}
               <div className={cn(
@@ -747,39 +496,20 @@ export default function TalkToEvaPage() {
           ))}
           <div ref={messagesEndRef} />
         </div>
-      </motion.div>
+      </div>
 
-      {/* Voice Indicator with 3D animation */}
+      {/* Voice Indicator */}
       {voice.isConnected && (
-        <motion.div 
-          className="px-4 py-4 border-t border-gray-800 backdrop-blur-lg"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 100 }}
-        >
+        <div className="px-4 py-4 border-t border-gray-800">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-center gap-6">
-              {/* 3D Audio Visualizer */}
-              <motion.div 
-                ref={voiceIndicatorRef}
-                className="relative"
-                style={{
-                  rotateX: springRotateX,
-                  rotateY: springRotateY,
-                  transformStyle: 'preserve-3d'
-                }}
-              >
+              {/* Audio Visualizer */}
+              <div className="relative">
                 <canvas
                   ref={audioVisualizerRef}
-                  width={200}
-                  height={200}
+                  width={120}
+                  height={120}
                   className="rounded-full"
-                  style={{
-                    boxShadow: voice.isListening 
-                      ? '0 0 60px rgba(34, 197, 94, 0.6)' 
-                      : '0 0 60px rgba(168, 85, 247, 0.6)'
-                  }}
                 />
                 <AnimatePresence>
                   {(voice.isListening || voice.isSpeaking) && (
@@ -788,37 +518,19 @@ export default function TalkToEvaPage() {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.8, opacity: 0 }}
                       className="absolute inset-0 flex items-center justify-center"
-                      style={{ transform: 'translateZ(50px)' }}
                     >
-                      <motion.div
-                        animate={{ 
-                          scale: [1, 1.2, 1],
-                          rotate: voice.isListening ? [0, 0, 0] : [0, 360, 360]
-                        }}
-                        transition={{ 
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: 'easeInOut'
-                        }}
-                      >
-                        {voice.isListening ? (
-                          <Mic className="w-10 h-10 text-white drop-shadow-2xl" />
-                        ) : (
-                          <Volume2 className="w-10 h-10 text-white drop-shadow-2xl" />
-                        )}
-                      </motion.div>
+                      {voice.isListening ? (
+                        <Mic className="w-8 h-8 text-white" />
+                      ) : (
+                        <Volume2 className="w-8 h-8 text-white" />
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
               
-              {/* Status Text with typewriter effect */}
-              <motion.div 
-                className="text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
+              {/* Status Text */}
+              <div className="text-center">
                 <p className="text-sm font-medium text-gray-300">
                   {isCalibrating ? 'Calibrating...' :
                    voice.isProcessing ? 'Processing...' :
@@ -831,10 +543,10 @@ export default function TalkToEvaPage() {
                    voice.isSpeaking ? 'Eva is responding' :
                    'Say something to start'}
                 </p>
-              </motion.div>
+              </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* File Input (Hidden) */}

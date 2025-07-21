@@ -119,7 +119,7 @@ async function handleLogin(supabase: any, url: URL): Promise<Response> {
     prompt: 'select_account'
   })
   
-  const authUrl = `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/authorize?${authParams}`
+  const authUrl = `https://login.microsoftonline.com/${config.tenantId}/oauth2/authorize?${authParams}`
   
   // Redirect to Microsoft
   return Response.redirect(authUrl, 302)
@@ -164,7 +164,7 @@ async function handleCallback(supabase: any, url: URL, req: Request): Promise<Re
   
   // Exchange code for tokens
   const tokenResponse = await fetch(
-    `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`,
+    `https://login.microsoftonline.com/${config.tenantId}/oauth2/token`,
     {
       method: 'POST',
       headers: {
@@ -326,7 +326,7 @@ async function handleRefresh(supabase: any, req: Request): Promise<Response> {
   
   // Refresh Microsoft tokens
   const refreshResponse = await fetch(
-    `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`,
+    `https://login.microsoftonline.com/${config.tenantId}/oauth2/token`,
     {
       method: 'POST',
       headers: {

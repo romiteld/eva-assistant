@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 const ZOOM_TOKEN_URL = 'https://zoom.us/oauth/token';
-const ZOOM_CLIENT_ID = process.env.ZOOM_CLIENT_ID!;
-const ZOOM_CLIENT_SECRET = process.env.ZOOM_CLIENT_SECRET!;
-const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 'http://localhost:3000/api/auth/zoom/callback';
 
 export async function GET(request: NextRequest) {
+  // Check for required environment variables first
+  const ZOOM_CLIENT_ID = process.env.ZOOM_CLIENT_ID;
+  const ZOOM_CLIENT_SECRET = process.env.ZOOM_CLIENT_SECRET;
+  const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 'http://localhost:3000/api/auth/zoom/callback';
+  
+  if (!ZOOM_CLIENT_ID || !ZOOM_CLIENT_SECRET) {
+    console.error('Zoom OAuth environment variables missing:', {
+      hasClientId: !!ZOOM_CLIENT_ID,
+      hasClientSecret: !!ZOOM_CLIENT_SECRET
+    });
+    return NextResponse.redirect(
+      new URL('/dashboard/interview-center?error=zoom_not_configured&details=server_env_missing', request.url)
+    );
+  }
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const state = searchParams.get('state');
