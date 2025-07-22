@@ -1,39 +1,47 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Initialize Gemini client with available API key
-const geminiApiKey =
-  process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY
+// Lazy initialization function for Gemini client
+function getGeminiClient() {
+  const geminiApiKey =
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY
 
-if (!geminiApiKey) {
-  throw new Error('GEMINI API key is not configured')
+  if (!geminiApiKey) {
+    throw new Error('GEMINI API key is not configured')
+  }
+
+  return new GoogleGenerativeAI(geminiApiKey)
 }
 
-const genAI = new GoogleGenerativeAI(geminiApiKey)
-
-// Model configurations
+// Model configurations with lazy initialization
 export const models = {
   // Gemini 2.5 Pro - For complex reasoning and analysis
-  pro: genAI.getGenerativeModel({ 
-    model: 'gemini-2.5-pro',
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-    },
-  }),
+  get pro() {
+    const genAI = getGeminiClient()
+    return genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-pro',
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      },
+    })
+  },
 
   // Gemini 2.5 Flash - For quick responses and high volume
-  flash: genAI.getGenerativeModel({ 
-    model: 'gemini-2.5-flash',
-    generationConfig: {
-      temperature: 0.9,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 4096,
-    },
-  }),
+  get flash() {
+    const genAI = getGeminiClient()
+    return genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        temperature: 0.9,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 4096,
+      },
+    })
+  },
 
   // Note: Flash Live model removed - using ElevenLabs for voice instead
 }
@@ -94,6 +102,7 @@ export const geminiHelpers = {
 
   // Generate embeddings for vector search
   async generateEmbedding(text: string) {
+    const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({ model: 'text-embedding-3' })
     const result = await model.embedContent(text)
     return result.embedding.values
